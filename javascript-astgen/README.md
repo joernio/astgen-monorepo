@@ -32,3 +32,18 @@ Options:
   -r, --recurse  Recurse mode suitable for mono-repos  [boolean] [default: true]
   -h             Show help                                             [boolean]
 ```
+
+## Example
+
+Navigate to the project and run `astgen` command.
+
+```bash
+cd <path to project>
+astgen
+```
+
+To specify the project type and the path to the project.
+
+```bash
+astgen -t nodejs -i <path to project>
+```
