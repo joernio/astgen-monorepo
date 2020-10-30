@@ -1,0 +1,24 @@
+{
+  "name": "@appthreat/astgen",
+  "version": "1.0.0",
+  "description": "Generate AST in json format for a number of languages by invoking appropriate tool",
+  "main": "index.js",
+  "keywords": [
+    "AST",
+    "Static Analysis"
+  ],
+  "bin": {
+    "astgen": "./bin/astgen"
+  },
+  "repository": "https://github.com/AppThreat/astgen",
+  "author": "Team AppThreat",
+  "license": "Apache-2.0",
+  "dependencies": {
+    "@babel/parser": "^7.12.3",
+    "yargs": "^16.1.0"
+  },
+  "files": [
+    "*.js",
+    "bin/",
+  ]
+}
