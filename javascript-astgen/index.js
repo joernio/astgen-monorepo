@@ -87,15 +87,18 @@ const createJsAst = async (options) => {
           fs.readFileSync(file, "utf-8"),
           babelParserOptions
         );
-        const relativePath = file.replace(new RegExp("^" + options.src + path.sep), "");
+        const relativePath = file.replace(
+          new RegExp("^" + options.src + path.sep),
+          ""
+        );
         const outAstFile = path.join(options.output, relativePath + ".json");
         const data = {
           fullName: file,
           relativeName: relativePath,
-          ast: ast
-        }
-        fs.mkdirSync(path.dirname(outAstFile), {recursive: true});
-        fs.writeFileSync(outAstFile, JSON.stringify(data, null, "  "))
+          ast: ast,
+        };
+        fs.mkdirSync(path.dirname(outAstFile), { recursive: true });
+        fs.writeFileSync(outAstFile, JSON.stringify(data, null, "  "));
         console.log("Converted", relativePath, "to", outAstFile);
       } catch (err) {
         console.error(file, err.message);
