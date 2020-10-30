@@ -1,4 +1,5 @@
 const babelParser = require("@babel/parser");
+const DockerfileParser = require("dockerfile-ast").DockerfileParser;
 
 const { join } = require("path");
 const fs = require("fs");
@@ -76,30 +77,29 @@ const getAllSrcJSAndTSFiles = (src) =>
     getAllFiles(src, ".tsx"),
   ]);
 
-const createJsAst = async (options) => {
+/**
+ * Convert a single JS/TS file to AST
+ */
+exports.toJSAst = (file) => {
+  const ast = babelParser.parse(
+    fs.readFileSync(file, "utf-8"),
+    babelParserOptions
+  );
+  return ast;
+};
+
+/**
+ * Generate AST for JavaScript or TypeScript
+ */
+exports.createJSAst = (options) => {
   try {
     const errFiles = [];
-    const promiseMap = await getAllSrcJSAndTSFiles(options.src);
+    const promiseMap = getAllSrcJSAndTSFiles(options.src);
     const srcFiles = promiseMap.flatMap((d) => d);
     for (const file of srcFiles) {
       try {
-        const ast = babelParser.parse(
-          fs.readFileSync(file, "utf-8"),
-          babelParserOptions
-        );
-        const relativePath = file.replace(
-          new RegExp("^" + options.src + path.sep),
-          ""
-        );
-        const outAstFile = path.join(options.output, relativePath + ".json");
-        const data = {
-          fullName: file,
-          relativeName: relativePath,
-          ast: ast,
-        };
-        fs.mkdirSync(path.dirname(outAstFile), { recursive: true });
-        fs.writeFileSync(outAstFile, JSON.stringify(data, null, "  "));
-        console.log("Converted", relativePath, "to", outAstFile);
+        const ast = toJSAst(file);
+        writeAstFile(file, ast, options);
       } catch (err) {
         console.error(file, err.message);
         errFiles.push(file);
@@ -110,7 +110,70 @@ const createJsAst = async (options) => {
   }
 };
 
-const createXAst = async (options) => {
+/**
+ * Write AST data to a json file
+ */
+const writeAstFile = (file, ast, options) => {
+  const relativePath = file.replace(
+    new RegExp("^" + options.src + path.sep),
+    ""
+  );
+  const outAstFile = path.join(options.output, relativePath + ".json");
+  const data = {
+    fullName: file,
+    relativeName: relativePath,
+    ast: ast,
+  };
+  fs.mkdirSync(path.dirname(outAstFile), { recursive: true });
+  fs.writeFileSync(outAstFile, JSON.stringify(data, null, "  "));
+  console.log("Converted", relativePath, "to", outAstFile);
+};
+
+/**
+ * Convert a single dockerfile to ast
+ */
+exports.toDockerAst = (file) => {
+  const dockerfile = DockerfileParser.parse(fs.readFileSync(file, "utf-8"));
+  const instructions = dockerfile.getInstructions();
+  const dataList = [];
+  for (let instruction of instructions) {
+    const instructionRange = instruction.instructionRange;
+    const data = {
+      type: instruction.getKeyword(),
+      start: instructionRange.start.line,
+      end: instructionRange.end.line,
+      loc: instructionRange,
+      arguments: instruction.getArguments(),
+      argumentsRange: instruction.getArgumentsRange(),
+      argumentsContent: instruction.getArgumentsContent(),
+      expandedArguments: instruction.getExpandedArguments(),
+      variables: instruction.getVariables(),
+    };
+    dataList.push(data);
+  }
+  return {
+    type: "file",
+    errors: [],
+    program: { type: "Dockerfile", sourceType: "Dockerfile", body: dataList },
+  };
+};
+
+/**
+ * Generate AST for dockerfile
+ */
+exports.createDockerAst = (options) => {
+  const dockerfiles = getAllFiles(options.src, "Dockerfile");
+  for (const file of dockerfiles) {
+    try {
+      const ast = toDockerAst(file);
+      writeAstFile(file, ast, options);
+    } catch (err) {
+      console.error(file, err.message);
+    }
+  }
+};
+
+const createXAst = (options) => {
   const src_dir = options.src;
   try {
     fs.accessSync(src_dir, fs.constants.R_OK);
@@ -124,14 +187,20 @@ const createXAst = async (options) => {
     fs.existsSync(path.join(src_dir, "package.json")) ||
     fs.existsSync(path.join(src_dir, "rush.json"))
   ) {
-    return await createJsAst(options);
+    return createJSAst(options);
+  }
+  // Dockerfile
+  if (fs.existsSync(path.join(src_dir, "Dockerfile"))) {
+    return createDockerAst(options);
   }
 };
 
 /**
+ * Method to start the ast generation process
  *
+ * @args options CLI arguments
  */
-exports.start = async (options) => {
+exports.start = (options) => {
   let { type } = options;
   if (!type) {
     type = "";
@@ -143,8 +212,10 @@ exports.start = async (options) => {
     case "javascript":
     case "typescript":
     case "ts":
-      return await createJsAst(options);
+      return createJSAst(options);
+    case "docker":
+      return createDockerAst(options);
     default:
-      return await createXAst(options);
+      return createXAst(options);
   }
 };

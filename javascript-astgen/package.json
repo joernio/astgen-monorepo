@@ -15,10 +15,18 @@
   "license": "Apache-2.0",
   "dependencies": {
     "@babel/parser": "^7.12.3",
+    "dockerfile-ast": "^0.0.30",
     "yargs": "^16.1.0"
+  },
+  "scripts": {
+    "test": "jest",
+    "watch": "jest --watch"
   },
   "files": [
     "*.js",
     "bin/"
-  ]
+  ],
+  "devDependencies": {
+    "jest": "^26.6.1"
+  }
 }

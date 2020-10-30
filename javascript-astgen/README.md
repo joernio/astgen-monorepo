@@ -4,12 +4,13 @@ This script creates Abstract Syntax Tree (AST) of all the files for supported la
 
 ## Supported languages
 
-| Language   | Tool used |
-| ---------- | --------- |
-| JavaScript | babel     |
-| TypeScript | babel     |
-| JSX        | babel     |
-| TSX        | babel     |
+| Language   | Tool used      |
+| ---------- | -------------- |
+| JavaScript | babel          |
+| TypeScript | babel          |
+| JSX        | babel          |
+| TSX        | babel          |
+| Dockerfile | dockerfile-ast |
 
 ## Usage
 
