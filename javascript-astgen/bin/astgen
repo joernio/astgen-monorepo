@@ -42,7 +42,14 @@ if (args.version) {
   process.exit(0);
 }
 
-if (args.output === "ast_out") {
-  args.output = path.join(args.src, args.output);
-}
-astGenerator.start(args);
+(async () => {
+  try {
+    if (args.output === "ast_out") {
+      args.output = path.join(args.src, args.output);
+    }
+    await astGenerator.start(args);
+  } catch (e) {
+    console.error(e);
+    process.exit(1);
+  }
+})();

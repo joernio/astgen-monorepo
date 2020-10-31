@@ -80,21 +80,22 @@ const getAllSrcJSAndTSFiles = (src) =>
 /**
  * Convert a single JS/TS file to AST
  */
-exports.toJSAst = (file) => {
+const toJSAst = (file) => {
   const ast = babelParser.parse(
     fs.readFileSync(file, "utf-8"),
     babelParserOptions
   );
   return ast;
 };
+exports.toJSAst = toJSAst;
 
 /**
  * Generate AST for JavaScript or TypeScript
  */
-exports.createJSAst = (options) => {
+const createJSAst = async (options) => {
   try {
     const errFiles = [];
-    const promiseMap = getAllSrcJSAndTSFiles(options.src);
+    const promiseMap = await getAllSrcJSAndTSFiles(options.src);
     const srcFiles = promiseMap.flatMap((d) => d);
     for (const file of srcFiles) {
       try {
@@ -132,7 +133,7 @@ const writeAstFile = (file, ast, options) => {
 /**
  * Convert a single dockerfile to ast
  */
-exports.toDockerAst = (file) => {
+const toDockerAst = (file) => {
   const dockerfile = DockerfileParser.parse(fs.readFileSync(file, "utf-8"));
   const instructions = dockerfile.getInstructions();
   const dataList = [];
@@ -157,11 +158,12 @@ exports.toDockerAst = (file) => {
     program: { type: "Dockerfile", sourceType: "Dockerfile", body: dataList },
   };
 };
+exports.toDockerAst = toDockerAst;
 
 /**
  * Generate AST for dockerfile
  */
-exports.createDockerAst = (options) => {
+const createDockerAst = (options) => {
   const dockerfiles = getAllFiles(options.src, "Dockerfile");
   for (const file of dockerfiles) {
     try {
@@ -173,7 +175,7 @@ exports.createDockerAst = (options) => {
   }
 };
 
-const createXAst = (options) => {
+const createXAst = async (options) => {
   const src_dir = options.src;
   try {
     fs.accessSync(src_dir, fs.constants.R_OK);
@@ -187,7 +189,7 @@ const createXAst = (options) => {
     fs.existsSync(path.join(src_dir, "package.json")) ||
     fs.existsSync(path.join(src_dir, "rush.json"))
   ) {
-    return createJSAst(options);
+    return await createJSAst(options);
   }
   // Dockerfile
   if (fs.existsSync(path.join(src_dir, "Dockerfile"))) {
@@ -200,7 +202,7 @@ const createXAst = (options) => {
  *
  * @args options CLI arguments
  */
-exports.start = (options) => {
+const start = async (options) => {
   let { type } = options;
   if (!type) {
     type = "";
@@ -212,10 +214,11 @@ exports.start = (options) => {
     case "javascript":
     case "typescript":
     case "ts":
-      return createJSAst(options);
+      return await createJSAst(options);
     case "docker":
       return createDockerAst(options);
     default:
-      return createXAst(options);
+      return await createXAst(options);
   }
 };
+exports.start = start;
