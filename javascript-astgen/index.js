@@ -1,5 +1,6 @@
 const babelParser = require("@babel/parser");
 const DockerfileParser = require("dockerfile-ast").DockerfileParser;
+const { execFileSync } = require("child_process");
 
 const { join } = require("path");
 const fs = require("fs");
@@ -137,18 +138,26 @@ const toDockerAst = (file) => {
   const dockerfile = DockerfileParser.parse(fs.readFileSync(file, "utf-8"));
   const instructions = dockerfile.getInstructions();
   const dataList = [];
-  for (let instruction of instructions) {
+  for (const instruction of instructions) {
     const instructionRange = instruction.instructionRange;
+    const keyword = instruction.getKeyword();
+    const argumentsContent = instruction.getArgumentsContent();
+    let instructionAst = {};
+    // Create AST for RUN arguments
+    if (keyword == "RUN") {
+      instructionAst = toBashAst(file, argumentsContent);
+    }
     const data = {
-      type: instruction.getKeyword(),
+      type: keyword,
       start: instructionRange.start.line,
       end: instructionRange.end.line,
       loc: instructionRange,
       arguments: instruction.getArguments(),
       argumentsRange: instruction.getArgumentsRange(),
-      argumentsContent: instruction.getArgumentsContent(),
+      argumentsContent,
       expandedArguments: instruction.getExpandedArguments(),
       variables: instruction.getVariables(),
+      instructionAst,
     };
     dataList.push(data);
   }
@@ -175,6 +184,47 @@ const createDockerAst = (options) => {
   }
 };
 
+/**
+ * Convert a single bash file to ast
+ */
+const toBashAst = async (file, content) => {
+  if (file && !content) {
+    content = fs.readFileSync(file, "utf-8");
+  }
+  let astString = "{}";
+  try {
+    astString = execFileSync("shfmt", ["-tojson"], {
+      input: content,
+      encoding: "utf-8",
+    });
+  } catch (err) {
+    console.log("Check if shfmt is installed and available in PATH");
+    console.error(err);
+  }
+  return {
+    type: "file",
+    errors: [],
+    program: { type: "bash", sourceType: "bash", body: JSON.parse(astString) },
+  };
+};
+exports.toBashAst = toBashAst;
+
+/**
+ * Generate AST for bash script
+ */
+const createBashAst = async (options) => {
+  const shfiles = getAllFiles(options.src, ".sh");
+  for (const file of shfiles) {
+    try {
+      const content = fs.readFileSync(file, "utf-8");
+      const ast = await toBashAst(file, content);
+      writeAstFile(file, ast, options);
+    } catch (err) {
+      console.error(file, err.message);
+    }
+  }
+};
+
 const createXAst = async (options) => {
   const src_dir = options.src;
   try {
@@ -193,8 +243,9 @@ const createXAst = async (options) => {
   }
   // Dockerfile
   if (fs.existsSync(path.join(src_dir, "Dockerfile"))) {
-    return createDockerAst(options);
+    createDockerAst(options);
   }
+  createBashAst(options);
 };
 
 /**
@@ -217,6 +268,9 @@ const start = async (options) => {
       return await createJSAst(options);
     case "docker":
       return createDockerAst(options);
+    case "bash":
+    case "sh":
+      return await createBashAst(options);
     default:
       return await createXAst(options);
   }

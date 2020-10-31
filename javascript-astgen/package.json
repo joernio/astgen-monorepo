@@ -20,7 +20,8 @@
   },
   "scripts": {
     "test": "jest",
-    "watch": "jest --watch"
+    "watch": "jest --watch",
+    "postinstall": "node ./postinstall.js"
   },
   "files": [
     "*.js",
