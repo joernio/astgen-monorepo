@@ -31,6 +31,7 @@ if (platform !== "windows") {
       "-o",
       "/usr/local/bin/shfmt",
     ]);
+    execFileSync("chmod", ["+x", "/usr/local/bin/shfmt"]);
   } catch (err) {
     console.log("Please download shfmt manually from", shfmtDownloadUrl);
   }
