@@ -1,6 +1,8 @@
 #!/usr/bin/env node
-const { execFileSync } = require("child_process");
+const { spawnSync, execFileSync } = require("child_process");
 const os = require("os");
+const path = require("path");
+
 let platform = os.platform();
 if (platform == "win32") {
   platform = "windows";
@@ -19,19 +21,21 @@ const shfmtVersion = "v3.2.0";
 const shfmtDownloadUrl = `https://github.com/mvdan/sh/releases/download/${shfmtVersion}/shfmt_${shfmtVersion}_${platform}_${arch}`;
 
 if (platform !== "windows") {
-  console.log(
-    "About to download shfmt from",
-    shfmtDownloadUrl,
-    "to /usr/local/bin"
-  );
+  let binDir = "/usr/local/bin";
   try {
-    execFileSync("curl", [
-      "-L",
-      shfmtDownloadUrl,
-      "-o",
-      "/usr/local/bin/shfmt",
-    ]);
-    execFileSync("chmod", ["+x", "/usr/local/bin/shfmt"]);
+    const cp = spawnSync("npm", ["config", "get", "prefix"], {
+      encoding: "utf-8",
+    });
+    if (cp && !cp.error && cp.stdout) {
+      binDir = cp.stdout.replace("\n", "") + path.sep + "bin";
+    }
+  } catch (err) {
+    console.log(err);
+  }
+  console.log("About to download shfmt from", shfmtDownloadUrl, "to", binDir);
+  try {
+    execFileSync("curl", ["-L", shfmtDownloadUrl, "-o", binDir + "/shfmt"]);
+    execFileSync("chmod", ["+x", binDir + "/shfmt"]);
   } catch (err) {
     console.log("Please download shfmt manually from", shfmtDownloadUrl);
   }

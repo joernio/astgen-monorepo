@@ -187,7 +187,7 @@ const createDockerAst = (options) => {
 /**
  * Convert a single bash file to ast
  */
-const toBashAst = async (file, content) => {
+const toBashAst = (file, content) => {
   if (file && !content) {
     content = fs.readFileSync(file, "utf-8");
   }
@@ -212,12 +212,12 @@ exports.toBashAst = toBashAst;
 /**
  * Generate AST for bash script
  */
-const createBashAst = async (options) => {
+const createBashAst = (options) => {
   const shfiles = getAllFiles(options.src, ".sh");
   for (const file of shfiles) {
     try {
       const content = fs.readFileSync(file, "utf-8");
-      const ast = await toBashAst(file, content);
+      const ast = toBashAst(file, content);
       writeAstFile(file, ast, options);
     } catch (err) {
       console.error(file, err.message);
@@ -270,7 +270,7 @@ const start = async (options) => {
       return createDockerAst(options);
     case "bash":
     case "sh":
-      return await createBashAst(options);
+      return createBashAst(options);
     default:
       return await createXAst(options);
   }
