@@ -24,7 +24,16 @@ if (platform !== "windows") {
     shfmtDownloadUrl,
     "to /usr/local/bin"
   );
-  execFileSync("curl", ["-L", shfmtDownloadUrl, "-o", "/usr/local/bin/shfmt"]);
+  try {
+    execFileSync("curl", [
+      "-L",
+      shfmtDownloadUrl,
+      "-o",
+      "/usr/local/bin/shfmt",
+    ]);
+  } catch (err) {
+    console.log("Please download shfmt manually from", shfmtDownloadUrl);
+  }
   console.log("Done");
 } else {
   console.log("Please download shfmt manually from", shfmtDownloadUrl);
