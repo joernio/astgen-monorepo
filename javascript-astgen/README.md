@@ -1,11 +1,12 @@
 # AST generator
 
-This script creates Abstract Syntax Tree (AST) of all the files for supported languages in JSON format. AST is created by using the bundled babel parser (for JavaScript, TypeScript) or by invoking appropriate external tools.
+This script creates Abstract Syntax Tree (AST) of all the files for supported languages in JSON format. AST is created by using the bundled babel parser (for JavaScript, TypeScript) or by invoking appropriate external tools (See table below).
 
 ## Supported languages
 
 | Language   | Tool used      |
 | ---------- | -------------- |
+| Bash       | shfmt (cli)    |
 | JavaScript | babel          |
 | TypeScript | babel          |
 | JSX        | babel          |
