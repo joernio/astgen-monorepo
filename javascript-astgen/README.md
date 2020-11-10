@@ -49,3 +49,7 @@ To specify the project type and the path to the project.
 ```bash
 astgen -t nodejs -i <path to project>
 ```
+
+## Troubleshooting
+
+`shfmt` is bundled with astgen and should work for linux amd64. When using astgen on any other platform and architecture, please download and place the [cli](https://github.com/mvdan/sh/releases) in the PATH.
