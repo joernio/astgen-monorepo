@@ -173,7 +173,7 @@ exports.toDockerAst = toDockerAst;
  * Generate AST for dockerfile
  */
 const createDockerAst = (options) => {
-  const dockerfiles = getAllFiles(options.src, "Dockerfile");
+  const dockerfiles = getAllFiles(options.src, "Dockerfile.*");
   for (const file of dockerfiles) {
     try {
       const ast = toDockerAst(file);
