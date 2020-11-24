@@ -134,8 +134,10 @@ const writeAstFile = (file, ast, options) => {
 /**
  * Convert a single dockerfile to ast
  */
-const toDockerAst = (file) => {
-  const dockerfile = DockerfileParser.parse(fs.readFileSync(file, "utf-8"));
+const toDockerAst = (file, content) => {
+  const dockerfile = DockerfileParser.parse(
+    file ? fs.readFileSync(file, "utf-8") : content
+  );
   const instructions = dockerfile.getInstructions();
   const dataList = [];
   for (const instruction of instructions) {
@@ -143,10 +145,31 @@ const toDockerAst = (file) => {
     const keyword = instruction.getKeyword();
     const argumentsContent = instruction.getArgumentsContent();
     let instructionAst = {};
+    let flags = [];
+    let metadata = {};
     // Create AST for RUN arguments
-    if (keyword == "RUN") {
+    if (keyword === "RUN") {
       instructionAst = toBashAst(file, argumentsContent);
     }
+    if (keyword === "COPY") {
+      flags = instruction.getFromFlag();
+    }
+    if (keyword === "FROM") {
+      metadata = {
+        image: instruction.getImage() || "",
+        imageTag: instruction.getImageTag() || "",
+        imageDigest: instruction.getImageDigest() || "",
+        registry: instruction.getRegistry() || "",
+        buildStage: instruction.getBuildStage() || "",
+        platform: instruction.getPlatformFlag() || "",
+      };
+    }
+    if (keyword === "HEALTHCHECK") {
+      metadata = {
+        subcommand: instruction.getSubcommand(),
+      };
+    }
+
     const data = {
       type: keyword,
       start: instructionRange.start.line,
@@ -157,6 +180,8 @@ const toDockerAst = (file) => {
       argumentsContent,
       expandedArguments: instruction.getExpandedArguments(),
       variables: instruction.getVariables(),
+      flags: flags,
+      metadata: metadata,
       instructionAst,
     };
     dataList.push(data);

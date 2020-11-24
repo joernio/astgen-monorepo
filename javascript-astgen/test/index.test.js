@@ -5,6 +5,19 @@ test("Test docker ast generation", () => {
   expect(ast);
 });
 
+test("Test docker ast from content", () => {
+  const ast = astGenerator.toDockerAst(
+    null,
+    `
+	FROM centos:7 as builder
+FROM centos:7 as new_image
+COPY --from=builder /tmp /tmp
+`
+  );
+  expect(ast);
+  expect(ast.program.body[ast.program.body.length - 1].flags);
+});
+
 test("Test JS ast generation", () => {
   const ast = astGenerator.toJSAst("./test/test001.js");
   expect(ast);
