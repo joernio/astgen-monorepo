@@ -117,7 +117,7 @@ const createJSAst = async (options) => {
  */
 const writeAstFile = (file, ast, options) => {
   const relativePath = file.replace(
-    new RegExp("^" + options.src + path.sep),
+    new RegExp("^" + options.src + "/"),
     ""
   );
   const outAstFile = path.join(options.output, relativePath + ".json");
