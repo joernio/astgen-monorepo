@@ -1,6 +1,6 @@
 {
   "name": "@appthreat/astgen",
-  "version": "1.0.13",
+  "version": "1.0.14",
   "description": "Generate AST in json format for a number of languages by invoking appropriate tool",
   "main": "index.js",
   "keywords": [
