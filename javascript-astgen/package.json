@@ -21,14 +21,15 @@
   "scripts": {
     "test": "jest",
     "watch": "jest --watch",
-    "postintall": "node postinstall"
+    "postinstall": "scripts/install.js"
   },
   "engines": {
     "node": ">=14.0.0"
   },
   "files": [
     "*.js",
-    "bin/"
+    "bin/",
+    "scripts/"
   ],
   "devDependencies": {
     "jest": "^26.6.3"
