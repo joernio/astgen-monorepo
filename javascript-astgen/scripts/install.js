@@ -30,7 +30,7 @@ if (platform !== "windows") {
     if (cp && !cp.error && cp.stdout) {
       tmpBinDir = cp.stdout.replace("\n", "") + path.sep + "bin";
       try {
-        if (fs.accessSync(tmpBinDir, fs.constants.W_OK)) {
+        if (fs.lstatSync(tmpBinDir).isDirectory()) {
           binDir = tmpBinDir;
         }
       } catch (err) {}
@@ -39,7 +39,7 @@ if (platform !== "windows") {
     console.log(err);
   }
   try {
-    if (fs.accessSync(binDir, fs.constants.W_OK)) {
+    if (fs.lstatSync(binDir).isDirectory()) {
       console.log(
         "About to download shfmt from",
         shfmtDownloadUrl,
