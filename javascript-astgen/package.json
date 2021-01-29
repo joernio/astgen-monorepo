@@ -21,7 +21,7 @@
   "scripts": {
     "test": "jest",
     "watch": "jest --watch",
-    "postinstall": "scripts/install.js"
+    "postinstall": "node scripts/install.js"
   },
   "engines": {
     "node": ">=14.0.0"
