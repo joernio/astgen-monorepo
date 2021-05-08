@@ -4,16 +4,17 @@ This script creates Abstract Syntax Tree (AST) of all the files for supported la
 
 ## Supported languages
 
-| Language   | Tool used             |
-| ---------- | --------------------- |
-| Bash       | shfmt (cli)           |
-| JavaScript | babel                 |
-| TypeScript | babel                 |
-| Vue        | vue-template-compiler |
-| Svelte     | svelte/compiler       |
-| JSX        | babel                 |
-| TSX        | babel                 |
-| Dockerfile | dockerfile-ast        |
+| Language   | Tool used                   |
+| ---------- | --------------------------- |
+| Bash       | shfmt (cli)                 |
+| JavaScript | babel                       |
+| TypeScript | babel                       |
+| Vue        | vue-template-compiler       |
+| Svelte     | svelte/compiler             |
+| JSX        | babel                       |
+| TSX        | babel                       |
+| Dockerfile | dockerfile-ast              |
+| Yaml       | yaml-language-server-parser |
 
 ## Usage
 

@@ -39,3 +39,8 @@ test("Test svelte ast generation", () => {
   let ast = astGenerator.toSvelteAst("./test/App.svelte");
   expect(ast);
 });
+
+test("Test yaml ast generation", () => {
+  let ast = astGenerator.toYamlAst("./test/Chart.yaml");
+  expect(ast);
+});
