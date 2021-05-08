@@ -1,6 +1,6 @@
 {
   "name": "@joernio/astgen",
-  "version": "1.0.17",
+  "version": "1.0.18",
   "description": "Generate AST in json format for a number of languages by invoking appropriate tool",
   "main": "index.js",
   "keywords": [
