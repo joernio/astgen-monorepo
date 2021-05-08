@@ -4,21 +4,22 @@ This script creates Abstract Syntax Tree (AST) of all the files for supported la
 
 ## Supported languages
 
-| Language   | Tool used      |
-| ---------- | -------------- |
-| Bash       | shfmt (cli)    |
-| JavaScript | babel          |
-| TypeScript | babel          |
-| JSX        | babel          |
-| TSX        | babel          |
-| Dockerfile | dockerfile-ast |
+| Language   | Tool used             |
+| ---------- | --------------------- |
+| Bash       | shfmt (cli)           |
+| JavaScript | babel                 |
+| TypeScript | babel                 |
+| Vue        | vue-template-compiler |
+| JSX        | babel                 |
+| TSX        | babel                 |
+| Dockerfile | dockerfile-ast        |
 
 ## Usage
 
 ## Installing
 
 ```bash
-sudo npm install -g @appthreat/astgen
+sudo npm install -g @joernio/astgen
 ```
 
 ## Getting Help
@@ -48,6 +49,7 @@ To specify the project type and the path to the project.
 
 ```bash
 astgen -t nodejs -i <path to project>
+astgen -t vue -i <path containing .vue files>
 ```
 
 ## Troubleshooting

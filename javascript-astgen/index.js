@@ -1,6 +1,7 @@
 const babelParser = require("@babel/parser");
 const DockerfileParser = require("dockerfile-ast").DockerfileParser;
 const { execFileSync } = require("child_process");
+const vueCompiler = require("vue-template-compiler");
 
 const { join } = require("path");
 const fs = require("fs");
@@ -54,6 +55,10 @@ const getAllFiles = (dir, extn, files, result, regex) => {
 
 const babelParserOptions = {
   sourceType: "module",
+  allowImportExportEverywhere: true,
+  allowAwaitOutsideFunction: true,
+  allowReturnOutsideFunction: true,
+  errorRecovery: true,
   plugins: [
     "optionalChaining",
     "classProperties",
@@ -91,6 +96,18 @@ const toJSAst = (file) => {
 exports.toJSAst = toJSAst;
 
 /**
+ * Convert a single vue file to AST
+ */
+const toVueAst = (file) => {
+  const astObj = vueCompiler.compile(fs.readFileSync(file, "utf-8"));
+  if (astObj && astObj.ast) {
+    return astObj.ast;
+  }
+  return undefined;
+};
+exports.toVueAst = toVueAst;
+
+/**
  * Generate AST for JavaScript or TypeScript
  */
 const createJSAst = async (options) => {
@@ -113,6 +130,39 @@ const createJSAst = async (options) => {
 };
 
 /**
+ * Generate AST for .vue files
+ */
+const createVueAst = async (options) => {
+  const srcFiles = getAllFiles(options.src, ".vue");
+  for (const file of srcFiles) {
+    try {
+      const ast = toVueAst(file);
+      if (ast) {
+        writeAstFile(file, ast, options);
+      }
+    } catch (err) {
+      console.error(file, err.message);
+    }
+  }
+};
+
+/**
+ * Deal with cyclic reference in json
+ */
+const getCircularReplacer = () => {
+  const seen = new WeakSet();
+  return (key, value) => {
+    if (typeof value === "object" && value !== null) {
+      if (seen.has(value)) {
+        return;
+      }
+      seen.add(value);
+    }
+    return value;
+  };
+};
+
+/**
  * Write AST data to a json file
  */
 const writeAstFile = (file, ast, options) => {
@@ -124,7 +174,10 @@ const writeAstFile = (file, ast, options) => {
     ast: ast,
   };
   fs.mkdirSync(path.dirname(outAstFile), { recursive: true });
-  fs.writeFileSync(outAstFile, JSON.stringify(data, null, "  "));
+  fs.writeFileSync(
+    outAstFile,
+    JSON.stringify(data, getCircularReplacer(), "  ")
+  );
   console.log("Converted", relativePath, "to", outAstFile);
 };
 
@@ -288,6 +341,8 @@ const start = async (options) => {
     case "typescript":
     case "ts":
       return await createJSAst(options);
+    case "vue":
+      return await createVueAst(options);
     case "docker":
       return createDockerAst(options);
     case "bash":
