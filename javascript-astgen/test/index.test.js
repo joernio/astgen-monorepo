@@ -27,3 +27,10 @@ test("Test Bash ast generation", () => {
   const ast = astGenerator.toBashAst("./test/test001.sh", null);
   expect(ast);
 });
+
+test("Test vue ast generation", () => {
+  let ast = astGenerator.toVueAst("./test/App.vue");
+  expect(ast);
+  ast = astGenerator.toVueAst("./test/HelloWorld.vue");
+  expect(ast);
+});

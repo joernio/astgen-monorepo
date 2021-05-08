@@ -1,6 +1,6 @@
 {
-  "name": "@appthreat/astgen",
-  "version": "1.0.14",
+  "name": "@joernio/astgen",
+  "version": "1.0.15",
   "description": "Generate AST in json format for a number of languages by invoking appropriate tool",
   "main": "index.js",
   "keywords": [
@@ -10,13 +10,14 @@
   "bin": {
     "astgen": "./bin/astgen"
   },
-  "repository": "https://github.com/AppThreat/astgen",
-  "author": "Team AppThreat",
+  "repository": "https://github.com/joernio/astgen",
+  "author": "Team joernio",
   "license": "Apache-2.0",
   "dependencies": {
-    "@babel/parser": "^7.12.11",
-    "dockerfile-ast": "^0.1.0",
-    "yargs": "^16.2.0"
+    "@babel/parser": "^7.14.1",
+    "dockerfile-ast": "^0.2.1",
+    "vue-template-compiler": "^2.6.12",
+    "yargs": "^17.0.1"
   },
   "scripts": {
     "test": "jest",
