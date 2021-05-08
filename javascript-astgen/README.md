@@ -10,6 +10,7 @@ This script creates Abstract Syntax Tree (AST) of all the files for supported la
 | JavaScript | babel                 |
 | TypeScript | babel                 |
 | Vue        | vue-template-compiler |
+| Svelte     | svelte/compiler       |
 | JSX        | babel                 |
 | TSX        | babel                 |
 | Dockerfile | dockerfile-ast        |

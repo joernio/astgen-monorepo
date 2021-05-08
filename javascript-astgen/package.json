@@ -16,6 +16,7 @@
   "dependencies": {
     "@babel/parser": "^7.14.1",
     "dockerfile-ast": "^0.2.1",
+    "svelte": "^3.38.2",
     "vue-template-compiler": "^2.6.12",
     "yargs": "^17.0.1"
   },

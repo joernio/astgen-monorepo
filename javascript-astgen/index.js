@@ -2,6 +2,7 @@ const babelParser = require("@babel/parser");
 const DockerfileParser = require("dockerfile-ast").DockerfileParser;
 const { execFileSync } = require("child_process");
 const vueCompiler = require("vue-template-compiler");
+const svelteCompiler = require("svelte/compiler");
 
 const { join } = require("path");
 const fs = require("fs");
@@ -108,6 +109,17 @@ const toVueAst = (file) => {
 exports.toVueAst = toVueAst;
 
 /**
+ * Convert a single svelte file to AST
+ */
+const toSvelteAst = (file) => {
+  const astObj = svelteCompiler.parse(fs.readFileSync(file, "utf-8"), {
+    filename: file,
+  });
+  return astObj;
+};
+exports.toSvelteAst = toSvelteAst;
+
+/**
  * Generate AST for JavaScript or TypeScript
  */
 const createJSAst = async (options) => {
@@ -137,6 +149,23 @@ const createVueAst = async (options) => {
   for (const file of srcFiles) {
     try {
       const ast = toVueAst(file);
+      if (ast) {
+        writeAstFile(file, ast, options);
+      }
+    } catch (err) {
+      console.error(file, err.message);
+    }
+  }
+};
+
+/**
+ * Generate AST for .svelte files
+ */
+const createSvelteAst = async (options) => {
+  const srcFiles = getAllFiles(options.src, ".svelte");
+  for (const file of srcFiles) {
+    try {
+      const ast = toSvelteAst(file);
       if (ast) {
         writeAstFile(file, ast, options);
       }
@@ -343,6 +372,8 @@ const start = async (options) => {
       return await createJSAst(options);
     case "vue":
       return await createVueAst(options);
+    case "svelte":
+      return await createSvelteAst(options);
     case "docker":
       return createDockerAst(options);
     case "bash":

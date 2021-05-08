@@ -34,3 +34,8 @@ test("Test vue ast generation", () => {
   ast = astGenerator.toVueAst("./test/HelloWorld.vue");
   expect(ast);
 });
+
+test("Test svelte ast generation", () => {
+  let ast = astGenerator.toSvelteAst("./test/App.svelte");
+  expect(ast);
+});
