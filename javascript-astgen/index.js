@@ -3,6 +3,7 @@ const DockerfileParser = require("dockerfile-ast").DockerfileParser;
 const { execFileSync } = require("child_process");
 const vueCompiler = require("vue-template-compiler");
 const svelteCompiler = require("svelte/compiler");
+const yamlParser = require("yaml-language-server-parser");
 
 const { join } = require("path");
 const fs = require("fs");
@@ -85,6 +86,12 @@ const getAllSrcJSAndTSFiles = (src) =>
   ]);
 
 /**
+ * Return paths to all yaml files.
+ */
+const getAllYamlFiles = (src) =>
+  Promise.all([getAllFiles(src, ".yml"), getAllFiles(src, ".yaml")]);
+
+/**
  * Convert a single JS/TS file to AST
  */
 const toJSAst = (file) => {
@@ -118,6 +125,19 @@ const toSvelteAst = (file) => {
   return astObj;
 };
 exports.toSvelteAst = toSvelteAst;
+
+/**
+ * Convert a single yaml file to AST
+ */
+const toYamlAst = (file) => {
+  const astObj = yamlParser.load(fs.readFileSync(file, "utf-8"), {
+    filename: file,
+    ignoreDuplicateKeys: true,
+    allowAnyEscape: true,
+  });
+  return astObj;
+};
+exports.toYamlAst = toYamlAst;
 
 /**
  * Generate AST for JavaScript or TypeScript
@@ -172,6 +192,28 @@ const createSvelteAst = async (options) => {
     } catch (err) {
       console.error(file, err.message);
     }
+  }
+};
+
+/**
+ * Generate AST for Yaml
+ */
+const createYamlAst = async (options) => {
+  try {
+    const errFiles = [];
+    const promiseMap = await getAllYamlFiles(options.src);
+    const srcFiles = promiseMap.flatMap((d) => d);
+    for (const file of srcFiles) {
+      try {
+        const ast = toYamlAst(file);
+        writeAstFile(file, ast, options);
+      } catch (err) {
+        console.error(file, err.message);
+        errFiles.push(file);
+      }
+    }
+  } catch (err) {
+    console.error(err);
   }
 };
 
@@ -374,6 +416,8 @@ const start = async (options) => {
       return await createVueAst(options);
     case "svelte":
       return await createSvelteAst(options);
+    case "yaml":
+      return await createYamlAst(options);
     case "docker":
       return createDockerAst(options);
     case "bash":
