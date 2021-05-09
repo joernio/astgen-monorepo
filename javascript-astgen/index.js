@@ -99,7 +99,7 @@ const getAllYamlFiles = (src) =>
  * Return paths to all html files.
  */
 const getAllHtmlFiles = (src) =>
-  Promise.all([getAllFiles(src, ".htm"), getAllFiles(src, ".html")]);
+  Promise.all([getAllFiles(src, ".htm"), getAllFiles(src, ".html"), getAllFiles(src, ".svg")]);
 
 /**
  * Convert a single JS/TS file to AST
@@ -503,6 +503,8 @@ export const start = async (options) => {
       return await createSvelteAst(options);
     case "yaml":
       return await createYamlAst(options);
+    case "htm":
+    case "svg":  
     case "html":
       return await createHtmlAst(options);
     case "docker":

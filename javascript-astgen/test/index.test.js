@@ -55,7 +55,9 @@ test("Test xml ast generation", () => {
   expect(ast);
 });
 
-test("Test html ast generation", () => {
+test("Test html and svg ast generation", () => {
   let ast = astGenerator.toHtmlAst("./test/sample.html");
+  expect(ast);
+  ast = astGenerator.toHtmlAst("./test/sample.svg");
   expect(ast);
 });
