@@ -1,4 +1,4 @@
-const astGenerator = require("../index.js");
+import * as astGenerator from "../index.js";
 
 test("Test docker ast generation", () => {
   const ast = astGenerator.toDockerAst("./test/Dockerfile");
@@ -42,5 +42,22 @@ test("Test svelte ast generation", () => {
 
 test("Test yaml ast generation", () => {
   let ast = astGenerator.toYamlAst("./test/Chart.yaml");
+  expect(ast);
+});
+
+test("Test markdown ast generation", () => {
+  let ast = astGenerator.toMarkdownAst("./README.md");
+  expect(ast);
+});
+
+test("Test xml ast generation", () => {
+  let ast = astGenerator.toXmlAst("./test/sample.xml");
+  expect(ast);
+});
+
+test("Test html and svg ast generation", () => {
+  let ast = astGenerator.toHtmlAst("./test/sample.html");
+  expect(ast);
+  ast = astGenerator.toHtmlAst("./test/sample.svg");
   expect(ast);
 });

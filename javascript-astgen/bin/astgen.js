@@ -1,10 +1,12 @@
 #!/usr/bin/env node
 
-const astGenerator = require("../index.js");
-const fs = require("fs");
-const path = require("path");
+import * as astGenerator from "../index.js";
+import fs from "fs";
+import path from "path";
+import yargs from "yargs";
+import { hideBin } from "yargs/helpers";
 
-const args = require("yargs")
+const args = yargs(hideBin(process.argv))
   .option("src", {
     alias: "i",
     default: ".",
