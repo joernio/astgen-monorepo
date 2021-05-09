@@ -44,14 +44,12 @@ if (args.version) {
   process.exit(0);
 }
 
-(async () => {
-  try {
-    if (args.output === "ast_out") {
-      args.output = path.join(args.src, args.output);
-    }
-    await astGenerator.start(args);
-  } catch (e) {
-    console.error(e);
-    process.exit(1);
+try {
+  if (args.output === "ast_out") {
+    args.output = path.join(args.src, args.output);
   }
-})();
+  await astGenerator.start(args);
+} catch (e) {
+  console.error(e);
+  process.exit(1);
+}
