@@ -54,3 +54,8 @@ test("Test xml ast generation", () => {
   let ast = astGenerator.toXmlAst("./test/sample.xml");
   expect(ast);
 });
+
+test("Test html ast generation", () => {
+  let ast = astGenerator.toHtmlAst("./test/sample.html");
+  expect(ast);
+});

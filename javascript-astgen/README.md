@@ -16,6 +16,8 @@ This script creates Abstract Syntax Tree (AST) of all the files for supported la
 | Dockerfile | dockerfile-ast              |
 | Yaml       | yaml-language-server-parser |
 | markdown   | mdast-util-from-markdown    |
+| xml        | xast-util-from-xml          |
+| html       | hast-util-to-xast           |
 
 ## Usage
 

@@ -6,6 +6,9 @@ import * as svelteCompiler from "svelte/compiler";
 import markdownParser from "mdast-util-from-markdown";
 import yamlParser from "yaml-language-server-parser";
 import { fromXml } from "xast-util-from-xml";
+import { toXast } from "hast-util-to-xast";
+import unified from "unified";
+import parse from "rehype-parse";
 
 import path, { join } from "path";
 import fs from "fs";
@@ -93,6 +96,12 @@ const getAllYamlFiles = (src) =>
   Promise.all([getAllFiles(src, ".yml"), getAllFiles(src, ".yaml")]);
 
 /**
+ * Return paths to all html files.
+ */
+const getAllHtmlFiles = (src) =>
+  Promise.all([getAllFiles(src, ".htm"), getAllFiles(src, ".html")]);
+
+/**
  * Convert a single JS/TS file to AST
  */
 export const toJSAst = (file) => {
@@ -149,6 +158,15 @@ export const toMarkdownAst = (file) => {
  */
 export const toXmlAst = (file) => {
   const astObj = fromXml(fs.readFileSync(file, "utf-8"));
+  return astObj;
+};
+
+/**
+ * Convert a single html file to AST
+ */
+export const toHtmlAst = (file) => {
+  const hast = unified().use(parse).parse(fs.readFileSync(file, "utf-8"));
+  const astObj = toXast(hast);
   return astObj;
 };
 
@@ -231,6 +249,28 @@ export const createYamlAst = async (options) => {
 };
 
 /**
+ * Generate AST for html
+ */
+export const createHtmlAst = async (options) => {
+  try {
+    const errFiles = [];
+    const promiseMap = await getAllHtmlFiles(options.src);
+    const srcFiles = promiseMap.flatMap((d) => d);
+    for (const file of srcFiles) {
+      try {
+        const ast = toHtmlAst(file);
+        writeAstFile(file, ast, options);
+      } catch (err) {
+        console.error(file, err.message);
+        errFiles.push(file);
+      }
+    }
+  } catch (err) {
+    console.error(err);
+  }
+};
+
+/**
  * Generate AST for .md files
  */
 export const createMarkdownAst = async (options) => {
@@ -238,6 +278,23 @@ export const createMarkdownAst = async (options) => {
   for (const file of srcFiles) {
     try {
       const ast = toMarkdownAst(file);
+      if (ast) {
+        writeAstFile(file, ast, options);
+      }
+    } catch (err) {
+      console.error(file, err.message);
+    }
+  }
+};
+
+/**
+ * Generate AST for .xml files
+ */
+export const createXmlAst = async (options) => {
+  const srcFiles = getAllFiles(options.src, ".xml");
+  for (const file of srcFiles) {
+    try {
+      const ast = toXmlAst(file);
       if (ast) {
         writeAstFile(file, ast, options);
       }
@@ -446,11 +503,15 @@ export const start = async (options) => {
       return await createSvelteAst(options);
     case "yaml":
       return await createYamlAst(options);
+    case "html":
+      return await createHtmlAst(options);
     case "docker":
       return createDockerAst(options);
     case "md":
     case "markdown":
       return createMarkdownAst(options);
+    case "xml":
+      return createXmlAst(options);
     case "bash":
     case "sh":
       return createBashAst(options);
