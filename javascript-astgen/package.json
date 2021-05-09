@@ -1,29 +1,32 @@
 {
   "name": "@joernio/astgen",
-  "version": "1.0.18",
+  "version": "1.1.0",
   "description": "Generate AST in json format for a number of languages by invoking appropriate tool",
-  "main": "index.js",
+  "exports": "./index.js",
   "keywords": [
     "AST",
     "Static Analysis"
   ],
   "bin": {
-    "astgen": "./bin/astgen"
+    "astgen": "./bin/astgen.js"
   },
+  "type": "module",
   "repository": "https://github.com/joernio/astgen",
   "author": "Team joernio",
   "license": "Apache-2.0",
   "dependencies": {
     "@babel/parser": "^7.14.1",
     "dockerfile-ast": "^0.2.1",
+    "mdast-util-from-markdown": "^0.8.5",
     "svelte": "^3.38.2",
     "vue-template-compiler": "^2.6.12",
+    "xast-util-from-xml": "^2.0.1",
     "yaml-language-server-parser": "^0.1.2",
     "yargs": "^17.0.1"
   },
   "scripts": {
-    "test": "jest",
-    "watch": "jest --watch",
+    "test": "cross-env NODE_OPTIONS=--experimental-vm-modules jest",
+    "watch": "cross-env NODE_OPTIONS=--experimental-vm-modules jest --watch",
     "postinstall": "node scripts/install.js"
   },
   "engines": {
@@ -35,6 +38,7 @@
     "scripts/"
   ],
   "devDependencies": {
+    "cross-env": "^7.0.3",
     "jest": "^26.6.3"
   }
 }

@@ -1,8 +1,8 @@
 #!/usr/bin/env node
-const { spawnSync, execFileSync } = require("child_process");
-const os = require("os");
-const fs = require("fs");
-const path = require("path");
+import { spawnSync, execFileSync } from "child_process";
+import os from "os";
+import fs from "fs";
+import path from "path";
 
 let platform = os.platform();
 if (platform == "win32") {
@@ -28,7 +28,7 @@ if (platform !== "windows") {
       encoding: "utf-8",
     });
     if (cp && !cp.error && cp.stdout) {
-      tmpBinDir = cp.stdout.replace("\n", "") + path.sep + "bin";
+      const tmpBinDir = cp.stdout.replace("\n", "") + path.sep + "bin";
       try {
         if (fs.lstatSync(tmpBinDir).isDirectory()) {
           binDir = tmpBinDir;

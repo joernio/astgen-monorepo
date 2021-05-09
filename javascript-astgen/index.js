@@ -1,13 +1,14 @@
-const babelParser = require("@babel/parser");
-const DockerfileParser = require("dockerfile-ast").DockerfileParser;
-const { execFileSync } = require("child_process");
-const vueCompiler = require("vue-template-compiler");
-const svelteCompiler = require("svelte/compiler");
-const yamlParser = require("yaml-language-server-parser");
+import babelParser from "@babel/parser";
+import { DockerfileParser } from "dockerfile-ast";
+import { execFileSync } from "child_process";
+import vueCompiler from "vue-template-compiler";
+import * as svelteCompiler from "svelte/compiler";
+import markdownParser from "mdast-util-from-markdown";
+import yamlParser from "yaml-language-server-parser";
+import { fromXml } from "xast-util-from-xml";
 
-const { join } = require("path");
-const fs = require("fs");
-const path = require("path");
+import path, { join } from "path";
+import fs from "fs";
 
 const IGNORE_DIRS = [
   "node_modules",
@@ -94,42 +95,39 @@ const getAllYamlFiles = (src) =>
 /**
  * Convert a single JS/TS file to AST
  */
-const toJSAst = (file) => {
+export const toJSAst = (file) => {
   const ast = babelParser.parse(
     fs.readFileSync(file, "utf-8"),
     babelParserOptions
   );
   return ast;
 };
-exports.toJSAst = toJSAst;
 
 /**
  * Convert a single vue file to AST
  */
-const toVueAst = (file) => {
+export const toVueAst = (file) => {
   const astObj = vueCompiler.compile(fs.readFileSync(file, "utf-8"));
   if (astObj && astObj.ast) {
     return astObj.ast;
   }
   return undefined;
 };
-exports.toVueAst = toVueAst;
 
 /**
  * Convert a single svelte file to AST
  */
-const toSvelteAst = (file) => {
+export const toSvelteAst = (file) => {
   const astObj = svelteCompiler.parse(fs.readFileSync(file, "utf-8"), {
     filename: file,
   });
   return astObj;
 };
-exports.toSvelteAst = toSvelteAst;
 
 /**
  * Convert a single yaml file to AST
  */
-const toYamlAst = (file) => {
+export const toYamlAst = (file) => {
   const astObj = yamlParser.load(fs.readFileSync(file, "utf-8"), {
     filename: file,
     ignoreDuplicateKeys: true,
@@ -137,12 +135,27 @@ const toYamlAst = (file) => {
   });
   return astObj;
 };
-exports.toYamlAst = toYamlAst;
+
+/**
+ * Convert a single markdown file to AST
+ */
+export const toMarkdownAst = (file) => {
+  const astObj = markdownParser(fs.readFileSync(file, "utf-8"));
+  return astObj;
+};
+
+/**
+ * Convert a single xml file to AST
+ */
+export const toXmlAst = (file) => {
+  const astObj = fromXml(fs.readFileSync(file, "utf-8"));
+  return astObj;
+};
 
 /**
  * Generate AST for JavaScript or TypeScript
  */
-const createJSAst = async (options) => {
+export const createJSAst = async (options) => {
   try {
     const errFiles = [];
     const promiseMap = await getAllSrcJSAndTSFiles(options.src);
@@ -164,7 +177,7 @@ const createJSAst = async (options) => {
 /**
  * Generate AST for .vue files
  */
-const createVueAst = async (options) => {
+export const createVueAst = async (options) => {
   const srcFiles = getAllFiles(options.src, ".vue");
   for (const file of srcFiles) {
     try {
@@ -181,7 +194,7 @@ const createVueAst = async (options) => {
 /**
  * Generate AST for .svelte files
  */
-const createSvelteAst = async (options) => {
+export const createSvelteAst = async (options) => {
   const srcFiles = getAllFiles(options.src, ".svelte");
   for (const file of srcFiles) {
     try {
@@ -198,7 +211,7 @@ const createSvelteAst = async (options) => {
 /**
  * Generate AST for Yaml
  */
-const createYamlAst = async (options) => {
+export const createYamlAst = async (options) => {
   try {
     const errFiles = [];
     const promiseMap = await getAllYamlFiles(options.src);
@@ -214,6 +227,23 @@ const createYamlAst = async (options) => {
     }
   } catch (err) {
     console.error(err);
+  }
+};
+
+/**
+ * Generate AST for .md files
+ */
+export const createMarkdownAst = async (options) => {
+  const srcFiles = getAllFiles(options.src, ".md");
+  for (const file of srcFiles) {
+    try {
+      const ast = toMarkdownAst(file);
+      if (ast) {
+        writeAstFile(file, ast, options);
+      }
+    } catch (err) {
+      console.error(file, err.message);
+    }
   }
 };
 
@@ -236,7 +266,7 @@ const getCircularReplacer = () => {
 /**
  * Write AST data to a json file
  */
-const writeAstFile = (file, ast, options) => {
+export const writeAstFile = (file, ast, options) => {
   const relativePath = file.replace(new RegExp("^" + options.src + "/"), "");
   const outAstFile = path.join(options.output, relativePath + ".json");
   const data = {
@@ -255,7 +285,7 @@ const writeAstFile = (file, ast, options) => {
 /**
  * Convert a single dockerfile to ast
  */
-const toDockerAst = (file, content) => {
+export const toDockerAst = (file, content) => {
   const dockerfile = DockerfileParser.parse(
     file ? fs.readFileSync(file, "utf-8") : content
   );
@@ -313,12 +343,11 @@ const toDockerAst = (file, content) => {
     program: { type: "Dockerfile", sourceType: "Dockerfile", body: dataList },
   };
 };
-exports.toDockerAst = toDockerAst;
 
 /**
  * Generate AST for dockerfile
  */
-const createDockerAst = (options) => {
+export const createDockerAst = (options) => {
   const dockerfiles = getAllFiles(options.src, "Dockerfile.*");
   for (const file of dockerfiles) {
     try {
@@ -333,7 +362,7 @@ const createDockerAst = (options) => {
 /**
  * Convert a single bash file to ast
  */
-const toBashAst = (file, content) => {
+export const toBashAst = (file, content) => {
   if (file && !content) {
     content = fs.readFileSync(file, "utf-8");
   }
@@ -353,12 +382,11 @@ const toBashAst = (file, content) => {
     program: { type: "bash", sourceType: "bash", body: JSON.parse(astString) },
   };
 };
-exports.toBashAst = toBashAst;
 
 /**
  * Generate AST for bash script
  */
-const createBashAst = (options) => {
+export const createBashAst = (options) => {
   const shfiles = getAllFiles(options.src, ".sh");
   for (const file of shfiles) {
     try {
@@ -399,7 +427,7 @@ const createXAst = async (options) => {
  *
  * @args options CLI arguments
  */
-const start = async (options) => {
+export const start = async (options) => {
   let { type } = options;
   if (!type) {
     type = "";
@@ -420,6 +448,9 @@ const start = async (options) => {
       return await createYamlAst(options);
     case "docker":
       return createDockerAst(options);
+    case "md":
+    case "markdown":
+      return createMarkdownAst(options);
     case "bash":
     case "sh":
       return createBashAst(options);
@@ -427,4 +458,3 @@ const start = async (options) => {
       return await createXAst(options);
   }
 };
-exports.start = start;
