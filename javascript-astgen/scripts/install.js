@@ -18,7 +18,7 @@ switch (arch) {
     arch = "amd64";
     break;
 }
-const shfmtVersion = "v3.2.4";
+const shfmtVersion = "v3.4.0";
 const shfmtDownloadUrl = `https://github.com/mvdan/sh/releases/download/${shfmtVersion}/shfmt_${shfmtVersion}_${platform}_${arch}`;
 
 if (platform !== "windows") {

@@ -27,10 +27,7 @@ const args = yargs(hideBin(process.argv))
     type: "boolean",
     description: "Recurse mode suitable for mono-repos",
   })
-  .option("version", {
-    alias: "v",
-    description: "Print version number",
-  })
+  .version()
   .help("h").argv;
 
 if (args.version) {

@@ -3,11 +3,11 @@ import { DockerfileParser } from "dockerfile-ast";
 import { execFileSync } from "child_process";
 import vueCompiler from "vue-template-compiler";
 import * as svelteCompiler from "svelte/compiler";
-import markdownParser from "mdast-util-from-markdown";
+import { fromMarkdown } from "mdast-util-from-markdown";
 import yamlParser from "yaml-language-server-parser";
 import { fromXml } from "xast-util-from-xml";
 import { toXast } from "hast-util-to-xast";
-import unified from "unified";
+import { unified } from "unified";
 import parse from "rehype-parse";
 
 import path, { join } from "path";
@@ -153,7 +153,7 @@ export const toYamlAst = (file) => {
  * Convert a single markdown file to AST
  */
 export const toMarkdownAst = (file) => {
-  const astObj = markdownParser(fs.readFileSync(file, "utf-8"));
+  const astObj = fromMarkdown(fs.readFileSync(file, "utf-8"));
   return astObj;
 };
 
