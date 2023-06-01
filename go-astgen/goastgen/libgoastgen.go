@@ -40,11 +40,11 @@ func serilizeToMap(node interface{}) map[string]interface{} {
 	for i := 0; i < elementType.NumField(); i++ {
 		field := elementType.Field(i)
 		value := elementValueObj.Field(i)
-		fieldKind := field.Type.Kind()
+		fieldKind := value.Type().Kind()
 
 		if fieldKind == reflect.Ptr {
 			// NOTE: This handles only one level of pointer. At this moment we don't expect to get pointer to pointer.
-			fieldKind = field.Type.Elem().Kind()
+			fieldKind = value.Type().Elem().Kind()
 			value = value.Elem()
 		}
 		switch fieldKind {
@@ -55,7 +55,18 @@ func serilizeToMap(node interface{}) map[string]interface{} {
 		case reflect.Struct:
 			objectMap[field.Name] = serilizeToMap(value.Interface())
 		case reflect.Array, reflect.Slice:
-			objectMap[field.Name] = value.Interface()
+			arrayValueTypeKind := value.Type().Elem().Kind()
+			switch arrayValueTypeKind {
+			case reflect.String, reflect.Int, reflect.Bool, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64, reflect.Float32, reflect.Float64, reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+				objectMap[field.Name] = value.Interface()
+			case reflect.Struct:
+				var nodeList []interface{}
+				for j := 0; j < value.Len(); j++ {
+					fieldArrayNode := value.Index(j).Interface()
+					nodeList = append(nodeList, serilizeToMap(fieldArrayNode))
+				}
+				objectMap[field.Name] = nodeList
+			}
 		}
 	}
 	return objectMap

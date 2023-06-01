@@ -20,19 +20,59 @@ type Phone struct {
 	PhoneNo string
 }
 
-type ArrayType struct {
+type ObjectSliceType struct {
+	Id        int
+	PhoneList []Phone
+}
+
+type SliceType struct {
 	Id       int
 	NameList []string
 }
 
+type ArrayType struct {
+	Id       int
+	NameList [3]string
+}
+
+func TestObjectSliceType(t *testing.T) {
+	objArrayType := ObjectSliceType{Id: 20, PhoneList: []Phone{{PhoneNo: "1234567890", Type: "Home"}, {PhoneNo: "0987654321", Type: "Office"}}}
+	result := serilizeToMap(objArrayType)
+	expectedResult := make(map[string]interface{})
+	expectedResult["Id"] = 20
+	firstPhoneItem := make(map[string]interface{})
+	firstPhoneItem["PhoneNo"] = "1234567890"
+	firstPhoneItem["Type"] = "Home"
+
+	secondPhoneItem := make(map[string]interface{})
+	secondPhoneItem["PhoneNo"] = "0987654321"
+	secondPhoneItem["Type"] = "Office"
+	expectedResult["PhoneList"] = []interface{}{firstPhoneItem, secondPhoneItem}
+
+	assert.Equal(t, expectedResult, result, "Simple Array type result Map should match with expected result Map")
+}
+
 func TestArrayType(t *testing.T) {
-	arrayType := ArrayType{Id: 10, NameList: []string{"First", "Second"}}
+	arrayType := ArrayType{Id: 10, NameList: [3]string{"First", "Second", "Third"}}
+	result := serilizeToMap(arrayType)
+	expectedResult := make(map[string]interface{})
+	expectedResult["Id"] = 10
+	expectedResult["NameList"] = [3]string{"First", "Second", "Third"}
+
+	assert.Equal(t, expectedResult, result, "Simple Array type result Map should match with expected result Map")
+	jsonResult := serilizeToJsonStr(result)
+	expectedJsonResult := "{\n  \"Id\": 10,\n  \"NameList\": [\n    \"First\",\n    \"Second\",\n    \"Third\"\n  ]\n}"
+	assert.Equal(t, expectedJsonResult, jsonResult, "Simple Array type result json should match with expected result")
+}
+
+func TestSliceType(t *testing.T) {
+	arrayType := SliceType{Id: 10, NameList: []string{"First", "Second"}}
 	result := serilizeToMap(arrayType)
 	expectedResult := make(map[string]interface{})
 	expectedResult["Id"] = 10
 	expectedResult["NameList"] = []string{"First", "Second"}
 
-	assert.Equal(t, expectedResult, result, "Simple Array type result Map should match with expected result Map")
+	assert.Equal(t, expectedResult, result, "Simple Slice type result Map should match with expected result Map")
 }
 
 func TestSimpleTypeWithNullValue(t *testing.T) {
