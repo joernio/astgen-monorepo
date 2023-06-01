@@ -20,6 +20,23 @@ type Phone struct {
 	PhoneNo string
 }
 
+func TestSimpleTypeWithNullValue(t *testing.T) {
+	address := Address{Addone: "First line address"}
+	result := serilizeToMap(address)
+	expectedResult := make(map[string]interface{})
+	expectedResult["Addone"] = "First line address"
+
+	assert.Equal(t, expectedResult, result, "Simple type result Map should match with expected result Map")
+
+	phone := Phone{PhoneNo: "1234567890"}
+	result = serilizeToMap(phone)
+	expectedResult = make(map[string]interface{})
+	expectedResult["PhoneNo"] = "1234567890"
+	expectedResult["Type"] = ""
+
+	assert.Equal(t, expectedResult, result, "Simple type result Map should match with expected result Map")
+}
+
 func TestSimpleType(t *testing.T) {
 	phone := Phone{PhoneNo: "1234567890", Type: "Home"}
 	result := serilizeToMap(phone)
