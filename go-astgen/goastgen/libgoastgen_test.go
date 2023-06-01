@@ -35,6 +35,27 @@ type ArrayType struct {
 	NameList [3]string
 }
 
+type ArrayPtrType struct {
+	Id       int
+	NameList [3]*string
+}
+
+func TestArrayPtrType(t *testing.T) {
+	firstStr := "First"
+	secondStr := "Second"
+	thirdStr := "Third"
+	arrayType := ArrayPtrType{Id: 10, NameList: [3]*string{&firstStr, &secondStr, &thirdStr}}
+	result := serilizeToMap(arrayType)
+	expectedResult := make(map[string]interface{})
+	expectedResult["Id"] = 10
+	expectedResult["NameList"] = []string{firstStr, secondStr, thirdStr}
+
+	assert.Equal(t, expectedResult, result, "Simple Array type result Map should match with expected result Map")
+	jsonResult := serilizeToJsonStr(result)
+	expectedJsonResult := "{\n  \"Id\": 10,\n  \"NameList\": [\n    \"First\",\n    \"Second\",\n    \"Third\"\n  ]\n}"
+	assert.Equal(t, expectedJsonResult, jsonResult, "Simple Array type result json should match with expected result")
+}
+
 func TestObjectSliceType(t *testing.T) {
 	objArrayType := ObjectSliceType{Id: 20, PhoneList: []Phone{{PhoneNo: "1234567890", Type: "Home"}, {PhoneNo: "0987654321", Type: "Office"}}}
 	result := serilizeToMap(objArrayType)
