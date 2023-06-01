@@ -20,6 +20,21 @@ type Phone struct {
 	PhoneNo string
 }
 
+type ArrayType struct {
+	Id       int
+	NameList []string
+}
+
+func TestArrayType(t *testing.T) {
+	arrayType := ArrayType{Id: 10, NameList: []string{"First", "Second"}}
+	result := serilizeToMap(arrayType)
+	expectedResult := make(map[string]interface{})
+	expectedResult["Id"] = 10
+	expectedResult["NameList"] = []string{"First", "Second"}
+
+	assert.Equal(t, expectedResult, result, "Simple Array type result Map should match with expected result Map")
+}
+
 func TestSimpleTypeWithNullValue(t *testing.T) {
 	address := Address{Addone: "First line address"}
 	result := serilizeToMap(address)

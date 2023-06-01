@@ -54,6 +54,8 @@ func serilizeToMap(node interface{}) map[string]interface{} {
 			}
 		case reflect.Struct:
 			objectMap[field.Name] = serilizeToMap(value.Interface())
+		case reflect.Array, reflect.Slice:
+			objectMap[field.Name] = value.Interface()
 		}
 	}
 	return objectMap
