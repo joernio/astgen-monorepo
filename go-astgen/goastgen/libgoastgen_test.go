@@ -1,6 +1,7 @@
 package goastgen
 
 import (
+	"fmt"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
@@ -18,6 +19,15 @@ type Address struct {
 type Phone struct {
 	Type    string
 	PhoneNo string
+}
+type MapIntType struct {
+	Id    int
+	Names map[string]int
+}
+
+type MapType struct {
+	Id    int
+	Names map[string]string
 }
 
 type ObjectSliceType struct {
@@ -40,6 +50,63 @@ type ArrayPtrType struct {
 	NameList [3]*string
 }
 
+type SliceObjPtrType struct {
+	Id        int
+	PhoneList []*Phone
+}
+
+func TestMapIntType(t *testing.T) {
+	names := make(map[string]int)
+	names["firstname"] = 1000
+	names["secondname"] = 2000
+	mapType := MapIntType{Id: 30, Names: names}
+	result := serilizeToMap(mapType)
+	expectedResult := make(map[string]interface{})
+	expectedResult["Id"] = 30
+	expectedNames := make(map[string]int)
+	expectedNames["firstname"] = 1000
+	expectedNames["secondname"] = 2000
+	expectedResult["Names"] = expectedNames
+	assert.Equal(t, expectedResult, result, "Simple Map type result Map should match with expected result Map")
+}
+
+func TestMapType(t *testing.T) {
+	names := make(map[string]string)
+	names["firstname"] = "firstvalue"
+	names["secondname"] = "secondvalue"
+	mapType := MapType{Id: 30, Names: names}
+	result := serilizeToMap(mapType)
+	expectedResult := make(map[string]interface{})
+	expectedResult["Id"] = 30
+	expectedNames := make(map[string]string)
+	expectedNames["firstname"] = "firstvalue"
+	expectedNames["secondname"] = "secondvalue"
+	expectedResult["Names"] = expectedNames
+	assert.Equal(t, expectedResult, result, "Simple Map type result Map should match with expected result Map")
+
+	jsonResult := serilizeToJsonStr(result)
+	fmt.Println(jsonResult)
+}
+
+func TestSliceObjctPtrType(t *testing.T) {
+	phone1 := Phone{PhoneNo: "1234567890", Type: "Home"}
+	phone2 := Phone{PhoneNo: "0987654321", Type: "Office"}
+	objArrayType := SliceObjPtrType{Id: 20, PhoneList: []*Phone{&phone1, &phone2}}
+	result := serilizeToMap(objArrayType)
+	expectedResult := make(map[string]interface{})
+	expectedResult["Id"] = 20
+	firstPhoneItem := make(map[string]interface{})
+	firstPhoneItem["PhoneNo"] = "1234567890"
+	firstPhoneItem["Type"] = "Home"
+
+	secondPhoneItem := make(map[string]interface{})
+	secondPhoneItem["PhoneNo"] = "0987654321"
+	secondPhoneItem["Type"] = "Office"
+	expectedResult["PhoneList"] = []interface{}{firstPhoneItem, secondPhoneItem}
+
+	assert.Equal(t, expectedResult, result, "Slice of Object pointers type result Map should match with expected result Map")
+}
+
 func TestArrayPtrType(t *testing.T) {
 	firstStr := "First"
 	secondStr := "Second"
@@ -53,7 +120,7 @@ func TestArrayPtrType(t *testing.T) {
 	assert.Equal(t, expectedResult, result, "Simple Array type result Map should match with expected result Map")
 	jsonResult := serilizeToJsonStr(result)
 	expectedJsonResult := "{\n  \"Id\": 10,\n  \"NameList\": [\n    \"First\",\n    \"Second\",\n    \"Third\"\n  ]\n}"
-	assert.Equal(t, expectedJsonResult, jsonResult, "Simple Array type result json should match with expected result")
+	assert.Equal(t, expectedJsonResult, jsonResult, "Array of Pointer type result json should match with expected result")
 }
 
 func TestObjectSliceType(t *testing.T) {
@@ -70,7 +137,7 @@ func TestObjectSliceType(t *testing.T) {
 	secondPhoneItem["Type"] = "Office"
 	expectedResult["PhoneList"] = []interface{}{firstPhoneItem, secondPhoneItem}
 
-	assert.Equal(t, expectedResult, result, "Simple Array type result Map should match with expected result Map")
+	assert.Equal(t, expectedResult, result, "Simple Slice type result Map should match with expected result Map")
 }
 
 func TestArrayType(t *testing.T) {
