@@ -208,7 +208,7 @@ func TestArrayPtrType(t *testing.T) {
 	result := serilizeToMap(arrayType)
 	expectedResult := make(map[string]interface{})
 	expectedResult["Id"] = 10
-	expectedResult["NameList"] = []string{firstStr, secondStr, thirdStr}
+	expectedResult["NameList"] = []interface{}{firstStr, secondStr, thirdStr}
 
 	assert.Equal(t, expectedResult, result, "Simple Array type result Map should match with expected result Map")
 	jsonResult := serilizeToJsonStr(result)
