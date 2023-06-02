@@ -65,6 +65,22 @@ func serilizeToMap(node interface{}) map[string]interface{} {
 					objMap[key.String()] = serilizeToMap(value.MapIndex(key).Interface())
 				}
 				objectMap[field.Name] = objMap
+			case reflect.Pointer:
+				mapValuePtrKind := value.Type().Elem().Elem().Kind()
+				switch mapValuePtrKind {
+				case reflect.String, reflect.Int, reflect.Bool, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64, reflect.Float32, reflect.Float64, reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+					objMap := make(map[string]interface{})
+					for _, key := range value.MapKeys() {
+						objMap[key.String()] = value.MapIndex(key).Elem().Interface()
+					}
+					objectMap[field.Name] = objMap
+				case reflect.Struct:
+					objMap := make(map[string]interface{})
+					for _, key := range value.MapKeys() {
+						objMap[key.String()] = serilizeToMap(value.MapIndex(key).Elem().Interface())
+					}
+					objectMap[field.Name] = objMap
+				}
 			}
 
 		case reflect.Array, reflect.Slice:

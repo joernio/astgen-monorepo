@@ -20,21 +20,6 @@ type Phone struct {
 	PhoneNo string
 }
 
-type MapObjType struct {
-	Id     int
-	Phones map[string]Phone
-}
-
-type MapIntType struct {
-	Id    int
-	Names map[string]int
-}
-
-type MapType struct {
-	Id    int
-	Names map[string]string
-}
-
 type ObjectSliceType struct {
 	Id        int
 	PhoneList []Phone
@@ -60,6 +45,81 @@ type SliceObjPtrType struct {
 	PhoneList []*Phone
 }
 
+type MapObjType struct {
+	Id     int
+	Phones map[string]Phone
+}
+
+type MapIntType struct {
+	Id    int
+	Names map[string]int
+}
+
+type MapType struct {
+	Id    int
+	Names map[string]string
+}
+
+type MapStrPtrType struct {
+	Id    int
+	Names map[string]*string
+}
+
+type MapObjPtrType struct {
+	Id     int
+	Phones map[string]*Phone
+}
+
+func TestMapObjPtrType(t *testing.T) {
+	first := Phone{PhoneNo: "1234567890", Type: "Home"}
+	second := Phone{PhoneNo: "0987654321", Type: "Office"}
+	phones := make(map[string]*Phone)
+	phones["first"] = &first
+	phones["second"] = &second
+
+	mapType := MapObjPtrType{Id: 90, Phones: phones}
+	result := serilizeToMap(mapType)
+	expectedResult := make(map[string]interface{})
+	expectedResult["Id"] = 90
+	expectedPhones := make(map[string]interface{})
+	firstPhone := make(map[string]interface{})
+	firstPhone["PhoneNo"] = "1234567890"
+	firstPhone["Type"] = "Home"
+	secondPhone := make(map[string]interface{})
+	secondPhone["PhoneNo"] = "0987654321"
+	secondPhone["Type"] = "Office"
+	expectedPhones["first"] = firstPhone
+	expectedPhones["second"] = secondPhone
+	expectedResult["Phones"] = expectedPhones
+
+	assert.Equal(t, expectedResult, result, "Map with Object Pointer type result Map should match with expected result Map")
+
+	jsonResult := serilizeToJsonStr(result)
+	expectedJsonResult := "{\n  \"Id\": 90,\n  \"Phones\": {\n    \"first\": {\n      \"PhoneNo\": \"1234567890\",\n      \"Type\": \"Home\"\n    },\n    \"second\": {\n      \"PhoneNo\": \"0987654321\",\n      \"Type\": \"Office\"\n    }\n  }\n}"
+	assert.Equal(t, expectedJsonResult, jsonResult, "Map with Object type result json should match with expected result")
+}
+
+func TestMapStrPtrType(t *testing.T) {
+	first := "firstvalue"
+	second := "secondvalue"
+	names := make(map[string]*string)
+	names["firstname"] = &first
+	names["secondname"] = &second
+	mapType := MapStrPtrType{Id: 30, Names: names}
+	result := serilizeToMap(mapType)
+	expectedResult := make(map[string]interface{})
+	expectedResult["Id"] = 30
+	expectedNames := make(map[string]interface{})
+	expectedNames["firstname"] = "firstvalue"
+	expectedNames["secondname"] = "secondvalue"
+	expectedResult["Names"] = expectedNames
+	assert.Equal(t, expectedResult, result, "Map String pointer type result Map should match with expected result Map")
+
+	jsonResult := serilizeToJsonStr(result)
+	expectedJsonResult := "{\n  \"Id\": 30,\n  \"Names\": {\n    \"firstname\": \"firstvalue\",\n    \"secondname\": \"secondvalue\"\n  }\n}"
+	assert.Equal(t, expectedJsonResult, jsonResult, "Map with String pointer type result json should match with expected result")
+}
+
 func TestMapObjType(t *testing.T) {
 	phones := make(map[string]Phone)
 	phones["first"] = Phone{PhoneNo: "1234567890", Type: "Home"}
@@ -81,6 +141,10 @@ func TestMapObjType(t *testing.T) {
 	expectedResult["Phones"] = expectedPhones
 
 	assert.Equal(t, expectedResult, result, "Map with Object type result Map should match with expected result Map")
+
+	jsonResult := serilizeToJsonStr(result)
+	expectedJsonResult := "{\n  \"Id\": 90,\n  \"Phones\": {\n    \"first\": {\n      \"PhoneNo\": \"1234567890\",\n      \"Type\": \"Home\"\n    },\n    \"second\": {\n      \"PhoneNo\": \"0987654321\",\n      \"Type\": \"Office\"\n    }\n  }\n}"
+	assert.Equal(t, expectedJsonResult, jsonResult, "Map with Object type result json should match with expected result")
 }
 
 func TestMapIntType(t *testing.T) {
