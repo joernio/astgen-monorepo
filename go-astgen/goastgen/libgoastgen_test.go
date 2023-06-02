@@ -70,6 +70,85 @@ type MapObjPtrType struct {
 	Phones map[string]*Phone
 }
 
+func TestArrayOfPointerOfMapOfObjectPointerType(t *testing.T) {
+	first := Phone{PhoneNo: "1234567890", Type: "Home"}
+	second := Phone{PhoneNo: "0987654321", Type: "Office"}
+	third := Phone{PhoneNo: "1234567891", Type: "Home1"}
+	forth := Phone{PhoneNo: "1987654321", Type: "Office1"}
+	firstMap := make(map[string]*Phone)
+	firstMap["fmfirst"] = &first
+	firstMap["fmsecond"] = &second
+	secondMap := make(map[string]*Phone)
+	secondMap["smfirst"] = &third
+	secondMap["smsecond"] = &forth
+	array := [2]*map[string]*Phone{&firstMap, &secondMap}
+	result := processArrayOrSlice(array)
+	firstPhone := make(map[string]interface{})
+	firstPhone["PhoneNo"] = "1234567890"
+	firstPhone["Type"] = "Home"
+	secondPhone := make(map[string]interface{})
+	secondPhone["PhoneNo"] = "0987654321"
+	secondPhone["Type"] = "Office"
+	thirdPhone := make(map[string]interface{})
+	thirdPhone["PhoneNo"] = "1234567891"
+	thirdPhone["Type"] = "Home1"
+	forthPhone := make(map[string]interface{})
+	forthPhone["PhoneNo"] = "1987654321"
+	forthPhone["Type"] = "Office1"
+	firstExpectedMap := make(map[string]interface{})
+	firstExpectedMap["fmfirst"] = firstPhone
+	firstExpectedMap["fmsecond"] = secondPhone
+	secondExpectedMap := make(map[string]interface{})
+	secondExpectedMap["smfirst"] = thirdPhone
+	secondExpectedMap["smsecond"] = forthPhone
+	expectedResult := []interface{}{firstExpectedMap, secondExpectedMap}
+
+	assert.Equal(t, expectedResult, result, "Array of Map of simple string should match with expected result")
+}
+
+func TestArrayOfPointerOfMapOfPrimitivesType(t *testing.T) {
+	firstMap := make(map[string]string)
+	firstMap["fmfirst"] = "fmfirstvalue"
+	firstMap["fmsecond"] = "fmsecondvalue"
+	secondMap := make(map[string]string)
+	secondMap["smfirst"] = "smfirstvalue"
+	secondMap["smsecond"] = "smsecondvalue"
+	array := [2]*map[string]string{&firstMap, &secondMap}
+	result := processArrayOrSlice(array)
+
+	firstExpectedMap := make(map[string]string)
+	firstExpectedMap["fmfirst"] = "fmfirstvalue"
+	firstExpectedMap["fmsecond"] = "fmsecondvalue"
+	secondExpectedMap := make(map[string]string)
+	secondExpectedMap["smfirst"] = "smfirstvalue"
+	secondExpectedMap["smsecond"] = "smsecondvalue"
+	expectedResult := []interface{}{firstExpectedMap, secondExpectedMap}
+
+	assert.Equal(t, expectedResult, result, "Array of Map of simple string should match with expected result")
+}
+
+func TestArrayOfMapOfPrimitivesType(t *testing.T) {
+	firstMap := make(map[string]string)
+	firstMap["fmfirst"] = "fmfirstvalue"
+	firstMap["fmsecond"] = "fmsecondvalue"
+	secondMap := make(map[string]string)
+	secondMap["smfirst"] = "smfirstvalue"
+	secondMap["smsecond"] = "smsecondvalue"
+	array := [2]map[string]string{firstMap, secondMap}
+	result := processArrayOrSlice(array)
+
+	firstExpectedMap := make(map[string]string)
+	firstExpectedMap["fmfirst"] = "fmfirstvalue"
+	firstExpectedMap["fmsecond"] = "fmsecondvalue"
+	secondExpectedMap := make(map[string]string)
+	secondExpectedMap["smfirst"] = "smfirstvalue"
+	secondExpectedMap["smsecond"] = "smsecondvalue"
+	expectedResult := []interface{}{firstExpectedMap, secondExpectedMap}
+
+	assert.Equal(t, expectedResult, result, "Array of Map of simple string should match with expected result")
+
+}
+
 func TestMapObjPtrType(t *testing.T) {
 	first := Phone{PhoneNo: "1234567890", Type: "Home"}
 	second := Phone{PhoneNo: "0987654321", Type: "Office"}

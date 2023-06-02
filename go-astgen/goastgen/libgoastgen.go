@@ -69,6 +69,13 @@ func processArrayOrSlice(object interface{}) interface{} {
 			nodeList = append(nodeList, serilizeToMap(fieldArrayNode))
 		}
 		result = nodeList
+	case reflect.Map:
+		var nodeList []interface{}
+		for j := 0; j < value.Len(); j++ {
+			fieldArrayNode := value.Index(j).Interface()
+			nodeList = append(nodeList, processMap(fieldArrayNode))
+		}
+		result = nodeList
 	case reflect.Pointer:
 		arrayValuePtrKind := value.Type().Elem().Elem().Kind()
 		switch arrayValuePtrKind {
@@ -83,6 +90,13 @@ func processArrayOrSlice(object interface{}) interface{} {
 			for j := 0; j < value.Len(); j++ {
 				fieldArrayNode := value.Index(j).Elem().Interface()
 				nodeList = append(nodeList, serilizeToMap(fieldArrayNode))
+			}
+			result = nodeList
+		case reflect.Map:
+			var nodeList []interface{}
+			for j := 0; j < value.Len(); j++ {
+				fieldArrayNode := value.Index(j).Elem().Interface()
+				nodeList = append(nodeList, processMap(fieldArrayNode))
 			}
 			result = nodeList
 		}
