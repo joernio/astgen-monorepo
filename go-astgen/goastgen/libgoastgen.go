@@ -59,7 +59,14 @@ func serilizeToMap(node interface{}) map[string]interface{} {
 			switch mapValueTypeKind {
 			case reflect.String, reflect.Int, reflect.Bool, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64, reflect.Float32, reflect.Float64, reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
 				objectMap[field.Name] = value.Interface()
+			case reflect.Struct:
+				objMap := make(map[string]interface{})
+				for _, key := range value.MapKeys() {
+					objMap[key.String()] = serilizeToMap(value.MapIndex(key).Interface())
+				}
+				objectMap[field.Name] = objMap
 			}
+
 		case reflect.Array, reflect.Slice:
 			arrayValueTypeKind := value.Type().Elem().Kind()
 			switch arrayValueTypeKind {

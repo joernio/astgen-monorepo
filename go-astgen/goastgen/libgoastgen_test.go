@@ -1,7 +1,6 @@
 package goastgen
 
 import (
-	"fmt"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
@@ -20,6 +19,12 @@ type Phone struct {
 	Type    string
 	PhoneNo string
 }
+
+type MapObjType struct {
+	Id     int
+	Phones map[string]Phone
+}
+
 type MapIntType struct {
 	Id    int
 	Names map[string]int
@@ -55,6 +60,29 @@ type SliceObjPtrType struct {
 	PhoneList []*Phone
 }
 
+func TestMapObjType(t *testing.T) {
+	phones := make(map[string]Phone)
+	phones["first"] = Phone{PhoneNo: "1234567890", Type: "Home"}
+	phones["second"] = Phone{PhoneNo: "0987654321", Type: "Office"}
+
+	mapType := MapObjType{Id: 90, Phones: phones}
+	result := serilizeToMap(mapType)
+	expectedResult := make(map[string]interface{})
+	expectedResult["Id"] = 90
+	expectedPhones := make(map[string]interface{})
+	firstPhone := make(map[string]interface{})
+	firstPhone["PhoneNo"] = "1234567890"
+	firstPhone["Type"] = "Home"
+	secondPhone := make(map[string]interface{})
+	secondPhone["PhoneNo"] = "0987654321"
+	secondPhone["Type"] = "Office"
+	expectedPhones["first"] = firstPhone
+	expectedPhones["second"] = secondPhone
+	expectedResult["Phones"] = expectedPhones
+
+	assert.Equal(t, expectedResult, result, "Map with Object type result Map should match with expected result Map")
+}
+
 func TestMapIntType(t *testing.T) {
 	names := make(map[string]int)
 	names["firstname"] = 1000
@@ -68,6 +96,10 @@ func TestMapIntType(t *testing.T) {
 	expectedNames["secondname"] = 2000
 	expectedResult["Names"] = expectedNames
 	assert.Equal(t, expectedResult, result, "Simple Map type result Map should match with expected result Map")
+
+	jsonResult := serilizeToJsonStr(result)
+	expectedJsonResult := "{\n  \"Id\": 30,\n  \"Names\": {\n    \"firstname\": 1000,\n    \"secondname\": 2000\n  }\n}"
+	assert.Equal(t, expectedJsonResult, jsonResult, "Simple Map type result json should match with expected result")
 }
 
 func TestMapType(t *testing.T) {
@@ -83,9 +115,6 @@ func TestMapType(t *testing.T) {
 	expectedNames["secondname"] = "secondvalue"
 	expectedResult["Names"] = expectedNames
 	assert.Equal(t, expectedResult, result, "Simple Map type result Map should match with expected result Map")
-
-	jsonResult := serilizeToJsonStr(result)
-	fmt.Println(jsonResult)
 }
 
 func TestSliceObjctPtrType(t *testing.T) {
