@@ -433,3 +433,54 @@ func TestObjectInterfaceWithArrayOfPointers(t *testing.T) {
 	expectedResult := []interface{}{firstPhoneItem, secondPhoneItem}
 	assert.Equal(t, expectedResult, result, "Simple Array type result should match with expected result Array")
 }
+
+func TestSimplePrimitive(t *testing.T) {
+	result := serilizeToMap("Hello")
+	assert.Equal(t, "Hello", result, "Simple string test should return same value")
+
+	message := "Hello another message"
+	result = serilizeToMap(&message)
+
+	assert.Equal(t, "Hello another message", result, "Simple string pointer test should return same value string")
+}
+
+func TestSimpleMapType(t *testing.T) {
+	phone1 := Phone{PhoneNo: "1234567890", Type: "Home"}
+	phone2 := Phone{PhoneNo: "0987654321", Type: "Office"}
+
+	mapType := make(map[string]*Phone)
+	mapType["first"] = &phone1
+	mapType["second"] = &phone2
+
+	result := serilizeToMap(mapType)
+	expectedResult := make(map[string]interface{})
+	firstPhone := make(map[string]interface{})
+	firstPhone["PhoneNo"] = "1234567890"
+	firstPhone["Type"] = "Home"
+	secondPhone := make(map[string]interface{})
+	secondPhone["PhoneNo"] = "0987654321"
+	secondPhone["Type"] = "Office"
+	expectedResult["first"] = firstPhone
+	expectedResult["second"] = secondPhone
+
+	assert.Equal(t, expectedResult, result, "Map type with object pointer values should match with expected results")
+}
+
+func TestSimpleArrayType(t *testing.T) {
+	phone1 := Phone{PhoneNo: "1234567890", Type: "Home"}
+	phone2 := Phone{PhoneNo: "0987654321", Type: "Office"}
+	simplePtrStr := "Simple PTR String"
+	arrayType := []interface{}{&phone1, phone2, "Simple String", 90, &simplePtrStr}
+	result := serilizeToMap(arrayType)
+
+	firstPhone := make(map[string]interface{})
+	firstPhone["PhoneNo"] = "1234567890"
+	firstPhone["Type"] = "Home"
+	secondPhone := make(map[string]interface{})
+	secondPhone["PhoneNo"] = "0987654321"
+	secondPhone["Type"] = "Office"
+
+	expectedResult := []interface{}{firstPhone, secondPhone, "Simple String", 90, "Simple PTR String"}
+
+	assert.Equal(t, expectedResult, result, "Array type with combination array elements should match with expected result")
+}

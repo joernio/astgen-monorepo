@@ -23,18 +23,17 @@ func Add(a int, b int) int {
 
 func astParser() {
 	fset := token.NewFileSet()
-	//file, err := parser.ParseDir(fset, "/Users/pandurang/projects/golang/helloworld/", nil, 0)
-	file, err := parser.ParseFile(fset, "/Users/pandurang/projects/golang/helloworld/hello.go", nil, 0)
+	file, err := parser.ParseDir(fset, "/Users/pandurang/projects/golang/helloworld/", nil, 0)
+	//file, err := parser.ParseFile(fset, "/Users/pandurang/projects/golang/helloworld/hello.go", nil, 0)
 	if err != nil {
 		log.Fatal(err)
 	}
-
 	result := serilizeToMap(file)
 	resultJson := serilizeToJsonStr(result)
 	fmt.Println(resultJson)
 }
 
-func serilizeToJsonStr(objectMap map[string]interface{}) string {
+func serilizeToJsonStr(objectMap interface{}) string {
 	jsonStr, _ := json.MarshalIndent(objectMap, "", "  ")
 	return string(jsonStr)
 }
@@ -49,7 +48,7 @@ func processMap(object interface{}) interface{} {
 	case reflect.Struct:
 		objMap := make(map[string]interface{})
 		for _, key := range value.MapKeys() {
-			objMap[key.String()] = serilizeToMap(value.MapIndex(key).Interface())
+			objMap[key.String()] = processStruct(value.MapIndex(key).Interface())
 		}
 		result = objMap
 	case reflect.Pointer:
@@ -64,10 +63,16 @@ func processMap(object interface{}) interface{} {
 		case reflect.Struct:
 			objMap := make(map[string]interface{})
 			for _, key := range value.MapKeys() {
-				objMap[key.String()] = serilizeToMap(value.MapIndex(key).Elem().Interface())
+				objMap[key.String()] = processStruct(value.MapIndex(key).Elem().Interface())
 			}
 			result = objMap
+		default:
+			log.SetPrefix("[WARNING]")
+			log.Println(getLogPrefix(), mapValueTypeKind, "- not handled for pointer type")
 		}
+	default:
+		log.SetPrefix("[WARNING]")
+		log.Println(getLogPrefix(), mapValueTypeKind, "- not handled")
 	}
 	return result
 }
@@ -86,7 +91,7 @@ func processArrayOrSlice(object interface{}) interface{} {
 		case reflect.String, reflect.Int, reflect.Bool, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64, reflect.Float32, reflect.Float64, reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
 			nodeList = append(nodeList, arrayElementValue.Interface())
 		case reflect.Struct:
-			nodeList = append(nodeList, serilizeToMap(arrayElementValue.Interface()))
+			nodeList = append(nodeList, processStruct(arrayElementValue.Interface()))
 		case reflect.Map:
 			nodeList = append(nodeList, processMap(arrayElementValue.Interface()))
 		case reflect.Pointer:
@@ -95,16 +100,22 @@ func processArrayOrSlice(object interface{}) interface{} {
 			case reflect.String, reflect.Int, reflect.Bool, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64, reflect.Float32, reflect.Float64, reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
 				nodeList = append(nodeList, arrayElementValue.Elem().Interface())
 			case reflect.Struct:
-				nodeList = append(nodeList, serilizeToMap(arrayElementValue.Elem().Interface()))
+				nodeList = append(nodeList, processStruct(arrayElementValue.Elem().Interface()))
 			case reflect.Map:
 				nodeList = append(nodeList, processMap(arrayElementValue.Elem().Interface()))
+			default:
+				log.SetPrefix("[WARNING]")
+				log.Println(getLogPrefix(), elementKind, "- not handled for array pointer element")
 			}
+		default:
+			log.SetPrefix("[WARNING]")
+			log.Println(getLogPrefix(), elementKind, "- not handled for array element")
 		}
 	}
 	return nodeList
 }
 
-func serilizeToMap(node interface{}) map[string]interface{} {
+func processStruct(node interface{}) interface{} {
 	objectMap := make(map[string]interface{})
 	var elementType reflect.Type
 	var elementValueObj reflect.Value
@@ -136,7 +147,7 @@ func serilizeToMap(node interface{}) map[string]interface{} {
 			}
 		case reflect.Struct:
 			if value.IsValid() {
-				objectMap[field.Name] = serilizeToMap(value.Interface())
+				objectMap[field.Name] = processStruct(value.Interface())
 			}
 		case reflect.Map:
 			if value.IsValid() {
@@ -146,9 +157,41 @@ func serilizeToMap(node interface{}) map[string]interface{} {
 			if value.IsValid() {
 				objectMap[field.Name] = processArrayOrSlice(value.Interface())
 			}
+		default:
+			log.SetPrefix("[WARNING]")
+			log.Println(getLogPrefix(), field.Name, "- of Kind ->", fieldKind, "- not handled")
 		}
 	}
 	return objectMap
+}
+
+func serilizeToMap(node interface{}) interface{} {
+	var elementType reflect.Type
+	var elementValue reflect.Value
+	nodeType := reflect.TypeOf(node)
+	nodeValue := reflect.ValueOf(node)
+	if nodeType.Kind() == reflect.Pointer {
+		// NOTE: This handles only one level of pointer. At this moment we don't expect to get pointer to pointer.
+		elementType = nodeType.Elem()
+		elementValue = nodeValue.Elem()
+	} else {
+		elementType = nodeType
+		elementValue = nodeValue
+	}
+	switch elementType.Kind() {
+	case reflect.String, reflect.Int, reflect.Bool, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64, reflect.Float32, reflect.Float64, reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+		return elementValue.Interface()
+	case reflect.Struct:
+		return processStruct(elementValue.Interface())
+	case reflect.Map:
+		return processMap(elementValue.Interface())
+	case reflect.Array, reflect.Slice:
+		return processArrayOrSlice(elementValue.Interface())
+	default:
+		log.SetPrefix("[WARNING]")
+		log.Println(getLogPrefix(), elementType.Kind(), " - not handled")
+		return elementValue.Interface()
+	}
 }
 
 func main() {
