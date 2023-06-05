@@ -3,6 +3,10 @@ package goastgen
 import "C"
 import (
 	"encoding/json"
+	"fmt"
+	"go/parser"
+	"go/token"
+	"log"
 	"reflect"
 )
 
@@ -15,6 +19,19 @@ func ExternallyCalled() *C.char {
 //export Add
 func Add(a int, b int) int {
 	return a + b
+}
+
+func astParser() {
+	fset := token.NewFileSet()
+	//file, err := parser.ParseDir(fset, "/Users/pandurang/projects/golang/helloworld/", nil, 0)
+	file, err := parser.ParseFile(fset, "/Users/pandurang/projects/golang/helloworld/hello.go", nil, 0)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	result := serilizeToMap(file)
+	resultJson := serilizeToJsonStr(result)
+	fmt.Println(resultJson)
 }
 
 func serilizeToJsonStr(objectMap map[string]interface{}) string {
@@ -56,52 +73,35 @@ func processMap(object interface{}) interface{} {
 }
 
 func processArrayOrSlice(object interface{}) interface{} {
-	var result interface{}
 	value := reflect.ValueOf(object)
-	arrayValueTypeKind := value.Type().Elem().Kind()
-	switch arrayValueTypeKind {
-	case reflect.String, reflect.Int, reflect.Bool, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64, reflect.Float32, reflect.Float64, reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
-		result = value.Interface()
-	case reflect.Struct:
-		var nodeList []interface{}
-		for j := 0; j < value.Len(); j++ {
-			fieldArrayNode := value.Index(j).Interface()
-			nodeList = append(nodeList, serilizeToMap(fieldArrayNode))
+	var nodeList []interface{}
+	for j := 0; j < value.Len(); j++ {
+		arrayElementValue := value.Index(j)
+		elementKind := arrayElementValue.Kind()
+		if elementKind == reflect.Interface {
+			arrayElementValue = arrayElementValue.Elem()
+			elementKind = arrayElementValue.Kind()
 		}
-		result = nodeList
-	case reflect.Map:
-		var nodeList []interface{}
-		for j := 0; j < value.Len(); j++ {
-			fieldArrayNode := value.Index(j).Interface()
-			nodeList = append(nodeList, processMap(fieldArrayNode))
-		}
-		result = nodeList
-	case reflect.Pointer:
-		arrayValuePtrKind := value.Type().Elem().Elem().Kind()
-		switch arrayValuePtrKind {
+		switch elementKind {
 		case reflect.String, reflect.Int, reflect.Bool, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64, reflect.Float32, reflect.Float64, reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
-			var nodeList []interface{}
-			for j := 0; j < value.Len(); j++ {
-				nodeList = append(nodeList, value.Index(j).Elem().Interface())
-			}
-			result = nodeList
+			nodeList = append(nodeList, arrayElementValue.Interface())
 		case reflect.Struct:
-			var nodeList []interface{}
-			for j := 0; j < value.Len(); j++ {
-				fieldArrayNode := value.Index(j).Elem().Interface()
-				nodeList = append(nodeList, serilizeToMap(fieldArrayNode))
-			}
-			result = nodeList
+			nodeList = append(nodeList, serilizeToMap(arrayElementValue.Interface()))
 		case reflect.Map:
-			var nodeList []interface{}
-			for j := 0; j < value.Len(); j++ {
-				fieldArrayNode := value.Index(j).Elem().Interface()
-				nodeList = append(nodeList, processMap(fieldArrayNode))
+			nodeList = append(nodeList, processMap(arrayElementValue.Interface()))
+		case reflect.Pointer:
+			arrayElementValuePtrKind := arrayElementValue.Elem().Kind()
+			switch arrayElementValuePtrKind {
+			case reflect.String, reflect.Int, reflect.Bool, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64, reflect.Float32, reflect.Float64, reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+				nodeList = append(nodeList, arrayElementValue.Elem().Interface())
+			case reflect.Struct:
+				nodeList = append(nodeList, serilizeToMap(arrayElementValue.Elem().Interface()))
+			case reflect.Map:
+				nodeList = append(nodeList, processMap(arrayElementValue.Elem().Interface()))
 			}
-			result = nodeList
 		}
 	}
-	return result
+	return nodeList
 }
 
 func serilizeToMap(node interface{}) map[string]interface{} {
@@ -135,11 +135,17 @@ func serilizeToMap(node interface{}) map[string]interface{} {
 				objectMap[field.Name] = value.Interface()
 			}
 		case reflect.Struct:
-			objectMap[field.Name] = serilizeToMap(value.Interface())
+			if value.IsValid() {
+				objectMap[field.Name] = serilizeToMap(value.Interface())
+			}
 		case reflect.Map:
-			objectMap[field.Name] = processMap(value.Interface())
+			if value.IsValid() {
+				objectMap[field.Name] = processMap(value.Interface())
+			}
 		case reflect.Array, reflect.Slice:
-			objectMap[field.Name] = processArrayOrSlice(value.Interface())
+			if value.IsValid() {
+				objectMap[field.Name] = processArrayOrSlice(value.Interface())
+			}
 		}
 	}
 	return objectMap

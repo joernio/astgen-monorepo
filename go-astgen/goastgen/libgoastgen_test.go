@@ -70,6 +70,10 @@ type MapObjPtrType struct {
 	Phones map[string]*Phone
 }
 
+//func TestASTParser(t *testing.T) {
+//	astParser()
+//}
+
 func TestArrayOfPointerOfMapOfObjectPointerType(t *testing.T) {
 	first := Phone{PhoneNo: "1234567890", Type: "Home"}
 	second := Phone{PhoneNo: "0987654321", Type: "Office"}
@@ -317,7 +321,7 @@ func TestArrayType(t *testing.T) {
 	result := serilizeToMap(arrayType)
 	expectedResult := make(map[string]interface{})
 	expectedResult["Id"] = 10
-	expectedResult["NameList"] = [3]string{"First", "Second", "Third"}
+	expectedResult["NameList"] = []interface{}{"First", "Second", "Third"}
 
 	assert.Equal(t, expectedResult, result, "Simple Array type result Map should match with expected result Map")
 	jsonResult := serilizeToJsonStr(result)
@@ -330,7 +334,7 @@ func TestSliceType(t *testing.T) {
 	result := serilizeToMap(arrayType)
 	expectedResult := make(map[string]interface{})
 	expectedResult["Id"] = 10
-	expectedResult["NameList"] = []string{"First", "Second"}
+	expectedResult["NameList"] = []interface{}{"First", "Second"}
 
 	assert.Equal(t, expectedResult, result, "Simple Slice type result Map should match with expected result Map")
 }
@@ -396,4 +400,36 @@ func TestSecondLevelType(t *testing.T) {
 	jsonResult := serilizeToJsonStr(result)
 	expectedJsonResult := "{\n  \"Address\": {\n    \"Addone\": \"First line address\",\n    \"Addtwo\": \"Second line address\"\n  },\n  \"Name\": \"Sample Name\"\n}"
 	assert.Equal(t, expectedJsonResult, jsonResult, "Second level type result json should match with expected result")
+}
+
+func TestSimpleInterfaceWithArray(t *testing.T) {
+	arrayType := [2]interface{}{"first", "second"}
+	result := processArrayOrSlice(arrayType)
+	expectedResult := []interface{}{"first", "second"}
+	assert.Equal(t, expectedResult, result, "Array of interface containing string pointers should match with expected results")
+}
+
+func TestSimpleInterfaceWithArrayOfPointersType(t *testing.T) {
+	first := "first"
+	second := "second"
+	arrayType := [2]interface{}{&first, &second}
+	result := processArrayOrSlice(arrayType)
+	expectedResult := []interface{}{"first", "second"}
+	assert.Equal(t, expectedResult, result, "Array of interface containing string pointers should match with expected results")
+}
+
+func TestObjectInterfaceWithArrayOfPointers(t *testing.T) {
+	phone1 := Phone{PhoneNo: "1234567890", Type: "Home"}
+	phone2 := Phone{PhoneNo: "0987654321", Type: "Office"}
+	arrayType := [2]interface{}{&phone1, &phone2}
+	result := processArrayOrSlice(arrayType)
+	firstPhoneItem := make(map[string]interface{})
+	firstPhoneItem["PhoneNo"] = "1234567890"
+	firstPhoneItem["Type"] = "Home"
+
+	secondPhoneItem := make(map[string]interface{})
+	secondPhoneItem["PhoneNo"] = "0987654321"
+	secondPhoneItem["Type"] = "Office"
+	expectedResult := []interface{}{firstPhoneItem, secondPhoneItem}
+	assert.Equal(t, expectedResult, result, "Simple Array type result should match with expected result Array")
 }
