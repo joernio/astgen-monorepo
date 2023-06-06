@@ -47,6 +47,14 @@ func processMap(object interface{}) interface{} {
 	objMap := make(map[string]interface{})
 	for _, key := range value.MapKeys() {
 		objValue := value.MapIndex(key)
+
+		// If the map is created to accept valye of any type i.e. map[string]interface{}.
+		// Then it's value's reflect.Kind is of type reflect.Interface.
+		// We need to fetch original objects reflect.Value by calling .Elem() on it.
+		if objValue.Kind() == reflect.Interface {
+			objValue = objValue.Elem()
+		}
+
 		// Checking the reflect.Kind of value object and if its pointer
 		// then fetching the reflect.Value of the object pointed to by this pointer
 		if objValue.Kind() == reflect.Pointer {

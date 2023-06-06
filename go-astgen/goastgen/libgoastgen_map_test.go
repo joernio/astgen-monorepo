@@ -5,6 +5,23 @@ import (
 	"testing"
 )
 
+func TestMapWithNilPointerCheck(t *testing.T) {
+	var nilStr *string
+	var nilObj *Phone
+	mapType := make(map[string]interface{})
+	mapType["first"] = "first value"
+	mapType["second"] = nilStr
+	mapType["third"] = nilObj
+
+	result := processMap(mapType)
+
+	expectedResult := make(map[string]interface{})
+	expectedResult["first"] = "first value"
+
+	assert.Equal(t, expectedResult, result, "It should return map with valid values only")
+
+}
+
 func TestArrayOfPointerOfMapOfObjectPointerType(t *testing.T) {
 	first := Phone{PhoneNo: "1234567890", Type: "Home"}
 	second := Phone{PhoneNo: "0987654321", Type: "Office"}
