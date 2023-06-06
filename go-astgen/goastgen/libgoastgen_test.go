@@ -120,10 +120,10 @@ func TestArrayOfPointerOfMapOfPrimitivesType(t *testing.T) {
 	array := [2]*map[string]string{&firstMap, &secondMap}
 	result := processArrayOrSlice(array)
 
-	firstExpectedMap := make(map[string]string)
+	firstExpectedMap := make(map[string]interface{})
 	firstExpectedMap["fmfirst"] = "fmfirstvalue"
 	firstExpectedMap["fmsecond"] = "fmsecondvalue"
-	secondExpectedMap := make(map[string]string)
+	secondExpectedMap := make(map[string]interface{})
 	secondExpectedMap["smfirst"] = "smfirstvalue"
 	secondExpectedMap["smsecond"] = "smsecondvalue"
 	expectedResult := []interface{}{firstExpectedMap, secondExpectedMap}
@@ -141,10 +141,10 @@ func TestArrayOfMapOfPrimitivesType(t *testing.T) {
 	array := [2]map[string]string{firstMap, secondMap}
 	result := processArrayOrSlice(array)
 
-	firstExpectedMap := make(map[string]string)
+	firstExpectedMap := make(map[string]interface{})
 	firstExpectedMap["fmfirst"] = "fmfirstvalue"
 	firstExpectedMap["fmsecond"] = "fmsecondvalue"
-	secondExpectedMap := make(map[string]string)
+	secondExpectedMap := make(map[string]interface{})
 	secondExpectedMap["smfirst"] = "smfirstvalue"
 	secondExpectedMap["smsecond"] = "smsecondvalue"
 	expectedResult := []interface{}{firstExpectedMap, secondExpectedMap}
@@ -238,7 +238,7 @@ func TestMapIntType(t *testing.T) {
 	result := serilizeToMap(mapType)
 	expectedResult := make(map[string]interface{})
 	expectedResult["Id"] = 30
-	expectedNames := make(map[string]int)
+	expectedNames := make(map[string]interface{})
 	expectedNames["firstname"] = 1000
 	expectedNames["secondname"] = 2000
 	expectedResult["Names"] = expectedNames
@@ -257,11 +257,76 @@ func TestMapType(t *testing.T) {
 	result := serilizeToMap(mapType)
 	expectedResult := make(map[string]interface{})
 	expectedResult["Id"] = 30
-	expectedNames := make(map[string]string)
+	expectedNames := make(map[string]interface{})
 	expectedNames["firstname"] = "firstvalue"
 	expectedNames["secondname"] = "secondvalue"
 	expectedResult["Names"] = expectedNames
 	assert.Equal(t, expectedResult, result, "Simple Map type result Map should match with expected result Map")
+}
+
+func TestSimpleMapType(t *testing.T) {
+	phone1 := Phone{PhoneNo: "1234567890", Type: "Home"}
+	phone2 := Phone{PhoneNo: "0987654321", Type: "Office"}
+
+	mapType := make(map[string]*Phone)
+	mapType["first"] = &phone1
+	mapType["second"] = &phone2
+
+	result := serilizeToMap(mapType)
+	expectedResult := make(map[string]interface{})
+	firstPhone := make(map[string]interface{})
+	firstPhone["PhoneNo"] = "1234567890"
+	firstPhone["Type"] = "Home"
+	secondPhone := make(map[string]interface{})
+	secondPhone["PhoneNo"] = "0987654321"
+	secondPhone["Type"] = "Office"
+	expectedResult["first"] = firstPhone
+	expectedResult["second"] = secondPhone
+
+	assert.Equal(t, expectedResult, result, "Map type with object pointer values should match with expected results")
+}
+
+func TestArrayWithnillPointerCheck(t *testing.T) {
+	var nilStr *string
+	var nilObj *Phone
+	var nilMap *map[string]Phone
+	arrayWithnil := [4]interface{}{"valid string", nilStr, nilObj, nilMap}
+	result := processArrayOrSlice(arrayWithnil)
+	expectedResult := []interface{}{"valid string"}
+
+	assert.Equal(t, expectedResult, result, "It should process valid values of the array successfully")
+}
+
+func TestSimpleInterfaceWithArray(t *testing.T) {
+	arrayType := [2]interface{}{"first", "second"}
+	result := processArrayOrSlice(arrayType)
+	expectedResult := []interface{}{"first", "second"}
+	assert.Equal(t, expectedResult, result, "Array of interface containing string pointers should match with expected results")
+}
+
+func TestSimpleInterfaceWithArrayOfPointersType(t *testing.T) {
+	first := "first"
+	second := "second"
+	arrayType := [2]interface{}{&first, &second}
+	result := processArrayOrSlice(arrayType)
+	expectedResult := []interface{}{"first", "second"}
+	assert.Equal(t, expectedResult, result, "Array of interface containing string pointers should match with expected results")
+}
+
+func TestObjectInterfaceWithArrayOfPointers(t *testing.T) {
+	phone1 := Phone{PhoneNo: "1234567890", Type: "Home"}
+	phone2 := Phone{PhoneNo: "0987654321", Type: "Office"}
+	arrayType := [2]interface{}{&phone1, &phone2}
+	result := processArrayOrSlice(arrayType)
+	firstPhoneItem := make(map[string]interface{})
+	firstPhoneItem["PhoneNo"] = "1234567890"
+	firstPhoneItem["Type"] = "Home"
+
+	secondPhoneItem := make(map[string]interface{})
+	secondPhoneItem["PhoneNo"] = "0987654321"
+	secondPhoneItem["Type"] = "Office"
+	expectedResult := []interface{}{firstPhoneItem, secondPhoneItem}
+	assert.Equal(t, expectedResult, result, "Simple Array type result should match with expected result Array")
 }
 
 func TestSliceObjctPtrType(t *testing.T) {
@@ -329,6 +394,58 @@ func TestArrayType(t *testing.T) {
 	assert.Equal(t, expectedJsonResult, jsonResult, "Simple Array type result json should match with expected result")
 }
 
+func TestObjectWithNullValueCheck(t *testing.T) {
+	type SimpleObj struct {
+		Id   int
+		Name *string
+	}
+
+	simpleObj := SimpleObj{Id: 10}
+	result := serilizeToMap(simpleObj)
+	expectedResult := make(map[string]interface{})
+	expectedResult["Id"] = 10
+
+	assert.Equal(t, expectedResult, result, "It should not process those fields which contains nil pointer, rest of the fields should be processed")
+
+	type SimpleObjObj struct {
+		Id    int
+		Phone *Phone
+	}
+
+	simpleObjObj := SimpleObjObj{Id: 20}
+	result = serilizeToMap(simpleObjObj)
+	expectedResult = make(map[string]interface{})
+	expectedResult["Id"] = 20
+
+	assert.Equal(t, expectedResult, result, "It should not process those fields which contains nil pointer, rest of the fields should be processed")
+
+	type SimpleObjMap struct {
+		Id       int
+		Document *map[string]interface{}
+	}
+
+	simpleObjMap := SimpleObjObj{Id: 30}
+	result = serilizeToMap(simpleObjMap)
+	expectedResult = make(map[string]interface{})
+	expectedResult["Id"] = 30
+
+	assert.Equal(t, expectedResult, result, "It should not process those fields which contains nil pointer, rest of the fields should be processed")
+
+	type SimpleObjArray struct {
+		Id    int
+		Array *[2]string
+		Slice *[]string
+	}
+
+	simpleObjArray := SimpleObjArray{Id: 40}
+	result = serilizeToMap(simpleObjArray)
+	expectedResult = make(map[string]interface{})
+	expectedResult["Id"] = 40
+
+	assert.Equal(t, expectedResult, result, "It should not process those fields which contains nil pointer, rest of the fields should be processed")
+
+}
+
 func TestSliceType(t *testing.T) {
 	arrayType := SliceType{Id: 10, NameList: []string{"First", "Second"}}
 	result := serilizeToMap(arrayType)
@@ -337,6 +454,25 @@ func TestSliceType(t *testing.T) {
 	expectedResult["NameList"] = []interface{}{"First", "Second"}
 
 	assert.Equal(t, expectedResult, result, "Simple Slice type result Map should match with expected result Map")
+}
+
+func TestSimpleArrayType(t *testing.T) {
+	phone1 := Phone{PhoneNo: "1234567890", Type: "Home"}
+	phone2 := Phone{PhoneNo: "0987654321", Type: "Office"}
+	simplePtrStr := "Simple PTR String"
+	arrayType := []interface{}{&phone1, phone2, "Simple String", 90, &simplePtrStr}
+	result := serilizeToMap(arrayType)
+
+	firstPhone := make(map[string]interface{})
+	firstPhone["PhoneNo"] = "1234567890"
+	firstPhone["Type"] = "Home"
+	secondPhone := make(map[string]interface{})
+	secondPhone["PhoneNo"] = "0987654321"
+	secondPhone["Type"] = "Office"
+
+	expectedResult := []interface{}{firstPhone, secondPhone, "Simple String", 90, "Simple PTR String"}
+
+	assert.Equal(t, expectedResult, result, "Array type with combination array elements should match with expected result")
 }
 
 func TestSimpleTypeWithNullValue(t *testing.T) {
@@ -402,38 +538,6 @@ func TestSecondLevelType(t *testing.T) {
 	assert.Equal(t, expectedJsonResult, jsonResult, "Second level type result json should match with expected result")
 }
 
-func TestSimpleInterfaceWithArray(t *testing.T) {
-	arrayType := [2]interface{}{"first", "second"}
-	result := processArrayOrSlice(arrayType)
-	expectedResult := []interface{}{"first", "second"}
-	assert.Equal(t, expectedResult, result, "Array of interface containing string pointers should match with expected results")
-}
-
-func TestSimpleInterfaceWithArrayOfPointersType(t *testing.T) {
-	first := "first"
-	second := "second"
-	arrayType := [2]interface{}{&first, &second}
-	result := processArrayOrSlice(arrayType)
-	expectedResult := []interface{}{"first", "second"}
-	assert.Equal(t, expectedResult, result, "Array of interface containing string pointers should match with expected results")
-}
-
-func TestObjectInterfaceWithArrayOfPointers(t *testing.T) {
-	phone1 := Phone{PhoneNo: "1234567890", Type: "Home"}
-	phone2 := Phone{PhoneNo: "0987654321", Type: "Office"}
-	arrayType := [2]interface{}{&phone1, &phone2}
-	result := processArrayOrSlice(arrayType)
-	firstPhoneItem := make(map[string]interface{})
-	firstPhoneItem["PhoneNo"] = "1234567890"
-	firstPhoneItem["Type"] = "Home"
-
-	secondPhoneItem := make(map[string]interface{})
-	secondPhoneItem["PhoneNo"] = "0987654321"
-	secondPhoneItem["Type"] = "Office"
-	expectedResult := []interface{}{firstPhoneItem, secondPhoneItem}
-	assert.Equal(t, expectedResult, result, "Simple Array type result should match with expected result Array")
-}
-
 func TestSimplePrimitive(t *testing.T) {
 	result := serilizeToMap("Hello")
 	assert.Equal(t, "Hello", result, "Simple string test should return same value")
@@ -442,47 +546,6 @@ func TestSimplePrimitive(t *testing.T) {
 	result = serilizeToMap(&message)
 
 	assert.Equal(t, "Hello another message", result, "Simple string pointer test should return same value string")
-}
-
-func TestSimpleMapType(t *testing.T) {
-	phone1 := Phone{PhoneNo: "1234567890", Type: "Home"}
-	phone2 := Phone{PhoneNo: "0987654321", Type: "Office"}
-
-	mapType := make(map[string]*Phone)
-	mapType["first"] = &phone1
-	mapType["second"] = &phone2
-
-	result := serilizeToMap(mapType)
-	expectedResult := make(map[string]interface{})
-	firstPhone := make(map[string]interface{})
-	firstPhone["PhoneNo"] = "1234567890"
-	firstPhone["Type"] = "Home"
-	secondPhone := make(map[string]interface{})
-	secondPhone["PhoneNo"] = "0987654321"
-	secondPhone["Type"] = "Office"
-	expectedResult["first"] = firstPhone
-	expectedResult["second"] = secondPhone
-
-	assert.Equal(t, expectedResult, result, "Map type with object pointer values should match with expected results")
-}
-
-func TestSimpleArrayType(t *testing.T) {
-	phone1 := Phone{PhoneNo: "1234567890", Type: "Home"}
-	phone2 := Phone{PhoneNo: "0987654321", Type: "Office"}
-	simplePtrStr := "Simple PTR String"
-	arrayType := []interface{}{&phone1, phone2, "Simple String", 90, &simplePtrStr}
-	result := serilizeToMap(arrayType)
-
-	firstPhone := make(map[string]interface{})
-	firstPhone["PhoneNo"] = "1234567890"
-	firstPhone["Type"] = "Home"
-	secondPhone := make(map[string]interface{})
-	secondPhone["PhoneNo"] = "0987654321"
-	secondPhone["Type"] = "Office"
-
-	expectedResult := []interface{}{firstPhone, secondPhone, "Simple String", 90, "Simple PTR String"}
-
-	assert.Equal(t, expectedResult, result, "Array type with combination array elements should match with expected result")
 }
 
 func TestSimpleNullCheck(t *testing.T) {
@@ -511,57 +574,5 @@ func TestSimpleNullCheck(t *testing.T) {
 	var nilArray *[2]string
 	nilResult = serilizeToMap(nilArray)
 	assert.Nil(t, nilResult, "Null Array should return null")
-
-}
-
-func TestObjectWithNullValueCheck(t *testing.T) {
-	type SimpleObj struct {
-		Id   int
-		Name *string
-	}
-
-	simpleObj := SimpleObj{Id: 10}
-	result := serilizeToMap(simpleObj)
-	expectedResult := make(map[string]interface{})
-	expectedResult["Id"] = 10
-
-	assert.Equal(t, expectedResult, result, "It should not process those fields which contains nil pointer, rest of the fields should be processed")
-
-	type SimpleObjObj struct {
-		Id    int
-		Phone *Phone
-	}
-
-	simpleObjObj := SimpleObjObj{Id: 20}
-	result = serilizeToMap(simpleObjObj)
-	expectedResult = make(map[string]interface{})
-	expectedResult["Id"] = 20
-
-	assert.Equal(t, expectedResult, result, "It should not process those fields which contains nil pointer, rest of the fields should be processed")
-
-	type SimpleObjMap struct {
-		Id       int
-		Document *map[string]interface{}
-	}
-
-	simpleObjMap := SimpleObjObj{Id: 30}
-	result = serilizeToMap(simpleObjMap)
-	expectedResult = make(map[string]interface{})
-	expectedResult["Id"] = 30
-
-	assert.Equal(t, expectedResult, result, "It should not process those fields which contains nil pointer, rest of the fields should be processed")
-
-	type SimpleObjArray struct {
-		Id    int
-		Array *[2]string
-		Slice *[]string
-	}
-
-	simpleObjArray := SimpleObjArray{Id: 40}
-	result = serilizeToMap(simpleObjArray)
-	expectedResult = make(map[string]interface{})
-	expectedResult["Id"] = 40
-
-	assert.Equal(t, expectedResult, result, "It should not process those fields which contains nil pointer, rest of the fields should be processed")
 
 }
