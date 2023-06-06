@@ -484,3 +484,84 @@ func TestSimpleArrayType(t *testing.T) {
 
 	assert.Equal(t, expectedResult, result, "Array type with combination array elements should match with expected result")
 }
+
+func TestSimpleNullCheck(t *testing.T) {
+	var emptyStr string
+
+	result := serilizeToMap(emptyStr)
+	assert.Equal(t, "", result, "result should be empty string")
+
+	var nilValue *string = nil
+	nilResult := serilizeToMap(nilValue)
+	assert.Nil(t, nilResult, "Null value should return null")
+
+	var nillObj *Phone
+
+	nilResult = serilizeToMap(nillObj)
+	assert.Nil(t, nilResult, "Null object should return null")
+
+	var nillMap *map[string]interface{}
+	nilResult = serilizeToMap(nillMap)
+	assert.Nil(t, nilResult, "Null map should return null")
+
+	var nilSlice *[]string
+	nilResult = serilizeToMap(nilSlice)
+	assert.Nil(t, nilResult, "Null Slice should return null")
+
+	var nilArray *[2]string
+	nilResult = serilizeToMap(nilArray)
+	assert.Nil(t, nilResult, "Null Array should return null")
+
+}
+
+func TestObjectWithNullValueCheck(t *testing.T) {
+	type SimpleObj struct {
+		Id   int
+		Name *string
+	}
+
+	simpleObj := SimpleObj{Id: 10}
+	result := serilizeToMap(simpleObj)
+	expectedResult := make(map[string]interface{})
+	expectedResult["Id"] = 10
+
+	assert.Equal(t, expectedResult, result, "It should not process those fields which contains nil pointer, rest of the fields should be processed")
+
+	type SimpleObjObj struct {
+		Id    int
+		Phone *Phone
+	}
+
+	simpleObjObj := SimpleObjObj{Id: 20}
+	result = serilizeToMap(simpleObjObj)
+	expectedResult = make(map[string]interface{})
+	expectedResult["Id"] = 20
+
+	assert.Equal(t, expectedResult, result, "It should not process those fields which contains nil pointer, rest of the fields should be processed")
+
+	type SimpleObjMap struct {
+		Id       int
+		Document *map[string]interface{}
+	}
+
+	simpleObjMap := SimpleObjObj{Id: 30}
+	result = serilizeToMap(simpleObjMap)
+	expectedResult = make(map[string]interface{})
+	expectedResult["Id"] = 30
+
+	assert.Equal(t, expectedResult, result, "It should not process those fields which contains nil pointer, rest of the fields should be processed")
+
+	type SimpleObjArray struct {
+		Id    int
+		Array *[2]string
+		Slice *[]string
+	}
+
+	simpleObjArray := SimpleObjArray{Id: 40}
+	result = serilizeToMap(simpleObjArray)
+	expectedResult = make(map[string]interface{})
+	expectedResult["Id"] = 40
+
+	assert.Equal(t, expectedResult, result, "It should not process those fields which contains nil pointer, rest of the fields should be processed")
+
+}

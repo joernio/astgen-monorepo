@@ -180,13 +180,25 @@ func serilizeToMap(node interface{}) interface{} {
 	}
 	switch elementType.Kind() {
 	case reflect.String, reflect.Int, reflect.Bool, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64, reflect.Float32, reflect.Float64, reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
-		return elementValue.Interface()
+		if elementValue.IsValid() {
+			return elementValue.Interface()
+		}
+		return nil
 	case reflect.Struct:
-		return processStruct(elementValue.Interface())
+		if elementValue.IsValid() {
+			return processStruct(elementValue.Interface())
+		}
+		return nil
 	case reflect.Map:
-		return processMap(elementValue.Interface())
+		if elementValue.IsValid() {
+			return processMap(elementValue.Interface())
+		}
+		return nil
 	case reflect.Array, reflect.Slice:
-		return processArrayOrSlice(elementValue.Interface())
+		if elementValue.IsValid() {
+			return processArrayOrSlice(elementValue.Interface())
+		}
+		return nil
 	default:
 		log.SetPrefix("[WARNING]")
 		log.Println(getLogPrefix(), elementType.Kind(), " - not handled")
