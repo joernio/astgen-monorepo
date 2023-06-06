@@ -3,7 +3,6 @@ package goastgen
 import "C"
 import (
 	"encoding/json"
-	"fmt"
 	"go/parser"
 	"go/token"
 	"log"
@@ -21,26 +20,101 @@ func Add(a int, b int) int {
 	return a + b
 }
 
-func astParser() {
+/*
+ It will parse given source code and generate AST in JSON format
+
+ Parameters:
+  filename: Filename used for generating AST metadata
+  src: string, []byte, or io.Reader - Source code
+
+ Returns:
+  If given source is valid go source then it will generate AST in JSON format other will return "" string.
+*/
+func internalParseAstFromSource(filename string, src any) string {
 	fset := token.NewFileSet()
-	file, err := parser.ParseDir(fset, "/Users/pandurang/projects/golang/helloworld/", nil, 0)
-	//file, err := parser.ParseFile(fset, "/Users/pandurang/projects/golang/helloworld/hello.go", nil, 0)
+	parsedAst, err := parser.ParseFile(fset, filename, src, 0)
 	if err != nil {
+		// TODO: convert this to just warning error log.
 		log.Fatal(err)
 	}
-	result := serilizeToMap(file)
-	resultJson := serilizeToJsonStr(result)
-	fmt.Println(resultJson)
+	result := serilizeToMap(parsedAst)
+	return serilizeToJsonStr(result)
 }
 
+/*
+ It will parse all the go files in given source folder location and generate AST in JSON format
+
+ Parameters:
+  file: absolute root directory path of source code
+
+ Returns:
+  If given directory contains valid go source code then it will generate AST in JSON format otherwise will return "" string.
+*/
+func internalParseAstFromDir(dir string) string {
+	fset := token.NewFileSet()
+	parsedAst, err := parser.ParseDir(fset, dir, nil, 0)
+	if err != nil {
+		// TODO: convert this to just warning error log.
+		log.SetPrefix("[ERROR]")
+		log.Println("Error while parsing source from source directory -> '", dir, ",")
+		log.Print(err)
+	}
+	result := serilizeToMap(parsedAst)
+	return serilizeToJsonStr(result)
+}
+
+/*
+ It will parse the given file and generate AST in JSON format
+
+ Parameters:
+  file: absolute file path to be parsed
+
+ Returns:
+  If given file is a valid go code then it will generate AST in JSON format otherwise will return "" string.
+*/
+func internalParseAstFromFile(file string) string {
+	fset := token.NewFileSet()
+	// NOTE: Haven't explore much of mode parameter. Default value has been passed as 0
+	parsedAst, err := parser.ParseFile(fset, file, nil, 0)
+	if err != nil {
+		log.SetPrefix("[ERROR]")
+		log.Println("Error while parsing source file -> '", file, ",")
+		log.Print(err)
+		return ""
+	} else {
+		result := serilizeToMap(parsedAst)
+		return serilizeToJsonStr(result)
+	}
+}
+
+/*
+ Independent function which handles serialisation of map[string]interface{} in to JSON
+
+ Parameters:
+  objectMap: Mostly it will be object of map[string]interface{}
+
+ Returns:
+  JSON string
+*/
 func serilizeToJsonStr(objectMap interface{}) string {
-	jsonStr, _ := json.MarshalIndent(objectMap, "", "  ")
+	jsonStr, err := json.MarshalIndent(objectMap, "", "  ")
+	if err != nil {
+		log.SetPrefix("[ERROR]")
+		log.Println("Error while generating the AST JSON")
+		log.Print(err)
+	}
 	return string(jsonStr)
 }
 
-/**
-  Process Map type objects. In order to process the contents of the map's value object.
-  If the value object is of type 'struct' then we are converting it to map[string]interface{} and using it.
+/*
+Process Map type objects. In order to process the contents of the map's value object.
+If the value object is of type 'struct' then we are converting it to map[string]interface{} and using it.
+
+Parameters:
+ object: expects map[string] any
+
+Returns:
+ It returns and object of map[string]interface{} by converting any 'Struct' type value field to map
 */
 func processMap(object interface{}) interface{} {
 	value := reflect.ValueOf(object)
@@ -75,9 +149,15 @@ func processMap(object interface{}) interface{} {
 	return objMap
 }
 
-/**
-  This will process the Array or Slice (Dynamic Array).
-  It will identify the type/reflect.Kind of each array element and process the array element according.
+/*
+ This will process the Array or Slice (Dynamic Array).
+ It will identify the type/reflect.Kind of each array element and process the array element according.
+
+ Parameters:
+  object: []interface{} - expected to pass object of Array or Slice
+
+ Returns:
+  It will return []map[string]interface{}
 */
 func processArrayOrSlice(object interface{}) interface{} {
 	value := reflect.ValueOf(object)
@@ -123,30 +203,23 @@ func processArrayOrSlice(object interface{}) interface{} {
 	return nodeList
 }
 
-/**
-  This will process object of 'struct' type and convert it into document / map[string]interface{}.
-  It will process each field of this object, if it contains further child objects, arrays or maps.
-  Then it will get those respective field objects processed through respective processors.
-  e.g. if the field object is of type 'struct' then it will call function processStruct recursively
+/*
+ This will process object of 'struct' type and convert it into document / map[string]interface{}.
+ It will process each field of this object, if it contains further child objects, arrays or maps.
+ Then it will get those respective field objects processed through respective processors.
+ e.g. if the field object is of type 'struct' then it will call function processStruct recursively
+
+ Parameters:
+  node: Object of struct
+
+ Returns:
+  It will return object of map[string]interface{} by converting all the child fields recursively into map
+
 */
 func processStruct(node interface{}) interface{} {
 	objectMap := make(map[string]interface{})
-	var elementType reflect.Type
-	var elementValueObj reflect.Value
-
-	pointerType := reflect.TypeOf(node)
-
-	// If the first object itself is the pointer then get the underlying object 'Value' and process it.
-	if pointerType.Kind() == reflect.Pointer {
-		// NOTE: This handles only one level of pointer. At this moment we don't expect to get pointer to pointer.
-		//This will get 'reflect.Value' object pointed to by this pointer.
-		elementValueObj = reflect.ValueOf(node).Elem()
-		//This will get 'reflect.Type' object pointed to by this pointer
-		elementType = pointerType.Elem()
-	} else {
-		elementValueObj = reflect.ValueOf(node)
-		elementType = pointerType
-	}
+	elementType := reflect.TypeOf(node)
+	elementValueObj := reflect.ValueOf(node)
 
 	// We will iterate through each field process each field according to its reflect.Kind type.
 	for i := 0; i < elementType.NumField(); i++ {
@@ -156,7 +229,6 @@ func processStruct(node interface{}) interface{} {
 
 		if fieldKind == reflect.Pointer {
 			// NOTE: This handles only one level of pointer. At this moment we don't expect to get pointer to pointer.
-
 			// This will fetch the reflect.Kind of object pointed to by this field pointer
 			fieldKind = value.Type().Elem().Kind()
 			// This will fetch the reflect.Value of object pointed to by this field pointer.
@@ -195,7 +267,11 @@ func processStruct(node interface{}) interface{} {
 
  In case the object itself is of primitive data type, it will not convert it to map, rather it will just return the same object as is.
 
- So possible return value types could be primitive type, map (map[string]interface{}) or slice ([]interface{})
+ Parameters:
+  node: any object
+
+ Returns:
+  possible return value types could be primitive type, map (map[string]interface{}) or slice ([]interface{})
 
 */
 func serilizeToMap(node interface{}) interface{} {
@@ -207,7 +283,9 @@ func serilizeToMap(node interface{}) interface{} {
 	// If the first object itself is the pointer then get the underlying object 'Value' and process it.
 	if nodeType.Kind() == reflect.Pointer {
 		// NOTE: This handles only one level of pointer. At this moment we don't expect to get pointer to pointer.
+		//This will get 'reflect.Value' object pointed to by this pointer.
 		elementType = nodeType.Elem()
+		//This will get 'reflect.Type' object pointed to by this pointer
 		elementValue = nodeValue.Elem()
 	} else {
 		elementType = nodeType
@@ -239,10 +317,6 @@ func serilizeToMap(node interface{}) interface{} {
 		log.Println(getLogPrefix(), elementType.Kind(), " - not handled")
 		return elementValue.Interface()
 	}
-}
-
-func main() {
-
 }
 
 // build
