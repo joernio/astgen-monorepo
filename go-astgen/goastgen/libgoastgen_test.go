@@ -70,9 +70,35 @@ type MapObjPtrType struct {
 	Phones map[string]*Phone
 }
 
-//func TestASTParser(t *testing.T) {
-//	astParser()
-//}
+type InterfaceStrObjPtrType struct {
+	Id    int
+	Name  interface{}
+	Phone interface{}
+}
+
+func TestInterfaceObjPtrType(t *testing.T) {
+	phone := Phone{PhoneNo: "1234567890", Type: "Home"}
+	interfaceObjPtrType := InterfaceStrObjPtrType{Id: 200, Phone: &phone}
+	result := serilizeToMap(interfaceObjPtrType)
+	expectedResult := make(map[string]interface{})
+	expectedResult["Id"] = 200
+	phoneResult := make(map[string]interface{})
+	phoneResult["PhoneNo"] = "1234567890"
+	phoneResult["Type"] = "Home"
+	expectedResult["Phone"] = phoneResult
+
+	assert.Equal(t, expectedResult, result, "Struct type with interface{} containing pointer to object should match with expected result")
+}
+
+func TestInterfaceStrPtrType(t *testing.T) {
+	sampleStr := "Sample"
+	interfaceStrPtrType := InterfaceStrObjPtrType{Id: 100, Name: &sampleStr}
+	result := serilizeToMap(interfaceStrPtrType)
+	expectedResult := make(map[string]interface{})
+	expectedResult["Id"] = 100
+	expectedResult["Name"] = "Sample"
+	assert.Equal(t, expectedResult, result, "Struct type with interface{} containing pointer to string should match with expected result")
+}
 
 func TestObjectWithNullValueCheck(t *testing.T) {
 	type SimpleObj struct {

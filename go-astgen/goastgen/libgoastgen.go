@@ -227,6 +227,11 @@ func processStruct(node interface{}) interface{} {
 		value := elementValueObj.Field(i)
 		fieldKind := value.Type().Kind()
 
+		if fieldKind == reflect.Interface {
+			fieldKind = value.Elem().Kind()
+			value = value.Elem()
+		}
+
 		if fieldKind == reflect.Pointer {
 			// NOTE: This handles only one level of pointer. At this moment we don't expect to get pointer to pointer.
 			// This will fetch the reflect.Kind of object pointed to by this field pointer
@@ -234,26 +239,20 @@ func processStruct(node interface{}) interface{} {
 			// This will fetch the reflect.Value of object pointed to by this field pointer.
 			value = value.Elem()
 		}
-		switch fieldKind {
-		case reflect.String, reflect.Int, reflect.Bool, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64, reflect.Float32, reflect.Float64, reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
-			if value.IsValid() {
+		if value.IsValid() {
+			switch fieldKind {
+			case reflect.String, reflect.Int, reflect.Bool, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64, reflect.Float32, reflect.Float64, reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
 				objectMap[field.Name] = value.Interface()
-			}
-		case reflect.Struct:
-			if value.IsValid() {
+			case reflect.Struct:
 				objectMap[field.Name] = processStruct(value.Interface())
-			}
-		case reflect.Map:
-			if value.IsValid() {
+			case reflect.Map:
 				objectMap[field.Name] = processMap(value.Interface())
-			}
-		case reflect.Array, reflect.Slice:
-			if value.IsValid() {
+			case reflect.Array, reflect.Slice:
 				objectMap[field.Name] = processArrayOrSlice(value.Interface())
+			default:
+				log.SetPrefix("[WARNING]")
+				log.Println(getLogPrefix(), field.Name, "- of Kind ->", fieldKind, "- not handled")
 			}
-		default:
-			log.SetPrefix("[WARNING]")
-			log.Println(getLogPrefix(), field.Name, "- of Kind ->", fieldKind, "- not handled")
 		}
 	}
 	return objectMap
