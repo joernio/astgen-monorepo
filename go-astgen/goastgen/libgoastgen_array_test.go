@@ -40,10 +40,11 @@ func TestObjectInterfaceWithArrayOfPointers(t *testing.T) {
 	firstPhoneItem := make(map[string]interface{})
 	firstPhoneItem["PhoneNo"] = "1234567890"
 	firstPhoneItem["Type"] = "Home"
-
+	firstPhoneItem["node_type"] = "goastgen.Phone"
 	secondPhoneItem := make(map[string]interface{})
 	secondPhoneItem["PhoneNo"] = "0987654321"
 	secondPhoneItem["Type"] = "Office"
+	secondPhoneItem["node_type"] = "goastgen.Phone"
 	expectedResult := []interface{}{firstPhoneItem, secondPhoneItem}
 	assert.Equal(t, expectedResult, result, "Simple Array type result should match with expected result Array")
 }
@@ -55,13 +56,15 @@ func TestSliceObjctPtrType(t *testing.T) {
 	result := serilizeToMap(objArrayType)
 	expectedResult := make(map[string]interface{})
 	expectedResult["Id"] = 20
+	expectedResult["node_type"] = "goastgen.SliceObjPtrType"
 	firstPhoneItem := make(map[string]interface{})
 	firstPhoneItem["PhoneNo"] = "1234567890"
 	firstPhoneItem["Type"] = "Home"
-
+	firstPhoneItem["node_type"] = "goastgen.Phone"
 	secondPhoneItem := make(map[string]interface{})
 	secondPhoneItem["PhoneNo"] = "0987654321"
 	secondPhoneItem["Type"] = "Office"
+	secondPhoneItem["node_type"] = "goastgen.Phone"
 	expectedResult["PhoneList"] = []interface{}{firstPhoneItem, secondPhoneItem}
 
 	assert.Equal(t, expectedResult, result, "Slice of Object pointers type result Map should match with expected result Map")
@@ -75,11 +78,12 @@ func TestArrayPtrType(t *testing.T) {
 	result := serilizeToMap(arrayType)
 	expectedResult := make(map[string]interface{})
 	expectedResult["Id"] = 10
+	expectedResult["node_type"] = "goastgen.ArrayPtrType"
 	expectedResult["NameList"] = []interface{}{firstStr, secondStr, thirdStr}
 
 	assert.Equal(t, expectedResult, result, "Simple Array type result Map should match with expected result Map")
 	jsonResult := serilizeToJsonStr(result)
-	expectedJsonResult := "{\n  \"Id\": 10,\n  \"NameList\": [\n    \"First\",\n    \"Second\",\n    \"Third\"\n  ]\n}"
+	expectedJsonResult := "{\n  \"Id\": 10,\n  \"NameList\": [\n    \"First\",\n    \"Second\",\n    \"Third\"\n  ],\n  \"node_type\": \"goastgen.ArrayPtrType\"\n}"
 	assert.Equal(t, expectedJsonResult, jsonResult, "Array of Pointer type result json should match with expected result")
 }
 
@@ -88,13 +92,15 @@ func TestObjectSliceType(t *testing.T) {
 	result := serilizeToMap(objArrayType)
 	expectedResult := make(map[string]interface{})
 	expectedResult["Id"] = 20
+	expectedResult["node_type"] = "goastgen.ObjectSliceType"
 	firstPhoneItem := make(map[string]interface{})
 	firstPhoneItem["PhoneNo"] = "1234567890"
 	firstPhoneItem["Type"] = "Home"
-
+	firstPhoneItem["node_type"] = "goastgen.Phone"
 	secondPhoneItem := make(map[string]interface{})
 	secondPhoneItem["PhoneNo"] = "0987654321"
 	secondPhoneItem["Type"] = "Office"
+	secondPhoneItem["node_type"] = "goastgen.Phone"
 	expectedResult["PhoneList"] = []interface{}{firstPhoneItem, secondPhoneItem}
 
 	assert.Equal(t, expectedResult, result, "Simple Slice type result Map should match with expected result Map")
@@ -106,10 +112,11 @@ func TestArrayType(t *testing.T) {
 	expectedResult := make(map[string]interface{})
 	expectedResult["Id"] = 10
 	expectedResult["NameList"] = []interface{}{"First", "Second", "Third"}
+	expectedResult["node_type"] = "goastgen.ArrayType"
 
 	assert.Equal(t, expectedResult, result, "Simple Array type result Map should match with expected result Map")
 	jsonResult := serilizeToJsonStr(result)
-	expectedJsonResult := "{\n  \"Id\": 10,\n  \"NameList\": [\n    \"First\",\n    \"Second\",\n    \"Third\"\n  ]\n}"
+	expectedJsonResult := "{\n  \"Id\": 10,\n  \"NameList\": [\n    \"First\",\n    \"Second\",\n    \"Third\"\n  ],\n  \"node_type\": \"goastgen.ArrayType\"\n}"
 	assert.Equal(t, expectedJsonResult, jsonResult, "Simple Array type result json should match with expected result")
 }
 
@@ -119,6 +126,7 @@ func TestSliceType(t *testing.T) {
 	expectedResult := make(map[string]interface{})
 	expectedResult["Id"] = 10
 	expectedResult["NameList"] = []interface{}{"First", "Second"}
+	expectedResult["node_type"] = "goastgen.SliceType"
 
 	assert.Equal(t, expectedResult, result, "Simple Slice type result Map should match with expected result Map")
 }
@@ -133,9 +141,11 @@ func TestSimpleArrayType(t *testing.T) {
 	firstPhone := make(map[string]interface{})
 	firstPhone["PhoneNo"] = "1234567890"
 	firstPhone["Type"] = "Home"
+	firstPhone["node_type"] = "goastgen.Phone"
 	secondPhone := make(map[string]interface{})
 	secondPhone["PhoneNo"] = "0987654321"
 	secondPhone["Type"] = "Office"
+	secondPhone["node_type"] = "goastgen.Phone"
 
 	expectedResult := []interface{}{firstPhone, secondPhone, "Simple String", 90, "Simple PTR String"}
 

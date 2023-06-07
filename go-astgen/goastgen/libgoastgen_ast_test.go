@@ -1,0 +1,40 @@
+package goastgen
+
+import (
+	"fmt"
+	"github.com/stretchr/testify/assert"
+	"testing"
+)
+
+type RecursivePtrType struct {
+	Id      int
+	Name    string
+	NodePtr interface{}
+}
+
+func TestRecursivePointerCheck(t *testing.T) {
+	recursivePtrType := RecursivePtrType{Id: 10, Name: "Gajraj"}
+	recursivePtrType.NodePtr = &recursivePtrType
+	result := serilizeToMap(&recursivePtrType)
+	expectedResult := make(map[string]interface{})
+	expectedResult["Id"] = 10
+	expectedResult["Name"] = "Gajraj"
+	expectedResult["node_type"] = "goastgen.RecursivePtrType"
+	expectedPtrResult := make(map[string]interface{})
+	expectedPtrResult["node_type"] = "goastgen.RecursivePtrType"
+	expectedResult["NodePtr"] = expectedPtrResult
+
+	assert.Equal(t, expectedResult, result, "Recursive type processed to map should match with expected result")
+}
+
+func TestFirst(t *testing.T) {
+	code := "package main \n" +
+		"import \"fmt\"\n" +
+		"func main() {\n" +
+		"fmt.Println(\"Hello World\")\n" +
+		"}"
+
+	result := internalParseAstFromSource("helloworld.go", code)
+	fmt.Println(result)
+
+}

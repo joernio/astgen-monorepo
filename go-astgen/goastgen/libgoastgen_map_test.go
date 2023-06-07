@@ -38,15 +38,19 @@ func TestArrayOfPointerOfMapOfObjectPointerType(t *testing.T) {
 	firstPhone := make(map[string]interface{})
 	firstPhone["PhoneNo"] = "1234567890"
 	firstPhone["Type"] = "Home"
+	firstPhone["node_type"] = "goastgen.Phone"
 	secondPhone := make(map[string]interface{})
 	secondPhone["PhoneNo"] = "0987654321"
 	secondPhone["Type"] = "Office"
+	secondPhone["node_type"] = "goastgen.Phone"
 	thirdPhone := make(map[string]interface{})
 	thirdPhone["PhoneNo"] = "1234567891"
 	thirdPhone["Type"] = "Home1"
+	thirdPhone["node_type"] = "goastgen.Phone"
 	forthPhone := make(map[string]interface{})
 	forthPhone["PhoneNo"] = "1987654321"
 	forthPhone["Type"] = "Office1"
+	forthPhone["node_type"] = "goastgen.Phone"
 	firstExpectedMap := make(map[string]interface{})
 	firstExpectedMap["fmfirst"] = firstPhone
 	firstExpectedMap["fmsecond"] = secondPhone
@@ -112,13 +116,16 @@ func TestMapObjPtrType(t *testing.T) {
 	result := serilizeToMap(mapType)
 	expectedResult := make(map[string]interface{})
 	expectedResult["Id"] = 90
+	expectedResult["node_type"] = "goastgen.MapObjPtrType"
 	expectedPhones := make(map[string]interface{})
 	firstPhone := make(map[string]interface{})
 	firstPhone["PhoneNo"] = "1234567890"
 	firstPhone["Type"] = "Home"
+	firstPhone["node_type"] = "goastgen.Phone"
 	secondPhone := make(map[string]interface{})
 	secondPhone["PhoneNo"] = "0987654321"
 	secondPhone["Type"] = "Office"
+	secondPhone["node_type"] = "goastgen.Phone"
 	expectedPhones["first"] = firstPhone
 	expectedPhones["second"] = secondPhone
 	expectedResult["Phones"] = expectedPhones
@@ -126,7 +133,7 @@ func TestMapObjPtrType(t *testing.T) {
 	assert.Equal(t, expectedResult, result, "Map with Object Pointer type result Map should match with expected result Map")
 
 	jsonResult := serilizeToJsonStr(result)
-	expectedJsonResult := "{\n  \"Id\": 90,\n  \"Phones\": {\n    \"first\": {\n      \"PhoneNo\": \"1234567890\",\n      \"Type\": \"Home\"\n    },\n    \"second\": {\n      \"PhoneNo\": \"0987654321\",\n      \"Type\": \"Office\"\n    }\n  }\n}"
+	expectedJsonResult := "{\n  \"Id\": 90,\n  \"Phones\": {\n    \"first\": {\n      \"PhoneNo\": \"1234567890\",\n      \"Type\": \"Home\",\n      \"node_type\": \"goastgen.Phone\"\n    },\n    \"second\": {\n      \"PhoneNo\": \"0987654321\",\n      \"Type\": \"Office\",\n      \"node_type\": \"goastgen.Phone\"\n    }\n  },\n  \"node_type\": \"goastgen.MapObjPtrType\"\n}"
 	assert.Equal(t, expectedJsonResult, jsonResult, "Map with Object type result json should match with expected result")
 }
 
@@ -140,6 +147,7 @@ func TestMapStrPtrType(t *testing.T) {
 	result := serilizeToMap(mapType)
 	expectedResult := make(map[string]interface{})
 	expectedResult["Id"] = 30
+	expectedResult["node_type"] = "goastgen.MapStrPtrType"
 	expectedNames := make(map[string]interface{})
 	expectedNames["firstname"] = "firstvalue"
 	expectedNames["secondname"] = "secondvalue"
@@ -147,7 +155,7 @@ func TestMapStrPtrType(t *testing.T) {
 	assert.Equal(t, expectedResult, result, "Map String pointer type result Map should match with expected result Map")
 
 	jsonResult := serilizeToJsonStr(result)
-	expectedJsonResult := "{\n  \"Id\": 30,\n  \"Names\": {\n    \"firstname\": \"firstvalue\",\n    \"secondname\": \"secondvalue\"\n  }\n}"
+	expectedJsonResult := "{\n  \"Id\": 30,\n  \"Names\": {\n    \"firstname\": \"firstvalue\",\n    \"secondname\": \"secondvalue\"\n  },\n  \"node_type\": \"goastgen.MapStrPtrType\"\n}"
 	assert.Equal(t, expectedJsonResult, jsonResult, "Map with String pointer type result json should match with expected result")
 }
 
@@ -160,13 +168,16 @@ func TestMapObjType(t *testing.T) {
 	result := serilizeToMap(mapType)
 	expectedResult := make(map[string]interface{})
 	expectedResult["Id"] = 90
+	expectedResult["node_type"] = "goastgen.MapObjType"
 	expectedPhones := make(map[string]interface{})
 	firstPhone := make(map[string]interface{})
 	firstPhone["PhoneNo"] = "1234567890"
 	firstPhone["Type"] = "Home"
+	firstPhone["node_type"] = "goastgen.Phone"
 	secondPhone := make(map[string]interface{})
 	secondPhone["PhoneNo"] = "0987654321"
 	secondPhone["Type"] = "Office"
+	secondPhone["node_type"] = "goastgen.Phone"
 	expectedPhones["first"] = firstPhone
 	expectedPhones["second"] = secondPhone
 	expectedResult["Phones"] = expectedPhones
@@ -174,7 +185,7 @@ func TestMapObjType(t *testing.T) {
 	assert.Equal(t, expectedResult, result, "Map with Object type result Map should match with expected result Map")
 
 	jsonResult := serilizeToJsonStr(result)
-	expectedJsonResult := "{\n  \"Id\": 90,\n  \"Phones\": {\n    \"first\": {\n      \"PhoneNo\": \"1234567890\",\n      \"Type\": \"Home\"\n    },\n    \"second\": {\n      \"PhoneNo\": \"0987654321\",\n      \"Type\": \"Office\"\n    }\n  }\n}"
+	expectedJsonResult := "{\n  \"Id\": 90,\n  \"Phones\": {\n    \"first\": {\n      \"PhoneNo\": \"1234567890\",\n      \"Type\": \"Home\",\n      \"node_type\": \"goastgen.Phone\"\n    },\n    \"second\": {\n      \"PhoneNo\": \"0987654321\",\n      \"Type\": \"Office\",\n      \"node_type\": \"goastgen.Phone\"\n    }\n  },\n  \"node_type\": \"goastgen.MapObjType\"\n}"
 	assert.Equal(t, expectedJsonResult, jsonResult, "Map with Object type result json should match with expected result")
 }
 
@@ -186,6 +197,7 @@ func TestMapIntType(t *testing.T) {
 	result := serilizeToMap(mapType)
 	expectedResult := make(map[string]interface{})
 	expectedResult["Id"] = 30
+	expectedResult["node_type"] = "goastgen.MapIntType"
 	expectedNames := make(map[string]interface{})
 	expectedNames["firstname"] = 1000
 	expectedNames["secondname"] = 2000
@@ -193,7 +205,7 @@ func TestMapIntType(t *testing.T) {
 	assert.Equal(t, expectedResult, result, "Simple Map type result Map should match with expected result Map")
 
 	jsonResult := serilizeToJsonStr(result)
-	expectedJsonResult := "{\n  \"Id\": 30,\n  \"Names\": {\n    \"firstname\": 1000,\n    \"secondname\": 2000\n  }\n}"
+	expectedJsonResult := "{\n  \"Id\": 30,\n  \"Names\": {\n    \"firstname\": 1000,\n    \"secondname\": 2000\n  },\n  \"node_type\": \"goastgen.MapIntType\"\n}"
 	assert.Equal(t, expectedJsonResult, jsonResult, "Simple Map type result json should match with expected result")
 }
 
@@ -205,6 +217,7 @@ func TestMapType(t *testing.T) {
 	result := serilizeToMap(mapType)
 	expectedResult := make(map[string]interface{})
 	expectedResult["Id"] = 30
+	expectedResult["node_type"] = "goastgen.MapType"
 	expectedNames := make(map[string]interface{})
 	expectedNames["firstname"] = "firstvalue"
 	expectedNames["secondname"] = "secondvalue"
@@ -225,9 +238,11 @@ func TestSimpleMapType(t *testing.T) {
 	firstPhone := make(map[string]interface{})
 	firstPhone["PhoneNo"] = "1234567890"
 	firstPhone["Type"] = "Home"
+	firstPhone["node_type"] = "goastgen.Phone"
 	secondPhone := make(map[string]interface{})
 	secondPhone["PhoneNo"] = "0987654321"
 	secondPhone["Type"] = "Office"
+	secondPhone["node_type"] = "goastgen.Phone"
 	expectedResult["first"] = firstPhone
 	expectedResult["second"] = secondPhone
 

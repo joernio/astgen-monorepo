@@ -7,6 +7,7 @@ import (
 	"go/token"
 	"log"
 	"reflect"
+	"unsafe"
 )
 
 //export ExternallyCalled
@@ -129,17 +130,20 @@ func processMap(object interface{}) interface{} {
 			objValue = objValue.Elem()
 		}
 
+		var ptrValue reflect.Value
 		// Checking the reflect.Kind of value object and if its pointer
 		// then fetching the reflect.Value of the object pointed to by this pointer
 		if objValue.Kind() == reflect.Pointer {
 			objValue = objValue.Elem()
+			ptrValue = objValue
 		}
+
 		if objValue.IsValid() {
 			switch objValue.Kind() {
 			case reflect.String, reflect.Int, reflect.Bool, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64, reflect.Float32, reflect.Float64, reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
 				objMap[key.String()] = objValue.Interface()
 			case reflect.Struct:
-				objMap[key.String()] = processStruct(objValue.Interface())
+				objMap[key.String()] = processStruct(objValue.Interface(), ptrValue)
 			default:
 				log.SetPrefix("[WARNING]")
 				log.Println(getLogPrefix(), objValue.Kind(), "- not handled")
@@ -173,11 +177,13 @@ func processArrayOrSlice(object interface{}) interface{} {
 			arrayElementValue = arrayElementValue.Elem()
 			elementKind = arrayElementValue.Kind()
 		}
+		ptrValue := arrayElementValue
+
 		switch elementKind {
 		case reflect.String, reflect.Int, reflect.Bool, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64, reflect.Float32, reflect.Float64, reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
 			nodeList = append(nodeList, arrayElementValue.Interface())
 		case reflect.Struct:
-			nodeList = append(nodeList, processStruct(arrayElementValue.Interface()))
+			nodeList = append(nodeList, processStruct(arrayElementValue.Interface(), ptrValue))
 		case reflect.Map:
 			nodeList = append(nodeList, processMap(arrayElementValue.Interface()))
 		case reflect.Pointer:
@@ -187,7 +193,7 @@ func processArrayOrSlice(object interface{}) interface{} {
 				case reflect.String, reflect.Int, reflect.Bool, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64, reflect.Float32, reflect.Float64, reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
 					nodeList = append(nodeList, arrayElementValue.Elem().Interface())
 				case reflect.Struct:
-					nodeList = append(nodeList, processStruct(arrayElementValue.Elem().Interface()))
+					nodeList = append(nodeList, processStruct(arrayElementValue.Elem().Interface(), ptrValue))
 				case reflect.Map:
 					nodeList = append(nodeList, processMap(arrayElementValue.Elem().Interface()))
 				default:
@@ -203,6 +209,8 @@ func processArrayOrSlice(object interface{}) interface{} {
 	return nodeList
 }
 
+var nodeAddressMap = make(map[interface{}]interface{})
+
 /*
  This will process object of 'struct' type and convert it into document / map[string]interface{}.
  It will process each field of this object, if it contains further child objects, arrays or maps.
@@ -216,42 +224,62 @@ func processArrayOrSlice(object interface{}) interface{} {
   It will return object of map[string]interface{} by converting all the child fields recursively into map
 
 */
-func processStruct(node interface{}) interface{} {
+func processStruct(node interface{}, objPtrValue reflect.Value) interface{} {
 	objectMap := make(map[string]interface{})
 	elementType := reflect.TypeOf(node)
 	elementValueObj := reflect.ValueOf(node)
 
-	// We will iterate through each field process each field according to its reflect.Kind type.
-	for i := 0; i < elementType.NumField(); i++ {
-		field := elementType.Field(i)
-		value := elementValueObj.Field(i)
-		fieldKind := value.Type().Kind()
-
-		if fieldKind == reflect.Interface {
-			fieldKind = value.Elem().Kind()
-			value = value.Elem()
+	process := true
+	var objAddress uintptr
+	if objPtrValue.Kind() == reflect.Pointer {
+		ptr := unsafe.Pointer(objPtrValue.Pointer()) // Get the pointer address as an unsafe.Pointer
+		objAddress = uintptr(ptr)                    // Convert unsafe.Pointer to uintptr
+		_, ok := nodeAddressMap[objAddress]
+		if ok {
+			process = false
 		}
-
-		if fieldKind == reflect.Pointer {
-			// NOTE: This handles only one level of pointer. At this moment we don't expect to get pointer to pointer.
-			// This will fetch the reflect.Kind of object pointed to by this field pointer
-			fieldKind = value.Type().Elem().Kind()
-			// This will fetch the reflect.Value of object pointed to by this field pointer.
-			value = value.Elem()
+	}
+	objectMap["node_type"] = elementValueObj.Type().String()
+	if process {
+		if objPtrValue.Kind() == reflect.Pointer {
+			nodeAddressMap[objAddress] = node
 		}
-		if value.IsValid() {
-			switch fieldKind {
-			case reflect.String, reflect.Int, reflect.Bool, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64, reflect.Float32, reflect.Float64, reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
-				objectMap[field.Name] = value.Interface()
-			case reflect.Struct:
-				objectMap[field.Name] = processStruct(value.Interface())
-			case reflect.Map:
-				objectMap[field.Name] = processMap(value.Interface())
-			case reflect.Array, reflect.Slice:
-				objectMap[field.Name] = processArrayOrSlice(value.Interface())
-			default:
-				log.SetPrefix("[WARNING]")
-				log.Println(getLogPrefix(), field.Name, "- of Kind ->", fieldKind, "- not handled")
+		// We will iterate through each field process each field according to its reflect.Kind type.
+		for i := 0; i < elementType.NumField(); i++ {
+			field := elementType.Field(i)
+			value := elementValueObj.Field(i)
+			fieldKind := value.Type().Kind()
+
+			// If object is defined with field type as interface{} and assigned with pointer value.
+			// We need to first fetch the element from the interface
+			if fieldKind == reflect.Interface {
+				fieldKind = value.Elem().Kind()
+				value = value.Elem()
+			}
+			var ptrValue reflect.Value
+
+			if fieldKind == reflect.Pointer {
+				// NOTE: This handles only one level of pointer. At this moment we don't expect to get pointer to pointer.
+				// This will fetch the reflect.Kind of object pointed to by this field pointer
+				fieldKind = value.Type().Elem().Kind()
+				// This will fetch the reflect.Value of object pointed to by this field pointer.
+				ptrValue = value
+				value = value.Elem()
+			}
+			if value.IsValid() {
+				switch fieldKind {
+				case reflect.String, reflect.Int, reflect.Bool, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64, reflect.Float32, reflect.Float64, reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+					objectMap[field.Name] = value.Interface()
+				case reflect.Struct:
+					objectMap[field.Name] = processStruct(value.Interface(), ptrValue)
+				case reflect.Map:
+					objectMap[field.Name] = processMap(value.Interface())
+				case reflect.Array, reflect.Slice:
+					objectMap[field.Name] = processArrayOrSlice(value.Interface())
+				default:
+					log.SetPrefix("[WARNING]")
+					log.Println(getLogPrefix(), field.Name, "- of Kind ->", fieldKind, "- not handled")
+				}
 			}
 		}
 	}
@@ -276,9 +304,9 @@ func processStruct(node interface{}) interface{} {
 func serilizeToMap(node interface{}) interface{} {
 	var elementType reflect.Type
 	var elementValue reflect.Value
+	var ptrValue reflect.Value
 	nodeType := reflect.TypeOf(node)
 	nodeValue := reflect.ValueOf(node)
-
 	// If the first object itself is the pointer then get the underlying object 'Value' and process it.
 	if nodeType.Kind() == reflect.Pointer {
 		// NOTE: This handles only one level of pointer. At this moment we don't expect to get pointer to pointer.
@@ -286,6 +314,7 @@ func serilizeToMap(node interface{}) interface{} {
 		elementType = nodeType.Elem()
 		//This will get 'reflect.Type' object pointed to by this pointer
 		elementValue = nodeValue.Elem()
+		ptrValue = nodeValue
 	} else {
 		elementType = nodeType
 		elementValue = nodeValue
@@ -298,7 +327,7 @@ func serilizeToMap(node interface{}) interface{} {
 		return nil
 	case reflect.Struct:
 		if elementValue.IsValid() {
-			return processStruct(elementValue.Interface())
+			return processStruct(elementValue.Interface(), ptrValue)
 		}
 		return nil
 	case reflect.Map:
