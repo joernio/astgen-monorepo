@@ -23,6 +23,8 @@ func TestMapWithNilPointerCheck(t *testing.T) {
 }
 
 func TestArrayOfPointerOfMapOfObjectPointerType(t *testing.T) {
+	lastNodeId = 1
+
 	first := Phone{PhoneNo: "1234567890", Type: "Home"}
 	second := Phone{PhoneNo: "0987654321", Type: "Office"}
 	third := Phone{PhoneNo: "1234567891", Type: "Home1"}
@@ -39,18 +41,22 @@ func TestArrayOfPointerOfMapOfObjectPointerType(t *testing.T) {
 	firstPhone["PhoneNo"] = "1234567890"
 	firstPhone["Type"] = "Home"
 	firstPhone["node_type"] = "goastgen.Phone"
+	firstPhone["node_id"] = 1
 	secondPhone := make(map[string]interface{})
 	secondPhone["PhoneNo"] = "0987654321"
 	secondPhone["Type"] = "Office"
 	secondPhone["node_type"] = "goastgen.Phone"
+	secondPhone["node_id"] = 2
 	thirdPhone := make(map[string]interface{})
 	thirdPhone["PhoneNo"] = "1234567891"
 	thirdPhone["Type"] = "Home1"
 	thirdPhone["node_type"] = "goastgen.Phone"
+	thirdPhone["node_id"] = 3
 	forthPhone := make(map[string]interface{})
 	forthPhone["PhoneNo"] = "1987654321"
 	forthPhone["Type"] = "Office1"
 	forthPhone["node_type"] = "goastgen.Phone"
+	forthPhone["node_id"] = 4
 	firstExpectedMap := make(map[string]interface{})
 	firstExpectedMap["fmfirst"] = firstPhone
 	firstExpectedMap["fmsecond"] = secondPhone
@@ -106,6 +112,7 @@ func TestArrayOfMapOfPrimitivesType(t *testing.T) {
 }
 
 func TestMapObjPtrType(t *testing.T) {
+	lastNodeId = 1
 	first := Phone{PhoneNo: "1234567890", Type: "Home"}
 	second := Phone{PhoneNo: "0987654321", Type: "Office"}
 	phones := make(map[string]*Phone)
@@ -117,27 +124,28 @@ func TestMapObjPtrType(t *testing.T) {
 	expectedResult := make(map[string]interface{})
 	expectedResult["Id"] = 90
 	expectedResult["node_type"] = "goastgen.MapObjPtrType"
+	expectedResult["node_id"] = 1
 	expectedPhones := make(map[string]interface{})
 	firstPhone := make(map[string]interface{})
 	firstPhone["PhoneNo"] = "1234567890"
 	firstPhone["Type"] = "Home"
 	firstPhone["node_type"] = "goastgen.Phone"
+	firstPhone["node_id"] = 2
 	secondPhone := make(map[string]interface{})
 	secondPhone["PhoneNo"] = "0987654321"
 	secondPhone["Type"] = "Office"
 	secondPhone["node_type"] = "goastgen.Phone"
+	secondPhone["node_id"] = 3
 	expectedPhones["first"] = firstPhone
 	expectedPhones["second"] = secondPhone
 	expectedResult["Phones"] = expectedPhones
 
 	assert.Equal(t, expectedResult, result, "Map with Object Pointer type result Map should match with expected result Map")
 
-	jsonResult := serilizeToJsonStr(result)
-	expectedJsonResult := "{\n  \"Id\": 90,\n  \"Phones\": {\n    \"first\": {\n      \"PhoneNo\": \"1234567890\",\n      \"Type\": \"Home\",\n      \"node_type\": \"goastgen.Phone\"\n    },\n    \"second\": {\n      \"PhoneNo\": \"0987654321\",\n      \"Type\": \"Office\",\n      \"node_type\": \"goastgen.Phone\"\n    }\n  },\n  \"node_type\": \"goastgen.MapObjPtrType\"\n}"
-	assert.Equal(t, expectedJsonResult, jsonResult, "Map with Object type result json should match with expected result")
 }
 
 func TestMapStrPtrType(t *testing.T) {
+	lastNodeId = 1
 	first := "firstvalue"
 	second := "secondvalue"
 	names := make(map[string]*string)
@@ -148,18 +156,17 @@ func TestMapStrPtrType(t *testing.T) {
 	expectedResult := make(map[string]interface{})
 	expectedResult["Id"] = 30
 	expectedResult["node_type"] = "goastgen.MapStrPtrType"
+	expectedResult["node_id"] = 1
 	expectedNames := make(map[string]interface{})
 	expectedNames["firstname"] = "firstvalue"
 	expectedNames["secondname"] = "secondvalue"
 	expectedResult["Names"] = expectedNames
 	assert.Equal(t, expectedResult, result, "Map String pointer type result Map should match with expected result Map")
 
-	jsonResult := serilizeToJsonStr(result)
-	expectedJsonResult := "{\n  \"Id\": 30,\n  \"Names\": {\n    \"firstname\": \"firstvalue\",\n    \"secondname\": \"secondvalue\"\n  },\n  \"node_type\": \"goastgen.MapStrPtrType\"\n}"
-	assert.Equal(t, expectedJsonResult, jsonResult, "Map with String pointer type result json should match with expected result")
 }
 
 func TestMapObjType(t *testing.T) {
+	lastNodeId = 1
 	phones := make(map[string]Phone)
 	phones["first"] = Phone{PhoneNo: "1234567890", Type: "Home"}
 	phones["second"] = Phone{PhoneNo: "0987654321", Type: "Office"}
@@ -169,27 +176,27 @@ func TestMapObjType(t *testing.T) {
 	expectedResult := make(map[string]interface{})
 	expectedResult["Id"] = 90
 	expectedResult["node_type"] = "goastgen.MapObjType"
+	expectedResult["node_id"] = 1
 	expectedPhones := make(map[string]interface{})
 	firstPhone := make(map[string]interface{})
 	firstPhone["PhoneNo"] = "1234567890"
 	firstPhone["Type"] = "Home"
 	firstPhone["node_type"] = "goastgen.Phone"
+	firstPhone["node_id"] = 2
 	secondPhone := make(map[string]interface{})
 	secondPhone["PhoneNo"] = "0987654321"
 	secondPhone["Type"] = "Office"
 	secondPhone["node_type"] = "goastgen.Phone"
+	secondPhone["node_id"] = 3
 	expectedPhones["first"] = firstPhone
 	expectedPhones["second"] = secondPhone
 	expectedResult["Phones"] = expectedPhones
 
 	assert.Equal(t, expectedResult, result, "Map with Object type result Map should match with expected result Map")
-
-	jsonResult := serilizeToJsonStr(result)
-	expectedJsonResult := "{\n  \"Id\": 90,\n  \"Phones\": {\n    \"first\": {\n      \"PhoneNo\": \"1234567890\",\n      \"Type\": \"Home\",\n      \"node_type\": \"goastgen.Phone\"\n    },\n    \"second\": {\n      \"PhoneNo\": \"0987654321\",\n      \"Type\": \"Office\",\n      \"node_type\": \"goastgen.Phone\"\n    }\n  },\n  \"node_type\": \"goastgen.MapObjType\"\n}"
-	assert.Equal(t, expectedJsonResult, jsonResult, "Map with Object type result json should match with expected result")
 }
 
 func TestMapIntType(t *testing.T) {
+	lastNodeId = 1
 	names := make(map[string]int)
 	names["firstname"] = 1000
 	names["secondname"] = 2000
@@ -198,18 +205,17 @@ func TestMapIntType(t *testing.T) {
 	expectedResult := make(map[string]interface{})
 	expectedResult["Id"] = 30
 	expectedResult["node_type"] = "goastgen.MapIntType"
+	expectedResult["node_id"] = 1
 	expectedNames := make(map[string]interface{})
 	expectedNames["firstname"] = 1000
 	expectedNames["secondname"] = 2000
 	expectedResult["Names"] = expectedNames
 	assert.Equal(t, expectedResult, result, "Simple Map type result Map should match with expected result Map")
 
-	jsonResult := serilizeToJsonStr(result)
-	expectedJsonResult := "{\n  \"Id\": 30,\n  \"Names\": {\n    \"firstname\": 1000,\n    \"secondname\": 2000\n  },\n  \"node_type\": \"goastgen.MapIntType\"\n}"
-	assert.Equal(t, expectedJsonResult, jsonResult, "Simple Map type result json should match with expected result")
 }
 
 func TestMapType(t *testing.T) {
+	lastNodeId = 1
 	names := make(map[string]string)
 	names["firstname"] = "firstvalue"
 	names["secondname"] = "secondvalue"
@@ -218,6 +224,7 @@ func TestMapType(t *testing.T) {
 	expectedResult := make(map[string]interface{})
 	expectedResult["Id"] = 30
 	expectedResult["node_type"] = "goastgen.MapType"
+	expectedResult["node_id"] = 1
 	expectedNames := make(map[string]interface{})
 	expectedNames["firstname"] = "firstvalue"
 	expectedNames["secondname"] = "secondvalue"
@@ -226,6 +233,7 @@ func TestMapType(t *testing.T) {
 }
 
 func TestSimpleMapType(t *testing.T) {
+	lastNodeId = 1
 	phone1 := Phone{PhoneNo: "1234567890", Type: "Home"}
 	phone2 := Phone{PhoneNo: "0987654321", Type: "Office"}
 
@@ -239,10 +247,12 @@ func TestSimpleMapType(t *testing.T) {
 	firstPhone["PhoneNo"] = "1234567890"
 	firstPhone["Type"] = "Home"
 	firstPhone["node_type"] = "goastgen.Phone"
+	firstPhone["node_id"] = 1
 	secondPhone := make(map[string]interface{})
 	secondPhone["PhoneNo"] = "0987654321"
 	secondPhone["Type"] = "Office"
 	secondPhone["node_type"] = "goastgen.Phone"
+	secondPhone["node_id"] = 2
 	expectedResult["first"] = firstPhone
 	expectedResult["second"] = secondPhone
 

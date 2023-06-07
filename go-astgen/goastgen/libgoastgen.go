@@ -210,6 +210,7 @@ func processArrayOrSlice(object interface{}) interface{} {
 }
 
 var nodeAddressMap = make(map[interface{}]interface{})
+var lastNodeId int = 1
 
 /*
  This will process object of 'struct' type and convert it into document / map[string]interface{}.
@@ -231,18 +232,28 @@ func processStruct(node interface{}, objPtrValue reflect.Value) interface{} {
 
 	process := true
 	var objAddress uintptr
+	// We are checking if the given object is already processed.
+	// We are doing that by maintaining map of processed object pointers set with node_id.
+	// If object is already processed then we will not process it again.
+	// Instead we wil just add its node_id as reference id
+
+	// NOTE: Important point to understand we are not maintaining every object in this cache.
+	// We are only maintaining those objects which are referenced as a pointer. In that case objPtrValue.Kind() will be of reflect.Pointer type
 	if objPtrValue.Kind() == reflect.Pointer {
 		ptr := unsafe.Pointer(objPtrValue.Pointer()) // Get the pointer address as an unsafe.Pointer
 		objAddress = uintptr(ptr)                    // Convert unsafe.Pointer to uintptr
-		_, ok := nodeAddressMap[objAddress]
+		refNodeId, ok := nodeAddressMap[objAddress]
 		if ok {
 			process = false
+			objectMap["node_reference_id"] = refNodeId
 		}
 	}
+	objectMap["node_id"] = lastNodeId
+	lastNodeId++
 	objectMap["node_type"] = elementValueObj.Type().String()
 	if process {
 		if objPtrValue.Kind() == reflect.Pointer {
-			nodeAddressMap[objAddress] = node
+			nodeAddressMap[objAddress] = objectMap["node_id"]
 		}
 		// We will iterate through each field process each field according to its reflect.Kind type.
 		for i := 0; i < elementType.NumField(); i++ {

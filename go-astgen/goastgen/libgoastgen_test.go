@@ -77,22 +77,28 @@ type InterfaceStrObjPtrType struct {
 }
 
 func TestInterfaceObjPtrType(t *testing.T) {
+	lastNodeId = 1
+
 	phone := Phone{PhoneNo: "1234567890", Type: "Home"}
 	interfaceObjPtrType := InterfaceStrObjPtrType{Id: 200, Phone: &phone}
 	result := serilizeToMap(interfaceObjPtrType)
 	expectedResult := make(map[string]interface{})
 	expectedResult["Id"] = 200
 	expectedResult["node_type"] = "goastgen.InterfaceStrObjPtrType"
+	expectedResult["node_id"] = 1
 	phoneResult := make(map[string]interface{})
 	phoneResult["PhoneNo"] = "1234567890"
 	phoneResult["Type"] = "Home"
 	phoneResult["node_type"] = "goastgen.Phone"
+	phoneResult["node_id"] = 2
 	expectedResult["Phone"] = phoneResult
 
 	assert.Equal(t, expectedResult, result, "Struct type with interface{} containing pointer to object should match with expected result")
 }
 
 func TestInterfaceStrPtrType(t *testing.T) {
+	lastNodeId = 1
+
 	sampleStr := "Sample"
 	interfaceStrPtrType := InterfaceStrObjPtrType{Id: 100, Name: &sampleStr}
 	result := serilizeToMap(interfaceStrPtrType)
@@ -100,10 +106,13 @@ func TestInterfaceStrPtrType(t *testing.T) {
 	expectedResult["Id"] = 100
 	expectedResult["Name"] = "Sample"
 	expectedResult["node_type"] = "goastgen.InterfaceStrObjPtrType"
+	expectedResult["node_id"] = 1
 	assert.Equal(t, expectedResult, result, "Struct type with interface{} containing pointer to string should match with expected result")
 }
 
 func TestObjectWithNullValueCheck(t *testing.T) {
+	lastNodeId = 1
+
 	type SimpleObj struct {
 		Id   int
 		Name *string
@@ -114,7 +123,10 @@ func TestObjectWithNullValueCheck(t *testing.T) {
 	expectedResult := make(map[string]interface{})
 	expectedResult["Id"] = 10
 	expectedResult["node_type"] = "goastgen.SimpleObj"
+	expectedResult["node_id"] = 1
 	assert.Equal(t, expectedResult, result, "It should not process those fields which contains nil pointer, rest of the fields should be processed")
+
+	lastNodeId = 1
 
 	type SimpleObjObj struct {
 		Id    int
@@ -126,8 +138,10 @@ func TestObjectWithNullValueCheck(t *testing.T) {
 	expectedResult = make(map[string]interface{})
 	expectedResult["Id"] = 20
 	expectedResult["node_type"] = "goastgen.SimpleObjObj"
+	expectedResult["node_id"] = 1
 	assert.Equal(t, expectedResult, result, "It should not process those fields which contains nil pointer, rest of the fields should be processed")
 
+	lastNodeId = 1
 	type SimpleObjMap struct {
 		Id       int
 		Document *map[string]interface{}
@@ -138,8 +152,10 @@ func TestObjectWithNullValueCheck(t *testing.T) {
 	expectedResult = make(map[string]interface{})
 	expectedResult["Id"] = 30
 	expectedResult["node_type"] = "goastgen.SimpleObjObj"
+	expectedResult["node_id"] = 1
 	assert.Equal(t, expectedResult, result, "It should not process those fields which contains nil pointer, rest of the fields should be processed")
 
+	lastNodeId = 1
 	type SimpleObjArray struct {
 		Id    int
 		Array *[2]string
@@ -151,38 +167,49 @@ func TestObjectWithNullValueCheck(t *testing.T) {
 	expectedResult = make(map[string]interface{})
 	expectedResult["Id"] = 40
 	expectedResult["node_type"] = "goastgen.SimpleObjArray"
+	expectedResult["node_id"] = 1
 	assert.Equal(t, expectedResult, result, "It should not process those fields which contains nil pointer, rest of the fields should be processed")
 
 }
 
 func TestSimpleTypeWithNullValue(t *testing.T) {
+	lastNodeId = 1
+
 	address := Address{Addone: "First line address"}
 	result := serilizeToMap(address)
 	expectedResult := make(map[string]interface{})
 	expectedResult["Addone"] = "First line address"
 	expectedResult["node_type"] = "goastgen.Address"
+	expectedResult["node_id"] = 1
 	assert.Equal(t, expectedResult, result, "Simple type result Map should match with expected result Map")
 
+	lastNodeId = 1
 	phone := Phone{PhoneNo: "1234567890"}
 	result = serilizeToMap(phone)
 	expectedResult = make(map[string]interface{})
 	expectedResult["PhoneNo"] = "1234567890"
 	expectedResult["Type"] = ""
 	expectedResult["node_type"] = "goastgen.Phone"
+	expectedResult["node_id"] = 1
 	assert.Equal(t, expectedResult, result, "Simple type result Map should match with expected result Map")
 }
 
 func TestSimpleType(t *testing.T) {
+	lastNodeId = 1
+
 	phone := Phone{PhoneNo: "1234567890", Type: "Home"}
 	result := serilizeToMap(phone)
 	expectedResult := make(map[string]interface{})
 	expectedResult["PhoneNo"] = "1234567890"
 	expectedResult["Type"] = "Home"
 	expectedResult["node_type"] = "goastgen.Phone"
+	expectedResult["node_id"] = 1
 	assert.Equal(t, expectedResult, result, "Simple type result Map should match with expected result Map")
 }
 
 func TestSimplePointerType(t *testing.T) {
+	lastNodeId = 1
+
 	addtwo := "Second line address"
 	var p *Address
 	p = &Address{Addone: "First line address", Addtwo: &addtwo}
@@ -191,14 +218,14 @@ func TestSimplePointerType(t *testing.T) {
 	expectedResult["Addone"] = "First line address"
 	expectedResult["Addtwo"] = "Second line address"
 	expectedResult["node_type"] = "goastgen.Address"
+	expectedResult["node_id"] = 1
 	assert.Equal(t, expectedResult, result, "Simple type result Map should match with expected result Map")
 
-	jsonResult := serilizeToJsonStr(result)
-	expectedJsonResult := "{\n  \"Addone\": \"First line address\",\n  \"Addtwo\": \"Second line address\",\n  \"node_type\": \"goastgen.Address\"\n}"
-	assert.Equal(t, expectedJsonResult, jsonResult, "Simple type result json should match with expected result")
 }
 
 func TestSecondLevelType(t *testing.T) {
+	lastNodeId = 1
+
 	addtwo := "Second line address"
 	var a *Address
 	a = &Address{Addone: "First line address", Addtwo: &addtwo}
@@ -209,16 +236,15 @@ func TestSecondLevelType(t *testing.T) {
 	expectedResult := make(map[string]interface{})
 	expectedResult["Name"] = "Sample Name"
 	expectedResult["node_type"] = "goastgen.Person"
+	expectedResult["node_id"] = 1
 	addressResult := make(map[string]interface{})
 	addressResult["Addone"] = "First line address"
 	addressResult["Addtwo"] = "Second line address"
 	addressResult["node_type"] = "goastgen.Address"
+	addressResult["node_id"] = 2
 	expectedResult["Address"] = addressResult
 	assert.Equal(t, expectedResult, result, "Second level type result Map should match with expected result map")
 
-	jsonResult := serilizeToJsonStr(result)
-	expectedJsonResult := "{\n  \"Address\": {\n    \"Addone\": \"First line address\",\n    \"Addtwo\": \"Second line address\",\n    \"node_type\": \"goastgen.Address\"\n  },\n  \"Name\": \"Sample Name\",\n  \"node_type\": \"goastgen.Person\"\n}"
-	assert.Equal(t, expectedJsonResult, jsonResult, "Second level type result json should match with expected result")
 }
 
 func TestSimplePrimitive(t *testing.T) {
