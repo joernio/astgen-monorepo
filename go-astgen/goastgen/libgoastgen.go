@@ -3,6 +3,7 @@ package goastgen
 import "C"
 import (
 	"encoding/json"
+	"go/ast"
 	"go/parser"
 	"go/token"
 	"log"
@@ -38,7 +39,7 @@ func internalParseAstFromSource(filename string, src any) string {
 		// TODO: convert this to just warning error log.
 		log.Fatal(err)
 	}
-	result := serilizeToMap(parsedAst)
+	result := serilizeToMap(parsedAst, fset)
 	return serilizeToJsonStr(result)
 }
 
@@ -60,7 +61,7 @@ func internalParseAstFromDir(dir string) string {
 		log.Println("Error while parsing source from source directory -> '", dir, ",")
 		log.Print(err)
 	}
-	result := serilizeToMap(parsedAst)
+	result := serilizeToMap(parsedAst, fset)
 	return serilizeToJsonStr(result)
 }
 
@@ -83,7 +84,7 @@ func internalParseAstFromFile(file string) string {
 		log.Print(err)
 		return ""
 	} else {
-		result := serilizeToMap(parsedAst)
+		result := serilizeToMap(parsedAst, fset)
 		return serilizeToJsonStr(result)
 	}
 }
@@ -117,7 +118,7 @@ Parameters:
 Returns:
  It returns and object of map[string]interface{} by converting any 'Struct' type value field to map
 */
-func processMap(object interface{}) interface{} {
+func processMap(object interface{}, fset *token.FileSet) interface{} {
 	value := reflect.ValueOf(object)
 	objMap := make(map[string]interface{})
 	for _, key := range value.MapKeys() {
@@ -143,7 +144,7 @@ func processMap(object interface{}) interface{} {
 			case reflect.String, reflect.Int, reflect.Bool, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64, reflect.Float32, reflect.Float64, reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
 				objMap[key.String()] = objValue.Interface()
 			case reflect.Struct:
-				objMap[key.String()] = processStruct(objValue.Interface(), ptrValue)
+				objMap[key.String()] = processStruct(objValue.Interface(), ptrValue, fset)
 			default:
 				log.SetPrefix("[WARNING]")
 				log.Println(getLogPrefix(), objValue.Kind(), "- not handled")
@@ -163,7 +164,7 @@ func processMap(object interface{}) interface{} {
  Returns:
   It will return []map[string]interface{}
 */
-func processArrayOrSlice(object interface{}) interface{} {
+func processArrayOrSlice(object interface{}, fset *token.FileSet) interface{} {
 	value := reflect.ValueOf(object)
 	var nodeList []interface{}
 	for j := 0; j < value.Len(); j++ {
@@ -183,9 +184,9 @@ func processArrayOrSlice(object interface{}) interface{} {
 		case reflect.String, reflect.Int, reflect.Bool, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64, reflect.Float32, reflect.Float64, reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
 			nodeList = append(nodeList, arrayElementValue.Interface())
 		case reflect.Struct:
-			nodeList = append(nodeList, processStruct(arrayElementValue.Interface(), ptrValue))
+			nodeList = append(nodeList, processStruct(arrayElementValue.Interface(), ptrValue, fset))
 		case reflect.Map:
-			nodeList = append(nodeList, processMap(arrayElementValue.Interface()))
+			nodeList = append(nodeList, processMap(arrayElementValue.Interface(), fset))
 		case reflect.Pointer:
 			if arrayElementValue.Elem().IsValid() {
 				arrayElementValuePtrKind := arrayElementValue.Elem().Kind()
@@ -193,9 +194,9 @@ func processArrayOrSlice(object interface{}) interface{} {
 				case reflect.String, reflect.Int, reflect.Bool, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64, reflect.Float32, reflect.Float64, reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
 					nodeList = append(nodeList, arrayElementValue.Elem().Interface())
 				case reflect.Struct:
-					nodeList = append(nodeList, processStruct(arrayElementValue.Elem().Interface(), ptrValue))
+					nodeList = append(nodeList, processStruct(arrayElementValue.Elem().Interface(), ptrValue, fset))
 				case reflect.Map:
-					nodeList = append(nodeList, processMap(arrayElementValue.Elem().Interface()))
+					nodeList = append(nodeList, processMap(arrayElementValue.Elem().Interface(), fset))
 				default:
 					log.SetPrefix("[WARNING]")
 					log.Println(getLogPrefix(), arrayElementValuePtrKind, "- not handled for array pointer element")
@@ -225,7 +226,7 @@ var lastNodeId int = 1
   It will return object of map[string]interface{} by converting all the child fields recursively into map
 
 */
-func processStruct(node interface{}, objPtrValue reflect.Value) interface{} {
+func processStruct(node interface{}, objPtrValue reflect.Value, fset *token.FileSet) interface{} {
 	objectMap := make(map[string]interface{})
 	elementType := reflect.TypeOf(node)
 	elementValueObj := reflect.ValueOf(node)
@@ -247,7 +248,16 @@ func processStruct(node interface{}, objPtrValue reflect.Value) interface{} {
 			process = false
 			objectMap["node_reference_id"] = refNodeId
 		}
+		if astNode, ok := objPtrValue.Interface().(ast.Node); ok && fset != nil {
+			if pos := astNode.Pos(); pos.IsValid() {
+				position := fset.Position(pos)
+				objectMap["node_filename"] = position.Filename
+				objectMap["node_line_no"] = position.Line
+				objectMap["node_col_no"] = position.Column
+			}
+		}
 	}
+
 	objectMap["node_id"] = lastNodeId
 	lastNodeId++
 	objectMap["node_type"] = elementValueObj.Type().String()
@@ -282,11 +292,11 @@ func processStruct(node interface{}, objPtrValue reflect.Value) interface{} {
 				case reflect.String, reflect.Int, reflect.Bool, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64, reflect.Float32, reflect.Float64, reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
 					objectMap[field.Name] = value.Interface()
 				case reflect.Struct:
-					objectMap[field.Name] = processStruct(value.Interface(), ptrValue)
+					objectMap[field.Name] = processStruct(value.Interface(), ptrValue, fset)
 				case reflect.Map:
-					objectMap[field.Name] = processMap(value.Interface())
+					objectMap[field.Name] = processMap(value.Interface(), fset)
 				case reflect.Array, reflect.Slice:
-					objectMap[field.Name] = processArrayOrSlice(value.Interface())
+					objectMap[field.Name] = processArrayOrSlice(value.Interface(), fset)
 				default:
 					log.SetPrefix("[WARNING]")
 					log.Println(getLogPrefix(), field.Name, "- of Kind ->", fieldKind, "- not handled")
@@ -312,7 +322,7 @@ func processStruct(node interface{}, objPtrValue reflect.Value) interface{} {
   possible return value types could be primitive type, map (map[string]interface{}) or slice ([]interface{})
 
 */
-func serilizeToMap(node interface{}) interface{} {
+func serilizeToMap(node interface{}, fset *token.FileSet) interface{} {
 	var elementType reflect.Type
 	var elementValue reflect.Value
 	var ptrValue reflect.Value
@@ -338,17 +348,17 @@ func serilizeToMap(node interface{}) interface{} {
 		return nil
 	case reflect.Struct:
 		if elementValue.IsValid() {
-			return processStruct(elementValue.Interface(), ptrValue)
+			return processStruct(elementValue.Interface(), ptrValue, fset)
 		}
 		return nil
 	case reflect.Map:
 		if elementValue.IsValid() {
-			return processMap(elementValue.Interface())
+			return processMap(elementValue.Interface(), fset)
 		}
 		return nil
 	case reflect.Array, reflect.Slice:
 		if elementValue.IsValid() {
-			return processArrayOrSlice(elementValue.Interface())
+			return processArrayOrSlice(elementValue.Interface(), fset)
 		}
 		return nil
 	default:

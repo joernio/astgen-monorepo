@@ -13,7 +13,7 @@ func TestMapWithNilPointerCheck(t *testing.T) {
 	mapType["second"] = nilStr
 	mapType["third"] = nilObj
 
-	result := processMap(mapType)
+	result := processMap(mapType, nil)
 
 	expectedResult := make(map[string]interface{})
 	expectedResult["first"] = "first value"
@@ -36,7 +36,7 @@ func TestArrayOfPointerOfMapOfObjectPointerType(t *testing.T) {
 	secondMap["smfirst"] = &third
 	secondMap["smsecond"] = &forth
 	array := [2]*map[string]*Phone{&firstMap, &secondMap}
-	result := processArrayOrSlice(array)
+	result := processArrayOrSlice(array, nil)
 	firstPhone := make(map[string]interface{})
 	firstPhone["PhoneNo"] = "1234567890"
 	firstPhone["Type"] = "Home"
@@ -76,7 +76,7 @@ func TestArrayOfPointerOfMapOfPrimitivesType(t *testing.T) {
 	secondMap["smfirst"] = "smfirstvalue"
 	secondMap["smsecond"] = "smsecondvalue"
 	array := [2]*map[string]string{&firstMap, &secondMap}
-	result := processArrayOrSlice(array)
+	result := processArrayOrSlice(array, nil)
 
 	firstExpectedMap := make(map[string]interface{})
 	firstExpectedMap["fmfirst"] = "fmfirstvalue"
@@ -97,7 +97,7 @@ func TestArrayOfMapOfPrimitivesType(t *testing.T) {
 	secondMap["smfirst"] = "smfirstvalue"
 	secondMap["smsecond"] = "smsecondvalue"
 	array := [2]map[string]string{firstMap, secondMap}
-	result := processArrayOrSlice(array)
+	result := processArrayOrSlice(array, nil)
 
 	firstExpectedMap := make(map[string]interface{})
 	firstExpectedMap["fmfirst"] = "fmfirstvalue"
@@ -120,7 +120,7 @@ func TestMapObjPtrType(t *testing.T) {
 	phones["second"] = &second
 
 	mapType := MapObjPtrType{Id: 90, Phones: phones}
-	result := serilizeToMap(mapType)
+	result := serilizeToMap(mapType, nil)
 	expectedResult := make(map[string]interface{})
 	expectedResult["Id"] = 90
 	expectedResult["node_type"] = "goastgen.MapObjPtrType"
@@ -152,7 +152,7 @@ func TestMapStrPtrType(t *testing.T) {
 	names["firstname"] = &first
 	names["secondname"] = &second
 	mapType := MapStrPtrType{Id: 30, Names: names}
-	result := serilizeToMap(mapType)
+	result := serilizeToMap(mapType, nil)
 	expectedResult := make(map[string]interface{})
 	expectedResult["Id"] = 30
 	expectedResult["node_type"] = "goastgen.MapStrPtrType"
@@ -172,7 +172,7 @@ func TestMapObjType(t *testing.T) {
 	phones["second"] = Phone{PhoneNo: "0987654321", Type: "Office"}
 
 	mapType := MapObjType{Id: 90, Phones: phones}
-	result := serilizeToMap(mapType)
+	result := serilizeToMap(mapType, nil)
 	expectedResult := make(map[string]interface{})
 	expectedResult["Id"] = 90
 	expectedResult["node_type"] = "goastgen.MapObjType"
@@ -201,7 +201,7 @@ func TestMapIntType(t *testing.T) {
 	names["firstname"] = 1000
 	names["secondname"] = 2000
 	mapType := MapIntType{Id: 30, Names: names}
-	result := serilizeToMap(mapType)
+	result := serilizeToMap(mapType, nil)
 	expectedResult := make(map[string]interface{})
 	expectedResult["Id"] = 30
 	expectedResult["node_type"] = "goastgen.MapIntType"
@@ -220,7 +220,7 @@ func TestMapType(t *testing.T) {
 	names["firstname"] = "firstvalue"
 	names["secondname"] = "secondvalue"
 	mapType := MapType{Id: 30, Names: names}
-	result := serilizeToMap(mapType)
+	result := serilizeToMap(mapType, nil)
 	expectedResult := make(map[string]interface{})
 	expectedResult["Id"] = 30
 	expectedResult["node_type"] = "goastgen.MapType"
@@ -241,7 +241,7 @@ func TestSimpleMapType(t *testing.T) {
 	mapType["first"] = &phone1
 	mapType["second"] = &phone2
 
-	result := serilizeToMap(mapType)
+	result := serilizeToMap(mapType, nil)
 	expectedResult := make(map[string]interface{})
 	firstPhone := make(map[string]interface{})
 	firstPhone["PhoneNo"] = "1234567890"

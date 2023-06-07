@@ -81,7 +81,7 @@ func TestInterfaceObjPtrType(t *testing.T) {
 
 	phone := Phone{PhoneNo: "1234567890", Type: "Home"}
 	interfaceObjPtrType := InterfaceStrObjPtrType{Id: 200, Phone: &phone}
-	result := serilizeToMap(interfaceObjPtrType)
+	result := serilizeToMap(interfaceObjPtrType, nil)
 	expectedResult := make(map[string]interface{})
 	expectedResult["Id"] = 200
 	expectedResult["node_type"] = "goastgen.InterfaceStrObjPtrType"
@@ -101,7 +101,7 @@ func TestInterfaceStrPtrType(t *testing.T) {
 
 	sampleStr := "Sample"
 	interfaceStrPtrType := InterfaceStrObjPtrType{Id: 100, Name: &sampleStr}
-	result := serilizeToMap(interfaceStrPtrType)
+	result := serilizeToMap(interfaceStrPtrType, nil)
 	expectedResult := make(map[string]interface{})
 	expectedResult["Id"] = 100
 	expectedResult["Name"] = "Sample"
@@ -119,7 +119,7 @@ func TestObjectWithNullValueCheck(t *testing.T) {
 	}
 
 	simpleObj := SimpleObj{Id: 10}
-	result := serilizeToMap(simpleObj)
+	result := serilizeToMap(simpleObj, nil)
 	expectedResult := make(map[string]interface{})
 	expectedResult["Id"] = 10
 	expectedResult["node_type"] = "goastgen.SimpleObj"
@@ -134,7 +134,7 @@ func TestObjectWithNullValueCheck(t *testing.T) {
 	}
 
 	simpleObjObj := SimpleObjObj{Id: 20}
-	result = serilizeToMap(simpleObjObj)
+	result = serilizeToMap(simpleObjObj, nil)
 	expectedResult = make(map[string]interface{})
 	expectedResult["Id"] = 20
 	expectedResult["node_type"] = "goastgen.SimpleObjObj"
@@ -148,7 +148,7 @@ func TestObjectWithNullValueCheck(t *testing.T) {
 	}
 
 	simpleObjMap := SimpleObjObj{Id: 30}
-	result = serilizeToMap(simpleObjMap)
+	result = serilizeToMap(simpleObjMap, nil)
 	expectedResult = make(map[string]interface{})
 	expectedResult["Id"] = 30
 	expectedResult["node_type"] = "goastgen.SimpleObjObj"
@@ -163,7 +163,7 @@ func TestObjectWithNullValueCheck(t *testing.T) {
 	}
 
 	simpleObjArray := SimpleObjArray{Id: 40}
-	result = serilizeToMap(simpleObjArray)
+	result = serilizeToMap(simpleObjArray, nil)
 	expectedResult = make(map[string]interface{})
 	expectedResult["Id"] = 40
 	expectedResult["node_type"] = "goastgen.SimpleObjArray"
@@ -176,7 +176,7 @@ func TestSimpleTypeWithNullValue(t *testing.T) {
 	lastNodeId = 1
 
 	address := Address{Addone: "First line address"}
-	result := serilizeToMap(address)
+	result := serilizeToMap(address, nil)
 	expectedResult := make(map[string]interface{})
 	expectedResult["Addone"] = "First line address"
 	expectedResult["node_type"] = "goastgen.Address"
@@ -185,7 +185,7 @@ func TestSimpleTypeWithNullValue(t *testing.T) {
 
 	lastNodeId = 1
 	phone := Phone{PhoneNo: "1234567890"}
-	result = serilizeToMap(phone)
+	result = serilizeToMap(phone, nil)
 	expectedResult = make(map[string]interface{})
 	expectedResult["PhoneNo"] = "1234567890"
 	expectedResult["Type"] = ""
@@ -198,7 +198,7 @@ func TestSimpleType(t *testing.T) {
 	lastNodeId = 1
 
 	phone := Phone{PhoneNo: "1234567890", Type: "Home"}
-	result := serilizeToMap(phone)
+	result := serilizeToMap(phone, nil)
 	expectedResult := make(map[string]interface{})
 	expectedResult["PhoneNo"] = "1234567890"
 	expectedResult["Type"] = "Home"
@@ -213,7 +213,7 @@ func TestSimplePointerType(t *testing.T) {
 	addtwo := "Second line address"
 	var p *Address
 	p = &Address{Addone: "First line address", Addtwo: &addtwo}
-	result := serilizeToMap(p)
+	result := serilizeToMap(p, nil)
 	expectedResult := make(map[string]interface{})
 	expectedResult["Addone"] = "First line address"
 	expectedResult["Addtwo"] = "Second line address"
@@ -232,7 +232,7 @@ func TestSecondLevelType(t *testing.T) {
 
 	var p *Person
 	p = &Person{Name: "Sample Name", Address: a}
-	result := serilizeToMap(p)
+	result := serilizeToMap(p, nil)
 	expectedResult := make(map[string]interface{})
 	expectedResult["Name"] = "Sample Name"
 	expectedResult["node_type"] = "goastgen.Person"
@@ -248,11 +248,11 @@ func TestSecondLevelType(t *testing.T) {
 }
 
 func TestSimplePrimitive(t *testing.T) {
-	result := serilizeToMap("Hello")
+	result := serilizeToMap("Hello", nil)
 	assert.Equal(t, "Hello", result, "Simple string test should return same value")
 
 	message := "Hello another message"
-	result = serilizeToMap(&message)
+	result = serilizeToMap(&message, nil)
 
 	assert.Equal(t, "Hello another message", result, "Simple string pointer test should return same value string")
 }
@@ -260,28 +260,28 @@ func TestSimplePrimitive(t *testing.T) {
 func TestSimpleNullCheck(t *testing.T) {
 	var emptyStr string
 
-	result := serilizeToMap(emptyStr)
+	result := serilizeToMap(emptyStr, nil)
 	assert.Equal(t, "", result, "result should be empty string")
 
 	var nilValue *string = nil
-	nilResult := serilizeToMap(nilValue)
+	nilResult := serilizeToMap(nilValue, nil)
 	assert.Nil(t, nilResult, "Null value should return null")
 
 	var nillObj *Phone
 
-	nilResult = serilizeToMap(nillObj)
+	nilResult = serilizeToMap(nillObj, nil)
 	assert.Nil(t, nilResult, "Null object should return null")
 
 	var nillMap *map[string]interface{}
-	nilResult = serilizeToMap(nillMap)
+	nilResult = serilizeToMap(nillMap, nil)
 	assert.Nil(t, nilResult, "Null map should return null")
 
 	var nilSlice *[]string
-	nilResult = serilizeToMap(nilSlice)
+	nilResult = serilizeToMap(nilSlice, nil)
 	assert.Nil(t, nilResult, "Null Slice should return null")
 
 	var nilArray *[2]string
-	nilResult = serilizeToMap(nilArray)
+	nilResult = serilizeToMap(nilArray, nil)
 	assert.Nil(t, nilResult, "Null Array should return null")
 
 }

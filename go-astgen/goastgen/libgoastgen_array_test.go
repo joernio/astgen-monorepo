@@ -10,7 +10,7 @@ func TestArrayWithnillPointerCheck(t *testing.T) {
 	var nilObj *Phone
 	var nilMap *map[string]Phone
 	arrayWithnil := [4]interface{}{"valid string", nilStr, nilObj, nilMap}
-	result := processArrayOrSlice(arrayWithnil)
+	result := processArrayOrSlice(arrayWithnil, nil)
 	expectedResult := []interface{}{"valid string"}
 
 	assert.Equal(t, expectedResult, result, "It should process valid values of the array successfully")
@@ -18,7 +18,7 @@ func TestArrayWithnillPointerCheck(t *testing.T) {
 
 func TestSimpleInterfaceWithArray(t *testing.T) {
 	arrayType := [2]interface{}{"first", "second"}
-	result := processArrayOrSlice(arrayType)
+	result := processArrayOrSlice(arrayType, nil)
 	expectedResult := []interface{}{"first", "second"}
 	assert.Equal(t, expectedResult, result, "Array of interface containing string pointers should match with expected results")
 }
@@ -27,7 +27,7 @@ func TestSimpleInterfaceWithArrayOfPointersType(t *testing.T) {
 	first := "first"
 	second := "second"
 	arrayType := [2]interface{}{&first, &second}
-	result := processArrayOrSlice(arrayType)
+	result := processArrayOrSlice(arrayType, nil)
 	expectedResult := []interface{}{"first", "second"}
 	assert.Equal(t, expectedResult, result, "Array of interface containing string pointers should match with expected results")
 }
@@ -37,7 +37,7 @@ func TestObjectInterfaceWithArrayOfPointers(t *testing.T) {
 	phone1 := Phone{PhoneNo: "1234567890", Type: "Home"}
 	phone2 := Phone{PhoneNo: "0987654321", Type: "Office"}
 	arrayType := [2]interface{}{&phone1, &phone2}
-	result := processArrayOrSlice(arrayType)
+	result := processArrayOrSlice(arrayType, nil)
 	firstPhoneItem := make(map[string]interface{})
 	firstPhoneItem["PhoneNo"] = "1234567890"
 	firstPhoneItem["Type"] = "Home"
@@ -57,7 +57,7 @@ func TestSliceObjctPtrType(t *testing.T) {
 	phone1 := Phone{PhoneNo: "1234567890", Type: "Home"}
 	phone2 := Phone{PhoneNo: "0987654321", Type: "Office"}
 	objArrayType := SliceObjPtrType{Id: 20, PhoneList: []*Phone{&phone1, &phone2}}
-	result := serilizeToMap(objArrayType)
+	result := serilizeToMap(objArrayType, nil)
 	expectedResult := make(map[string]interface{})
 	expectedResult["Id"] = 20
 	expectedResult["node_type"] = "goastgen.SliceObjPtrType"
@@ -83,7 +83,7 @@ func TestArrayPtrType(t *testing.T) {
 	secondStr := "Second"
 	thirdStr := "Third"
 	arrayType := ArrayPtrType{Id: 10, NameList: [3]*string{&firstStr, &secondStr, &thirdStr}}
-	result := serilizeToMap(arrayType)
+	result := serilizeToMap(arrayType, nil)
 	expectedResult := make(map[string]interface{})
 	expectedResult["Id"] = 10
 	expectedResult["node_type"] = "goastgen.ArrayPtrType"
@@ -96,7 +96,7 @@ func TestArrayPtrType(t *testing.T) {
 func TestObjectSliceType(t *testing.T) {
 	lastNodeId = 1
 	objArrayType := ObjectSliceType{Id: 20, PhoneList: []Phone{{PhoneNo: "1234567890", Type: "Home"}, {PhoneNo: "0987654321", Type: "Office"}}}
-	result := serilizeToMap(objArrayType)
+	result := serilizeToMap(objArrayType, nil)
 	expectedResult := make(map[string]interface{})
 	expectedResult["Id"] = 20
 	expectedResult["node_type"] = "goastgen.ObjectSliceType"
@@ -119,7 +119,7 @@ func TestObjectSliceType(t *testing.T) {
 func TestArrayType(t *testing.T) {
 	lastNodeId = 1
 	arrayType := ArrayType{Id: 10, NameList: [3]string{"First", "Second", "Third"}}
-	result := serilizeToMap(arrayType)
+	result := serilizeToMap(arrayType, nil)
 	expectedResult := make(map[string]interface{})
 	expectedResult["Id"] = 10
 	expectedResult["NameList"] = []interface{}{"First", "Second", "Third"}
@@ -131,7 +131,7 @@ func TestArrayType(t *testing.T) {
 func TestSliceType(t *testing.T) {
 	lastNodeId = 1
 	arrayType := SliceType{Id: 10, NameList: []string{"First", "Second"}}
-	result := serilizeToMap(arrayType)
+	result := serilizeToMap(arrayType, nil)
 	expectedResult := make(map[string]interface{})
 	expectedResult["Id"] = 10
 	expectedResult["NameList"] = []interface{}{"First", "Second"}
@@ -147,7 +147,7 @@ func TestSimpleArrayType(t *testing.T) {
 	phone2 := Phone{PhoneNo: "0987654321", Type: "Office"}
 	simplePtrStr := "Simple PTR String"
 	arrayType := []interface{}{&phone1, phone2, "Simple String", 90, &simplePtrStr}
-	result := serilizeToMap(arrayType)
+	result := serilizeToMap(arrayType, nil)
 
 	firstPhone := make(map[string]interface{})
 	firstPhone["PhoneNo"] = "1234567890"

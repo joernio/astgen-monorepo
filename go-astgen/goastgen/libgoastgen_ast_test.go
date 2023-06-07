@@ -16,7 +16,7 @@ func TestRecursivePointerCheck(t *testing.T) {
 	lastNodeId = 1
 	recursivePtrType := RecursivePtrType{Id: 10, Name: "Gajraj"}
 	recursivePtrType.NodePtr = &recursivePtrType
-	result := serilizeToMap(&recursivePtrType)
+	result := serilizeToMap(&recursivePtrType, nil)
 	expectedResult := make(map[string]interface{})
 	expectedResult["Id"] = 10
 	expectedResult["Name"] = "Gajraj"
