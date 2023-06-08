@@ -7,7 +7,7 @@ dist
 .vscode
 .idea
 
-.h
-.lib
-.so
-.dylib
+*.h
+*.lib
+*.so
+*.dylib

@@ -38,7 +38,7 @@ func TestFirst(t *testing.T) {
 		"fmt.Println(\"Hello World\")\n" +
 		"}"
 
-	result := internalParseAstFromSource("helloworld.go", code)
+	result := ParseAstFromSource("helloworld.go", code)
 	fmt.Println(result)
 
 }

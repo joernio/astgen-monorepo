@@ -11,17 +11,7 @@ import (
 	"unsafe"
 )
 
-//export ExternallyCalled
-func ExternallyCalled() *C.char {
-	result := "John"
-	return C.CString(result)
-}
-
-//export Add
-func Add(a int, b int) int {
-	return a + b
-}
-
+// ParseAstFromSource
 /*
  It will parse given source code and generate AST in JSON format
 
@@ -32,7 +22,7 @@ func Add(a int, b int) int {
  Returns:
   If given source is valid go source then it will generate AST in JSON format other will return "" string.
 */
-func internalParseAstFromSource(filename string, src any) string {
+func ParseAstFromSource(filename string, src any) string {
 	fset := token.NewFileSet()
 	parsedAst, err := parser.ParseFile(fset, filename, src, 0)
 	if err != nil {
@@ -43,6 +33,7 @@ func internalParseAstFromSource(filename string, src any) string {
 	return serilizeToJsonStr(result)
 }
 
+//ParseAstFromDir
 /*
  It will parse all the go files in given source folder location and generate AST in JSON format
 
@@ -52,7 +43,7 @@ func internalParseAstFromSource(filename string, src any) string {
  Returns:
   If given directory contains valid go source code then it will generate AST in JSON format otherwise will return "" string.
 */
-func internalParseAstFromDir(dir string) string {
+func ParseAstFromDir(dir string) string {
 	fset := token.NewFileSet()
 	parsedAst, err := parser.ParseDir(fset, dir, nil, 0)
 	if err != nil {
@@ -65,6 +56,7 @@ func internalParseAstFromDir(dir string) string {
 	return serilizeToJsonStr(result)
 }
 
+//ParseAstFromFile
 /*
  It will parse the given file and generate AST in JSON format
 
@@ -74,7 +66,7 @@ func internalParseAstFromDir(dir string) string {
  Returns:
   If given file is a valid go code then it will generate AST in JSON format otherwise will return "" string.
 */
-func internalParseAstFromFile(file string) string {
+func ParseAstFromFile(file string) string {
 	fset := token.NewFileSet()
 	// NOTE: Haven't explore much of mode parameter. Default value has been passed as 0
 	parsedAst, err := parser.ParseFile(fset, file, nil, 0)
@@ -377,7 +369,3 @@ func serilizeToMap(node interface{}, fset *token.FileSet) interface{} {
 	}
 	return nil
 }
-
-// build
-
-//  go build -buildmode=c-shared -o lib-sample.dylib sample.go
