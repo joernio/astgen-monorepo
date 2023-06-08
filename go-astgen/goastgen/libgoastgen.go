@@ -114,6 +114,7 @@ If the value object is of type 'struct' then we are converting it to map[string]
 
 Parameters:
  object: expects map[string] any
+ fset: *token.FileSet - As this library is primarily designed to generate AST JSON. This parameter facilitate adding line, column no and file details to the node.
 
 Returns:
  It returns and object of map[string]interface{} by converting any 'Struct' type value field to map
@@ -160,6 +161,7 @@ func processMap(object interface{}, fset *token.FileSet) interface{} {
 
  Parameters:
   object: []interface{} - expected to pass object of Array or Slice
+  fset: *token.FileSet - As this library is primarily designed to generate AST JSON. This parameter facilitate adding line, column no and file details to the node.
 
  Returns:
   It will return []map[string]interface{}
@@ -188,6 +190,7 @@ func processArrayOrSlice(object interface{}, fset *token.FileSet) interface{} {
 		case reflect.Map:
 			nodeList = append(nodeList, processMap(arrayElementValue.Interface(), fset))
 		case reflect.Pointer:
+			// In case the node is pointer, it will check if given Value contains valid pointer address.
 			if arrayElementValue.Elem().IsValid() {
 				arrayElementValuePtrKind := arrayElementValue.Elem().Kind()
 				switch arrayElementValuePtrKind {
@@ -210,7 +213,10 @@ func processArrayOrSlice(object interface{}, fset *token.FileSet) interface{} {
 	return nodeList
 }
 
-var nodeAddressMap = make(map[interface{}]interface{})
+// We maintain the cache of processed object pointers mapped to their respective node_id
+var nodeAddressMap = make(map[uintptr]interface{})
+
+// Last node id reference
 var lastNodeId int = 1
 
 /*
@@ -221,6 +227,10 @@ var lastNodeId int = 1
 
  Parameters:
   node: Object of struct
+  objPtrValue: reflect.Value - As we cannot get the pointer information from reflect.Value object.
+               If its a pointer that is getting processed, the caller will pass the reflect.Value of pointer.
+               So that it can be used for checking the cache if the given object pointed by the same pointer is already processed or not.
+  fset: *token.FileSet - As this library is primarily designed to generate AST JSON. This parameter facilitate adding line, column no and file details to the node.
 
  Returns:
   It will return object of map[string]interface{} by converting all the child fields recursively into map
@@ -246,8 +256,10 @@ func processStruct(node interface{}, objPtrValue reflect.Value, fset *token.File
 		refNodeId, ok := nodeAddressMap[objAddress]
 		if ok {
 			process = false
+			//if the given object is already processed, then we are adding its respective node_id as a reference_id in this node.
 			objectMap["node_reference_id"] = refNodeId
 		}
+		// Reading and setting column no, line no and file details.
 		if astNode, ok := objPtrValue.Interface().(ast.Node); ok && fset != nil {
 			if pos := astNode.Pos(); pos.IsValid() {
 				position := fset.Position(pos)
@@ -261,6 +273,7 @@ func processStruct(node interface{}, objPtrValue reflect.Value, fset *token.File
 	objectMap["node_id"] = lastNodeId
 	lastNodeId++
 	objectMap["node_type"] = elementValueObj.Type().String()
+
 	if process {
 		if objPtrValue.Kind() == reflect.Pointer {
 			nodeAddressMap[objAddress] = objectMap["node_id"]
@@ -277,6 +290,7 @@ func processStruct(node interface{}, objPtrValue reflect.Value, fset *token.File
 				fieldKind = value.Elem().Kind()
 				value = value.Elem()
 			}
+
 			var ptrValue reflect.Value
 
 			if fieldKind == reflect.Pointer {
@@ -285,8 +299,10 @@ func processStruct(node interface{}, objPtrValue reflect.Value, fset *token.File
 				fieldKind = value.Type().Elem().Kind()
 				// This will fetch the reflect.Value of object pointed to by this field pointer.
 				ptrValue = value
+				// capturing the reflect.Value of the pointer if it's a pointer to be passed to recursive processStruct method.
 				value = value.Elem()
 			}
+			// In case the node is pointer, it will check if given Value contains valid pointer address.
 			if value.IsValid() {
 				switch fieldKind {
 				case reflect.String, reflect.Int, reflect.Bool, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64, reflect.Float32, reflect.Float64, reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
@@ -317,6 +333,7 @@ func processStruct(node interface{}, objPtrValue reflect.Value, fset *token.File
 
  Parameters:
   node: any object
+  fset: *token.FileSet - As this library is primarily designed to generate AST JSON. This parameter facilitate adding line, column no and file details to the node.
 
  Returns:
   possible return value types could be primitive type, map (map[string]interface{}) or slice ([]interface{})
@@ -340,32 +357,25 @@ func serilizeToMap(node interface{}, fset *token.FileSet) interface{} {
 		elementType = nodeType
 		elementValue = nodeValue
 	}
-	switch elementType.Kind() {
-	case reflect.String, reflect.Int, reflect.Bool, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64, reflect.Float32, reflect.Float64, reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
-		if elementValue.IsValid() {
+
+	// In case the node is pointer, it will check if given Value contains valid pointer address.
+	if elementValue.IsValid() {
+		switch elementType.Kind() {
+		case reflect.String, reflect.Int, reflect.Bool, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64, reflect.Float32, reflect.Float64, reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+			return elementValue.Interface()
+		case reflect.Struct:
+			return processStruct(elementValue.Interface(), ptrValue, fset)
+		case reflect.Map:
+			return processMap(elementValue.Interface(), fset)
+		case reflect.Array, reflect.Slice:
+			return processArrayOrSlice(elementValue.Interface(), fset)
+		default:
+			log.SetPrefix("[WARNING]")
+			log.Println(getLogPrefix(), elementType.Kind(), " - not handled")
 			return elementValue.Interface()
 		}
-		return nil
-	case reflect.Struct:
-		if elementValue.IsValid() {
-			return processStruct(elementValue.Interface(), ptrValue, fset)
-		}
-		return nil
-	case reflect.Map:
-		if elementValue.IsValid() {
-			return processMap(elementValue.Interface(), fset)
-		}
-		return nil
-	case reflect.Array, reflect.Slice:
-		if elementValue.IsValid() {
-			return processArrayOrSlice(elementValue.Interface(), fset)
-		}
-		return nil
-	default:
-		log.SetPrefix("[WARNING]")
-		log.Println(getLogPrefix(), elementType.Kind(), " - not handled")
-		return elementValue.Interface()
 	}
+	return nil
 }
 
 // build
