@@ -1,7 +1,9 @@
 package main
 
 import "C"
-import "privado.ai/goastgen/goastgen"
+import (
+	"privado.ai/goastgen/goastgen"
+)
 
 //export ParseAstFromSource
 func ParseAstFromSource(filename *C.char, src *C.char) *C.char {
