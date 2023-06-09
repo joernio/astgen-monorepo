@@ -51,7 +51,9 @@ jobs:
         goarch: [amd64, arm64]
         exclude:
           - goarch: arm64
-            goos.os: windows
+            goos:
+              os: windows
+              libext: dll
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -66,4 +68,3 @@ jobs:
           binary_name: lib-goastgen-${{ matrix.goos.os }}-${{ matrix.goarch }}.${{ matrix.goos.libext }}
           goversion: "https://dl.google.com/go/go1.18.4.linux-amd64.tar.gz"
           asset_name: lib-goastgen-${{ matrix.goos.os }}-${{ matrix.goarch }}
-            
