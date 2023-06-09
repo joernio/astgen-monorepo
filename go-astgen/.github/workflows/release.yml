@@ -15,9 +15,9 @@ jobs:
         with:
           fetch-depth: '0'
       - name: Set up Go
-        uses: actions/setup-go@v2
+        uses: actions/setup-go@v4
         with:
-          go-version: 1.18
+          go-version-file: go.mod
       - name: Get next release version (dry run)
         id: taggerDryRun
         uses: anothrNick/github-tag-action@1.61.0
@@ -32,9 +32,9 @@ jobs:
         run: |
           echo "The current tag is: ${{ steps.taggerDryRun.outputs.tag }}"
       - name: Build C-Shared Libraries
-        run: GOOS=darwin GOARCH=arm64 go build -buildmode=c-shared -o lib-goastgen_macos_arm64.dylib
+        run: GOOS=linux GOARCH=amd64 go build -buildmode=c-shared -o lib-goastgen_linux_amd64.so
       - name: Rename
-        run: mv lib-goastgen_macos_arm64.dylib lib-goastgen_macos_arm.dylib
+        run: mv lib-goastgen_linux_amd64.so lib-goastgen_linux_amd64.so
       - name: Set next release version
         id: taggerFinal
         uses: anothrNick/github-tag-action@1.61.0
@@ -45,4 +45,4 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           tag_name: ${{ steps.taggerDryRun.outputs.new_tag }}
-          files: lib-goastgen_macos_arm.dylib
+          files: lib-goastgen_linux_amd64.so
