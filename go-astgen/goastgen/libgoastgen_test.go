@@ -59,7 +59,6 @@ type MapType struct {
 	Id    int
 	Names map[string]string
 }
-
 type MapStrPtrType struct {
 	Id    int
 	Names map[string]*string
@@ -83,7 +82,7 @@ func TestInterfaceObjPtrType(t *testing.T) {
 	interfaceObjPtrType := InterfaceStrObjPtrType{Id: 200, Phone: &phone}
 	result := serilizeToMap(interfaceObjPtrType, nil)
 	expectedResult := make(map[string]interface{})
-	expectedResult["Id"] = 200
+	expectedResult["Id"] = 201
 	expectedResult["node_type"] = "goastgen.InterfaceStrObjPtrType"
 	expectedResult["node_id"] = 1
 	phoneResult := make(map[string]interface{})
