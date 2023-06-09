@@ -26,7 +26,13 @@ jobs:
           echo "The next tag version will be: ${{ steps.taggerDryRun.outputs.new_tag }}"
       - name: echo tag
         run: |
-          echo "The current tag is: ${{ steps.taggerDryRun.outputs.tag }}"      
+          echo "The current tag is: ${{ steps.taggerDryRun.outputs.tag }}"
+      - name: Set next release version
+        id: taggerFinal
+        uses: anothrNick/github-tag-action@1.61.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          WITH_V: true
 
   release-assets:
     name: Build and Attach Release Assets
@@ -45,7 +51,7 @@ jobs:
         goarch: [amd64, arm64]
         exclude:
           - goarch: arm64
-            goos: windows
+            goos.os: windows
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -59,5 +65,5 @@ jobs:
           project_path: "./"
           binary_name: lib-goastgen-${{ matrix.goos.os }}-${{ matrix.goarch }}.${{ matrix.goos.libext }}
           goversion: "https://dl.google.com/go/go1.18.4.linux-amd64.tar.gz"
-          asset_name: privado-${{ matrix.goos.os }}-${{ matrix.goarch }}
+          asset_name: lib-goastgen-${{ matrix.goos.os }}-${{ matrix.goarch }}
             
