@@ -20,7 +20,6 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           WITH_V: true
-          DRY_RUN: true
       - name: echo new tag
         run: |
           echo "The next tag version will be: ${{ steps.tagger.outputs.new_tag }}"
@@ -48,7 +47,11 @@ jobs:
             goos:
               os: windows
               libext: dll
+    env:
+      CGO_ENABLED: 1
     steps:
+      - name: echo cgo
+        run: echo "cgo env - $CGO_ENABLED "
       - name: Checkout
         uses: actions/checkout@v3
       - name: build and release
