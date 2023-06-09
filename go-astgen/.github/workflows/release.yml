@@ -10,59 +10,43 @@ jobs:
   release:
     name: Create Release
     runs-on: ubuntu-latest
-    outputs:
-      tag: ${{ steps.tagger.outputs.new_tag }}
     steps:
       - uses: actions/checkout@v3
       - name: Get next release version (dry run)
-        id: tagger
+        id: taggerDryRun
         uses: anothrNick/github-tag-action@1.61.0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           WITH_V: true
+          DRY_RUN: true
       - name: echo new tag
         run: |
-          echo "The next tag version will be: ${{ steps.tagger.outputs.new_tag }}"
+          echo "The next tag version will be: ${{ steps.taggerDryRun.outputs.new_tag }}"
       - name: echo tag
         run: |
-          echo "The current tag is: ${{ steps.tagger.outputs.tag }}"
-
-  release-assets:
-    name: Build and Attach Release Assets
-    runs-on: ubuntu-20.04
-    needs: release
-    strategy:
-      matrix:
-        # build and publish in parallel: linux/amd64
-        goos:
-          - os: linux
-            libext: so
-          - os: windows
-            libext: dll
-          - os: darwin
-            libext: dylib
-        goarch: [amd64, arm64]
-        exclude:
-          - goarch: arm64
-            goos:
-              os: windows
-              libext: dll
-    env:
-      CGO_ENABLED: 1
-    steps:
-      - name: echo cgo
-        run: echo "cgo env - $CGO_ENABLED "
-      - name: Checkout
-        uses: actions/checkout@v3
-      - name: build and release
-        uses: wangyoucao577/go-release-action@v1.24
+          echo "The current tag is: ${{ steps.taggerDryRun.outputs.tag }}"
+      - name: build
+        uses: crazy-max/ghaction-xgo@v2
         with:
-          release_tag: ${{ needs.release.outputs.tag }}
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          goos: ${{ matrix.goos.os }}
-          goarch: ${{ matrix.goarch }}
-          project_path: "./"
-          build_flags: -buildmode=c-shared
-          binary_name: lib-goastgen-${{ matrix.goos.os }}-${{ matrix.goarch }}.${{ matrix.goos.libext }}
-          goversion: "https://dl.google.com/go/go1.18.4.linux-amd64.tar.gz"
-          asset_name: lib-goastgen-${{ matrix.goos.os }}-${{ matrix.goarch }}
+          xgo_version: latest
+          go_version: 1.18
+          dest: build
+          prefix: lib-goastgen
+          targets: windows/amd64,linux/amd64,linux/arm64,darwin/arm64,darwin/amd64
+          v: true
+          x: true
+          race: false
+          buildmode: c-shared
+          trimpath: true
+          tags: ${{ steps.taggerDryRun.outputs.new_tag }}
+      - name: Set next release version
+        id: taggerFinal
+        uses: anothrNick/github-tag-action@1.61.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          WITH_V: true
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v2
+        with:
+          name: cshared-libraries
+          path: build/
