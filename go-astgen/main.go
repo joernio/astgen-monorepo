@@ -28,6 +28,4 @@ func main() {
 	fmt.Println("TODO: > Create a CLI interface to take input as source code folder location and generate the AST in JSON format")
 }
 
-// build
-
 // go build -buildmode=c-shared -o lib-goastgen.dylib main.go
