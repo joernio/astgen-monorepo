@@ -59,7 +59,6 @@ type MapType struct {
 	Id    int
 	Names map[string]string
 }
-
 type MapStrPtrType struct {
 	Id    int
 	Names map[string]*string
