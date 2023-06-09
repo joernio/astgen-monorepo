@@ -32,9 +32,14 @@ jobs:
         run: |
           echo "The current tag is: ${{ steps.taggerDryRun.outputs.tag }}"
       - name: Build C-Shared Libraries
-        run: GOOS=darwin GOARCH=amd64 go build -buildmode=c-shared -o lib-goastgen_macos_amd64.dylib
+        run: |
+          sudo apt-get update && sudo apt-get install -y gcc-aarch64-linux-gnu
+          GOOS=linux GOARCH=amd64 go build -buildmode=c-shared -o lib-goastgen_linux_amd64.so
+          GOOS=linux GOARCH=arm64 go build -buildmode=c-shared -o lib-goastgen_linux_arm64.so
       - name: Rename
-        run: mv lib-goastgen_macos_amd64.dylib lib-goastgen_macos.dylib
+        run: |
+          mv lib-goastgen_linux_amd64.so lib-goastgen_linux.so
+          mv lib-goastgen_linux_arm64.so lib-goastgen_linux_arm.so
       - name: Set next release version
         id: taggerFinal
         uses: anothrNick/github-tag-action@1.61.0
@@ -45,7 +50,7 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           tag_name: ${{ steps.taggerDryRun.outputs.new_tag }}
-          files: lib-goastgen_macos.dylib
-
-
-
+          files: |
+            lib-goastgen_linux.so
+            lib-goastgen_linux_arm.so
+            
