@@ -7,17 +7,13 @@ on:
 concurrency: production
 
 jobs:
-  build:
+  release:
+    name: Create Release
     runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.taggerDryRun.outputs.new_tag }}
     steps:
-      - name: Checkout
-        uses: actions/checkout@v3
-        with:
-          fetch-depth: '0'
-      - name: Set up Go
-        uses: actions/setup-go@v4
-        with:
-          go-version-file: go.mod
+      - uses: actions/checkout@v3
       - name: Get next release version (dry run)
         id: taggerDryRun
         uses: anothrNick/github-tag-action@1.61.0
@@ -30,27 +26,32 @@ jobs:
           echo "The next tag version will be: ${{ steps.taggerDryRun.outputs.new_tag }}"
       - name: echo tag
         run: |
-          echo "The current tag is: ${{ steps.taggerDryRun.outputs.tag }}"
-      - name: Build C-Shared Libraries
-        run: |
-          sudo apt-get update && sudo apt-get install -y gcc-aarch64-linux-gnu
-          GOOS=linux GOARCH=amd64 go build -buildmode=c-shared -o lib-goastgen_linux_amd64.so
-          GOOS=linux GOARCH=arm64 go build -buildmode=c-shared -o lib-goastgen_linux_arm64.so
-      - name: Rename
-        run: |
-          mv lib-goastgen_linux_amd64.so lib-goastgen_linux.so
-          mv lib-goastgen_linux_arm64.so lib-goastgen_linux_arm.so
-      - name: Set next release version
-        id: taggerFinal
-        uses: anothrNick/github-tag-action@1.61.0
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          WITH_V: true
-      - name: Release
-        uses: softprops/action-gh-release@v1
+          echo "The current tag is: ${{ steps.taggerDryRun.outputs.tag }}"      
+
+  release-assets:
+    name: Build and Attach Release Assets
+    runs-on: ubuntu-20.04
+    needs: release
+    strategy:
+      matrix:
+        # build and publish in parallel: linux/amd64
+        goos: [{os:linux, libext:so}, {os:windows, libext:dll}, {os:darwin libext:dylib}]
+        goarch: [amd64, arm64]
+        exclude:
+          - goarch: arm64
+            goos: windows
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: build and release
+        uses: wangyoucao577/go-release-action@v1.24
         with:
-          tag_name: ${{ steps.taggerDryRun.outputs.new_tag }}
-          files: |
-            lib-goastgen_linux.so
-            lib-goastgen_linux_arm.so
+          release_tag: ${{ needs.release.outputs.tag }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          goos: ${{ matrix.goos.os }}
+          goarch: ${{ matrix.goarch }}
+          project_path: "./"
+          binary_name: lib-goastgen-${{ matrix.goos.os }}-${{ matrix.goarch }}.${{ matrix.goos.libext }}
+          goversion: "https://dl.google.com/go/go1.18.4.linux-amd64.tar.gz"
+          asset_name: privado-${{ matrix.goos.os }}-${{ matrix.goarch }}
             
