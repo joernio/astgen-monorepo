@@ -3,6 +3,7 @@ package main
 import "C"
 import (
 	"fmt"
+	"os"
 	"privado.ai/goastgen/goastgen"
 )
 
@@ -25,7 +26,11 @@ func ParseAstFromFile(file *C.char) *C.char {
 }
 
 func main() {
-	fmt.Println("TODO: > Create a CLI interface to take input as source code folder location and generate the AST in JSON format")
+	fmt.Println("Trial goastgen")
+	args := os.Args[1:]
+	path := args[0]
+	resultJson := goastgen.ParseAstFromFile(path)
+	fmt.Println(resultJson)
 }
 
 // go build -buildmode=c-shared -o lib-goastgen.dylib main.go

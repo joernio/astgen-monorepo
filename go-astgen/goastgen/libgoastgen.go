@@ -1,6 +1,5 @@
 package goastgen
 
-import "C"
 import (
 	"encoding/json"
 	"go/ast"
