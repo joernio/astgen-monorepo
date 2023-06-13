@@ -8,10 +8,17 @@ concurrency: production
 
 jobs:
   release:
-    name: Create Release
+    name: Build and Release
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: '0'
+      - name: Set up Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: 1.18
       - name: Get next release version (dry run)
         id: taggerDryRun
         uses: anothrNick/github-tag-action@1.61.0
@@ -25,20 +32,13 @@ jobs:
       - name: echo tag
         run: |
           echo "The current tag is: ${{ steps.taggerDryRun.outputs.tag }}"
-      - name: build
-        uses: crazy-max/ghaction-xgo@v2
-        with:
-          xgo_version: latest
-          go_version: 1.18
-          dest: build
-          prefix: lib-goastgen
-          targets: windows/amd64,linux/amd64,linux/arm64,darwin/arm64,darwin/amd64
-          v: true
-          x: true
-          race: false
-          buildmode: c-shared
-          trimpath: true
-          tags: ${{ steps.taggerDryRun.outputs.new_tag }}
+      - name: Build C-Shared Libraries
+        run: |
+          GOOS=linux GOARCH=amd64 go build -o build/goastgen-linux
+          GOOS=linux GOARCH=arm64 go build -o build/goastgen-linux-arm64
+          GOOS=windows GOARCH=amd64 go build -o build/goastgen-windows.exe
+          GOOS=darwin GOARCH=amd64 go build -o build/goastgen-macos
+          GOOS=darwin GOARCH=arm64 go build -o build/goastgen-macos-arm64
       - name: Set next release version
         id: taggerFinal
         uses: anothrNick/github-tag-action@1.61.0
@@ -49,4 +49,9 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           tag_name: ${{ steps.taggerDryRun.outputs.new_tag }}
-          files: build/*
+          files: |
+            build/goastgen-linux
+            build/goastgen-linux-arm64
+            build/goastgen-windows.exe
+            build/goastgen-macos
+            build/goastgen-macos-arm64
