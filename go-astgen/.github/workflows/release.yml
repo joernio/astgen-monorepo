@@ -34,11 +34,11 @@ jobs:
           echo "The current tag is: ${{ steps.taggerDryRun.outputs.tag }}"
       - name: Build
         run: |
-          GOOS=linux GOARCH=amd64 go build -o build/goastgen-linux
-          GOOS=linux GOARCH=arm64 go build -o build/goastgen-linux-arm64
-          GOOS=windows GOARCH=amd64 go build -o build/goastgen-windows.exe
-          GOOS=darwin GOARCH=amd64 go build -o build/goastgen-macos
-          GOOS=darwin GOARCH=arm64 go build -o build/goastgen-macos-arm64
+          GOOS=linux GOARCH=amd64 go build -o build/goastgen-linux -ldflags "-X main.Version=${{ steps.taggerDryRun.outputs.tag }}"
+          GOOS=linux GOARCH=arm64 go build -o build/goastgen-linux-arm64 -ldflags "-X main.Version=${{ steps.taggerDryRun.outputs.tag }}"
+          GOOS=windows GOARCH=amd64 go build -o build/goastgen-windows.exe -ldflags "-X main.Version=${{ steps.taggerDryRun.outputs.tag }}"
+          GOOS=darwin GOARCH=amd64 go build -o build/goastgen-macos -ldflags "-X main.Version=${{ steps.taggerDryRun.outputs.tag }}"
+          GOOS=darwin GOARCH=arm64 go build -o build/goastgen-macos-arm64 -ldflags "-X main.Version=${{ steps.taggerDryRun.outputs.tag }}"
       - name: Set next release version
         id: taggerFinal
         uses: anothrNick/github-tag-action@1.61.0

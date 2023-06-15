@@ -9,6 +9,8 @@ import (
 	"strings"
 )
 
+var Version = "dev"
+
 func main() {
 	out, inputPath := parseArguments()
 	processRequest(out, inputPath)
@@ -58,15 +60,23 @@ func parseArguments() (string, string) {
 	var (
 		out       string
 		inputPath string = ""
+		version   bool
+		help      bool
 	)
 	flag.StringVar(&out, "out", ".ast", "Out put location of ast")
+	flag.BoolVar(&version, "version", false, "print the version")
+	flag.BoolVar(&help, "help", false, "print the usage")
 	flag.Parse()
+	if version {
+		fmt.Println(Version)
+		os.Exit(0)
+	}
 	// Check if positional arguments exist
 	if flag.NArg() > 0 {
 		// Retrieve positional arguments
 		inputPath = flag.Arg(0)
 	}
-	if inputPath == "" {
+	if inputPath == "" || help {
 		fmt.Println("Usage:")
 		fmt.Println("\tgoastgen [falgs] <source location>")
 		fmt.Println()
