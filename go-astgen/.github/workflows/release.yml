@@ -32,7 +32,7 @@ jobs:
       - name: echo tag
         run: |
           echo "The current tag is: ${{ steps.taggerDryRun.outputs.tag }}"
-      - name: Build C-Shared Libraries
+      - name: Build
         run: |
           GOOS=linux GOARCH=amd64 go build -o build/goastgen-linux
           GOOS=linux GOARCH=arm64 go build -o build/goastgen-linux-arm64

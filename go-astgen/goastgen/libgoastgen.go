@@ -254,7 +254,10 @@ func processStruct(node interface{}, objPtrValue reflect.Value, fset *token.File
 		if astNode, ok := objPtrValue.Interface().(ast.Node); ok && fset != nil {
 			if pos := astNode.Pos(); pos.IsValid() {
 				position := fset.Position(pos)
-				objectMap["node_filename"] = position.Filename
+				//Add file information only inside ast.File node which is the root node for a file AST.
+				if elementValueObj.Type().String() == "ast.File" {
+					objectMap["node_filename"] = position.Filename
+				}
 				objectMap["node_line_no"] = position.Line
 				objectMap["node_col_no"] = position.Column
 			}
