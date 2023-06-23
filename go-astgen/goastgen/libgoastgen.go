@@ -21,12 +21,15 @@ import (
  Returns:
   If given source is valid go source then it will generate AST in JSON format other will return "" string.
 */
-func ParseAstFromSource(filename string, src any) string {
+func ParseAstFromSource(filename string, src any) (string, error) {
 	fset := token.NewFileSet()
 	parsedAst, err := parser.ParseFile(fset, filename, src, 0)
 	if err != nil {
 		// TODO: convert this to just warning error log.
-		log.Fatal(err)
+		log.SetPrefix("[ERROR]")
+		log.Println("Error while parsing source from source file -> '", filename, "'")
+		log.Print(err)
+		return "", err
 	}
 	result := serilizeToMap(parsedAst, fset)
 	return serilizeToJsonStr(result)
@@ -42,14 +45,15 @@ func ParseAstFromSource(filename string, src any) string {
  Returns:
   If given directory contains valid go source code then it will generate AST in JSON format otherwise will return "" string.
 */
-func ParseAstFromDir(dir string) string {
+func ParseAstFromDir(dir string) (string, error) {
 	fset := token.NewFileSet()
 	parsedAst, err := parser.ParseDir(fset, dir, nil, 0)
 	if err != nil {
 		// TODO: convert this to just warning error log.
 		log.SetPrefix("[ERROR]")
-		log.Println("Error while parsing source from source directory -> '", dir, ",")
+		log.Println("Error while parsing source from source directory -> '", dir, "'")
 		log.Print(err)
+		return "", err
 	}
 	result := serilizeToMap(parsedAst, fset)
 	return serilizeToJsonStr(result)
@@ -65,7 +69,7 @@ func ParseAstFromDir(dir string) string {
  Returns:
   If given file is a valid go code then it will generate AST in JSON format otherwise will return "" string.
 */
-func ParseAstFromFile(file string) string {
+func ParseAstFromFile(file string) (string, error) {
 	fset := token.NewFileSet()
 	// NOTE: Haven't explore much of mode parameter. Default value has been passed as 0
 	parsedAst, err := parser.ParseFile(fset, file, nil, 0)
@@ -73,11 +77,10 @@ func ParseAstFromFile(file string) string {
 		log.SetPrefix("[ERROR]")
 		log.Println("Error while parsing source file -> '", file, ",")
 		log.Print(err)
-		return ""
-	} else {
-		result := serilizeToMap(parsedAst, fset)
-		return serilizeToJsonStr(result)
+		return "", err
 	}
+	result := serilizeToMap(parsedAst, fset)
+	return serilizeToJsonStr(result)
 }
 
 /*
@@ -89,14 +92,15 @@ func ParseAstFromFile(file string) string {
  Returns:
   JSON string
 */
-func serilizeToJsonStr(objectMap interface{}) string {
+func serilizeToJsonStr(objectMap interface{}) (string, error) {
 	jsonStr, err := json.MarshalIndent(objectMap, "", "  ")
 	if err != nil {
 		log.SetPrefix("[ERROR]")
 		log.Println("Error while generating the AST JSON")
-		log.Print(err)
+		log.Println(err)
+		return "", err
 	}
-	return string(jsonStr)
+	return string(jsonStr), nil
 }
 
 /*

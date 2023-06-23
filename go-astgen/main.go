@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"log"
 	"os"
 	"path/filepath"
 	"privado.ai/goastgen/goastgen"
@@ -20,7 +21,9 @@ func processRequest(out string, inputPath string) {
 	if strings.HasSuffix(inputPath, ".go") {
 		fileInfo, err := os.Stat(inputPath)
 		if err != nil {
-			fmt.Println("Failed to get file info:", err)
+			log.SetPrefix("[ERROR]")
+			log.Println("Failed to get file info:", err)
+			fmt.Printf("Error accessing path '%s'\n", inputPath)
 			return
 		}
 		directory := filepath.Dir(inputPath)
@@ -30,11 +33,25 @@ func processRequest(out string, inputPath string) {
 		} else {
 			outFile = filepath.Join(out, fileInfo.Name()+".json")
 		}
-		writeFileContents(outFile, goastgen.ParseAstFromFile(inputPath))
+		jsonResult, perr := goastgen.ParseAstFromFile(inputPath)
+		if perr != nil {
+			fmt.Printf("Failed to generate AST for %s\n", inputPath)
+			return
+		} else {
+			err = writeFileContents(outFile, jsonResult)
+			if err != nil {
+				fmt.Printf("Error writing AST to output location '%s'\n", outFile)
+			} else {
+				fmt.Printf("Converted AST for %s to %s\n", inputPath, outFile)
+			}
+			return
+		}
 	} else {
 		err := filepath.Walk(inputPath, func(path string, info os.FileInfo, err error) error {
 			if err != nil {
-				fmt.Printf("Error accessing path %s: %v\n", path, err)
+				log.SetPrefix("[ERROR]")
+				log.Printf("Error accessing path %s: %v\n", path, err)
+				fmt.Printf("Error accessing path '%s'\n", path)
 				return err
 			}
 			if !info.IsDir() && strings.HasSuffix(info.Name(), ".go") {
@@ -45,13 +62,25 @@ func processRequest(out string, inputPath string) {
 				} else {
 					outFile = filepath.Join(out, strings.ReplaceAll(directory, inputPath, ""), info.Name()+".json")
 				}
-				writeFileContents(outFile, goastgen.ParseAstFromFile(path))
+				jsonResult, perr := goastgen.ParseAstFromFile(path)
+				if perr != nil {
+					fmt.Printf("Failed to generate AST for %s \n", path)
+				} else {
+					err = writeFileContents(outFile, jsonResult)
+					if err != nil {
+						fmt.Printf("Error writing AST to output location '%s'\n", outFile)
+					} else {
+						fmt.Printf("Converted AST for %s to %s \n", path, outFile)
+					}
+					return nil
+				}
 			}
 			return nil
 		})
 
 		if err != nil {
-			fmt.Printf("Error walking the path %s: %v\n", inputPath, err)
+			log.SetPrefix("[ERROR]")
+			log.Printf("Error walking the path %s: %v\n", inputPath, err)
 		}
 	}
 }
@@ -87,27 +116,31 @@ func parseArguments() (string, string) {
 	return out, inputPath
 }
 
-func writeFileContents(location string, contents string) {
+func writeFileContents(location string, contents string) error {
 	// Open the file for writing (creates a new file if it doesn't exist)
 	dir := filepath.Dir(location)
 
 	// Create all directories recursively
 	err := os.MkdirAll(dir, 0755)
 	if err != nil {
-		fmt.Println("Failed to create file:", err)
-		return
+		log.SetPrefix("[ERROR]")
+		log.Println("Failed to create file:", err)
+		return err
 	}
 	file, err := os.Create(location)
 	if err != nil {
-		fmt.Println("Failed to create file:", err)
-		return
+		log.SetPrefix("[ERROR]")
+		log.Println("Failed to create file:", err)
+		return err
 	}
 	defer file.Close()
 
 	// Write the contents to the file
 	_, err = file.WriteString(contents)
 	if err != nil {
-		fmt.Println("Failed to write to file:", err)
-		return
+		log.SetPrefix("[ERROR]")
+		log.Println("Failed to write to file:", err)
+		return err
 	}
+	return nil
 }
