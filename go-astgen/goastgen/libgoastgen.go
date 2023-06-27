@@ -5,6 +5,8 @@ import (
 	"go/ast"
 	"go/parser"
 	"go/token"
+	"golang.org/x/mod/modfile"
+	"io/ioutil"
 	"log"
 	"reflect"
 	"unsafe"
@@ -81,6 +83,55 @@ func ParseAstFromFile(file string) (string, error) {
 	}
 	result := serilizeToMap(parsedAst, fset)
 	return serilizeToJsonStr(result)
+}
+
+// ParseModFromFile
+/*
+ It will parse the .mod file and generate module and dependency information in JSON format
+
+ Parameters:
+  file: absolute file path to be parsed
+
+ Returns:
+  If given file is a valid .mod file then it will generate the module and dependency information in JSON format
+*/
+func ParseModFromFile(file string) (string, error) {
+	objMap := make(map[string]interface{})
+	contents, err := ioutil.ReadFile(file)
+	if err != nil {
+		log.SetPrefix("[ERROR]")
+		log.Printf("Error while processing '%s' \n", file)
+		log.Println(err)
+		return "", err
+	}
+	modFile, err := modfile.Parse(file, contents, nil)
+	if err != nil {
+		log.SetPrefix("[ERROR]")
+		log.Printf("Error while processing '%s' \n", file)
+		log.Println(err)
+		return "", err
+	}
+	objMap["node_filename"] = file
+	module := make(map[string]interface{})
+	module["name"] = modFile.Module.Mod.Path
+	module["node_line_no"] = modFile.Module.Syntax.Start.Line
+	module["node_col_no"] = modFile.Module.Syntax.Start.LineRune
+	module["node_line_no_end"] = modFile.Module.Syntax.End.Line
+	module["node_col_no_end"] = modFile.Module.Syntax.End.LineRune
+	objMap["module"] = module
+	dependencies := []interface{}{}
+	for _, req := range modFile.Require {
+		node := make(map[string]interface{})
+		node["module"] = req.Mod.Path
+		node["version"] = req.Mod.Version
+		node["node_line_no"] = req.Syntax.Start.Line
+		node["node_col_no"] = req.Syntax.Start.LineRune
+		node["node_line_no_end"] = req.Syntax.End.Line
+		node["node_col_no_end"] = req.Syntax.End.LineRune
+		dependencies = append(dependencies, node)
+	}
+	objMap["dependencies"] = dependencies
+	return serilizeToJsonStr(objMap)
 }
 
 /*

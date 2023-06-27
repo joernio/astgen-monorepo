@@ -74,6 +74,26 @@ func processRequest(out string, inputPath string) {
 					}
 					return nil
 				}
+			} else if strings.HasSuffix(info.Name(), ".mod") {
+				var outFile = ""
+				directory := filepath.Dir(path)
+				if out == ".ast" {
+					outFile = filepath.Join(inputPath, out, strings.ReplaceAll(directory, inputPath, ""), info.Name()+".json")
+				} else {
+					outFile = filepath.Join(out, strings.ReplaceAll(directory, inputPath, ""), info.Name()+".json")
+				}
+				jsonResult, perr := goastgen.ParseModFromFile(path)
+				if perr != nil {
+					fmt.Printf("Failed to generate AST for %s \n", path)
+				} else {
+					err = writeFileContents(outFile, jsonResult)
+					if err != nil {
+						fmt.Printf("Error writing AST to output location '%s'\n", outFile)
+					} else {
+						fmt.Printf("Converted AST for %s to %s \n", path, outFile)
+					}
+					return nil
+				}
 			}
 			return nil
 		})

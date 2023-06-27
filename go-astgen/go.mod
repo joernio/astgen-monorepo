@@ -5,6 +5,7 @@ go 1.18
 require (
 	github.com/google/uuid v1.3.0
 	github.com/stretchr/testify v1.8.4
+	golang.org/x/mod v0.11.0
 )
 
 require (
