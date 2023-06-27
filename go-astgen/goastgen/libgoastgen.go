@@ -265,6 +265,11 @@ func processStruct(node interface{}, objPtrValue reflect.Value, fset *token.File
 				objectMap["node_line_no"] = position.Line
 				objectMap["node_col_no"] = position.Column
 			}
+			if epos := astNode.End(); epos.IsValid() {
+				position := fset.Position(epos)
+				objectMap["node_line_no_end"] = position.Line
+				objectMap["node_col_no_end"] = position.Column
+			}
 		}
 	}
 
