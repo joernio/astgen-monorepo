@@ -13,10 +13,12 @@ type RecursivePtrType struct {
 }
 
 func TestRecursivePointerCheck(t *testing.T) {
-	lastNodeId = 1
+	lastNodeId := 1
+	var nodeAddressMap = make(map[uintptr]interface{})
+
 	recursivePtrType := RecursivePtrType{Id: 10, Name: "Gajraj"}
 	recursivePtrType.NodePtr = &recursivePtrType
-	result := serilizeToMap(&recursivePtrType, nil)
+	result := serilizeToMap(&recursivePtrType, nil, &lastNodeId, nodeAddressMap)
 	expectedResult := make(map[string]interface{})
 	expectedResult["Id"] = 10
 	expectedResult["Name"] = "Gajraj"
