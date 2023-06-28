@@ -113,21 +113,23 @@ func ParseModFromFile(file string) (string, error) {
 	}
 	objMap["node_filename"] = file
 	module := make(map[string]interface{})
-	module["name"] = modFile.Module.Mod.Path
+	module["Name"] = modFile.Module.Mod.Path
 	module["node_line_no"] = modFile.Module.Syntax.Start.Line
 	module["node_col_no"] = modFile.Module.Syntax.Start.LineRune
 	module["node_line_no_end"] = modFile.Module.Syntax.End.Line
 	module["node_col_no_end"] = modFile.Module.Syntax.End.LineRune
-	objMap["module"] = module
+	module["node_type"] = "mod.Module"
+	objMap["Module"] = module
 	dependencies := []interface{}{}
 	for _, req := range modFile.Require {
 		node := make(map[string]interface{})
-		node["module"] = req.Mod.Path
-		node["version"] = req.Mod.Version
+		node["Module"] = req.Mod.Path
+		node["Version"] = req.Mod.Version
 		node["node_line_no"] = req.Syntax.Start.Line
 		node["node_col_no"] = req.Syntax.Start.LineRune
 		node["node_line_no_end"] = req.Syntax.End.Line
 		node["node_col_no_end"] = req.Syntax.End.LineRune
+		node["node_type"] = "mod.Dependency"
 		dependencies = append(dependencies, node)
 	}
 	objMap["dependencies"] = dependencies
