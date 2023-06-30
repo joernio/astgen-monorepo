@@ -368,7 +368,11 @@ func processStruct(node interface{}, objPtrValue reflect.Value, fset *token.File
 			if value.IsValid() {
 				switch fieldKind {
 				case reflect.String, reflect.Int, reflect.Bool, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64, reflect.Float32, reflect.Float64, reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
-					objectMap[field.Name] = value.Interface()
+					if value.Type().String() == "token.Token" {
+						objectMap[field.Name] = value.Interface().(token.Token).String()
+					} else {
+						objectMap[field.Name] = value.Interface()
+					}
 				case reflect.Struct:
 					objectMap[field.Name] = processStruct(value.Interface(), ptrValue, fset, lastNodeId, nodeAddressMap)
 				case reflect.Map:
