@@ -108,9 +108,9 @@ func processRequest(out string, inputPath string) {
 			}
 		}
 
-		println("\n\n\n\n Without error -> ", successCount, ", With Error -> ", failCount)
-		println("total files sent for processing ----> ", totalSentForProcessing)
-		println("No of CPUs --->", concurrency)
+		//println("\n\n\n\n Without error -> ", successCount, ", With Error -> ", failCount)
+		//println("total files sent for processing ----> ", totalSentForProcessing)
+		//println("No of CPUs --->", concurrency)
 		if err != nil {
 			log.SetPrefix("[ERROR]")
 			log.Printf("Error walking the path %s: %v\n", inputPath, err)
