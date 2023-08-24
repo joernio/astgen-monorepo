@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"privado.ai/goastgen/goastgen"
+	"runtime"
 	"strings"
 )
 
@@ -15,6 +16,38 @@ var Version = "dev"
 func main() {
 	out, inputPath := parseArguments()
 	processRequest(out, inputPath)
+}
+
+func processFile(out string, inputPath string, path string, info os.FileInfo, resultErr chan error, sem chan int) {
+	sem <- 1
+	defer func() {
+		<-sem
+	}()
+	var outFile = ""
+	var jsonResult string
+	var err error
+	directory := filepath.Dir(path)
+	if out == ".ast" {
+		outFile = filepath.Join(inputPath, out, strings.ReplaceAll(directory, inputPath, ""), info.Name()+".json")
+	} else {
+		outFile = filepath.Join(out, strings.ReplaceAll(directory, inputPath, ""), info.Name()+".json")
+	}
+	if strings.HasSuffix(info.Name(), ".go") {
+		jsonResult, err = goastgen.ParseAstFromFile(path)
+	} else if strings.HasSuffix(info.Name(), ".mod") {
+		jsonResult, err = goastgen.ParseModFromFile(path)
+	}
+	if err != nil {
+		fmt.Printf("Failed to generate AST for %s \n", path)
+	} else {
+		err = writeFileContents(outFile, jsonResult)
+		if err != nil {
+			fmt.Printf("Error writing AST to output location '%s'\n", outFile)
+		} else {
+			fmt.Printf("Converted AST for %s to %s \n", path, outFile)
+		}
+	}
+	resultErr <- err
 }
 
 func processRequest(out string, inputPath string) {
@@ -47,6 +80,12 @@ func processRequest(out string, inputPath string) {
 			return
 		}
 	} else {
+		concurrency := runtime.NumCPU()
+		var successCount int = 0
+		var failCount int = 0
+		resultErrChan := make(chan error)
+		sem := make(chan int, concurrency)
+		var totalSentForProcessing = 0
 		err := filepath.Walk(inputPath, func(path string, info os.FileInfo, err error) error {
 			if err != nil {
 				log.SetPrefix("[ERROR]")
@@ -54,50 +93,24 @@ func processRequest(out string, inputPath string) {
 				fmt.Printf("Error accessing path '%s'\n", path)
 				return err
 			}
-			if !info.IsDir() && strings.HasSuffix(info.Name(), ".go") {
-				var outFile = ""
-				directory := filepath.Dir(path)
-				if out == ".ast" {
-					outFile = filepath.Join(inputPath, out, strings.ReplaceAll(directory, inputPath, ""), info.Name()+".json")
-				} else {
-					outFile = filepath.Join(out, strings.ReplaceAll(directory, inputPath, ""), info.Name()+".json")
-				}
-				jsonResult, perr := goastgen.ParseAstFromFile(path)
-				if perr != nil {
-					fmt.Printf("Failed to generate AST for %s \n", path)
-				} else {
-					err = writeFileContents(outFile, jsonResult)
-					if err != nil {
-						fmt.Printf("Error writing AST to output location '%s'\n", outFile)
-					} else {
-						fmt.Printf("Converted AST for %s to %s \n", path, outFile)
-					}
-					return nil
-				}
-			} else if strings.HasSuffix(info.Name(), ".mod") {
-				var outFile = ""
-				directory := filepath.Dir(path)
-				if out == ".ast" {
-					outFile = filepath.Join(inputPath, out, strings.ReplaceAll(directory, inputPath, ""), info.Name()+".json")
-				} else {
-					outFile = filepath.Join(out, strings.ReplaceAll(directory, inputPath, ""), info.Name()+".json")
-				}
-				jsonResult, perr := goastgen.ParseModFromFile(path)
-				if perr != nil {
-					fmt.Printf("Failed to generate AST for %s \n", path)
-				} else {
-					err = writeFileContents(outFile, jsonResult)
-					if err != nil {
-						fmt.Printf("Error writing AST to output location '%s'\n", outFile)
-					} else {
-						fmt.Printf("Converted AST for %s to %s \n", path, outFile)
-					}
-					return nil
-				}
+			if !info.IsDir() && (strings.HasSuffix(info.Name(), ".go") || strings.HasSuffix(info.Name(), ".mod")) {
+				totalSentForProcessing++
+				go processFile(out, inputPath, path, info, resultErrChan, sem)
 			}
 			return nil
 		})
+		for i := 0; i < totalSentForProcessing; i++ {
+			err = <-resultErrChan
+			if err != nil {
+				failCount++
+			} else {
+				successCount++
+			}
+		}
 
+		println("\n\n\n\n Without error -> ", successCount, ", With Error -> ", failCount)
+		println("total files sent for processing ----> ", totalSentForProcessing)
+		println("No of CPUs --->", concurrency)
 		if err != nil {
 			log.SetPrefix("[ERROR]")
 			log.Printf("Error walking the path %s: %v\n", inputPath, err)
