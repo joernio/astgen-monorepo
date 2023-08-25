@@ -343,52 +343,46 @@ func processStruct(node interface{}, objPtrValue reflect.Value, fset *token.File
 		// We will iterate through each field process each field according to its reflect.Kind type.
 		for i := 0; i < elementType.NumField(); i++ {
 			field := elementType.Field(i)
-			if field.Name != "Obj" {
-				// It looks like "Obj" field refers to the original method node from inside call expression node.
-				// In the event call expression node gets encountered earlier than the FuncDecl node.
-				// We process this object inside Call Expression and refer to this node inside FuncDecl node.
-				// However, while processing the AST, we need to process the Function Declaration with FuncDecl Node.
-				// As we don't use the "Obj" for any reference
-				value := elementValueObj.Field(i)
-				fieldKind := value.Type().Kind()
 
-				// If object is defined with field type as interface{} and assigned with pointer value.
-				// We need to first fetch the element from the interface
-				if fieldKind == reflect.Interface {
-					fieldKind = value.Elem().Kind()
-					value = value.Elem()
-				}
+			value := elementValueObj.Field(i)
+			fieldKind := value.Type().Kind()
 
-				var ptrValue reflect.Value
+			// If object is defined with field type as interface{} and assigned with pointer value.
+			// We need to first fetch the element from the interface
+			if fieldKind == reflect.Interface {
+				fieldKind = value.Elem().Kind()
+				value = value.Elem()
+			}
 
-				if fieldKind == reflect.Pointer {
-					// NOTE: This handles only one level of pointer. At this moment we don't expect to get pointer to pointer.
-					// This will fetch the reflect.Kind of object pointed to by this field pointer
-					fieldKind = value.Type().Elem().Kind()
-					// This will fetch the reflect.Value of object pointed to by this field pointer.
-					ptrValue = value
-					// capturing the reflect.Value of the pointer if it's a pointer to be passed to recursive processStruct method.
-					value = value.Elem()
-				}
-				// In case the node is pointer, it will check if given Value contains valid pointer address.
-				if value.IsValid() {
-					switch fieldKind {
-					case reflect.String, reflect.Int, reflect.Bool, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64, reflect.Float32, reflect.Float64, reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
-						if value.Type().String() == "token.Token" {
-							objectMap[field.Name] = value.Interface().(token.Token).String()
-						} else {
-							objectMap[field.Name] = value.Interface()
-						}
-					case reflect.Struct:
-						objectMap[field.Name] = processStruct(value.Interface(), ptrValue, fset, lastNodeId, nodeAddressMap)
-					case reflect.Map:
-						objectMap[field.Name] = processMap(value.Interface(), fset, lastNodeId, nodeAddressMap)
-					case reflect.Array, reflect.Slice:
-						objectMap[field.Name] = processArrayOrSlice(value.Interface(), fset, lastNodeId, nodeAddressMap)
-					default:
-						log.SetPrefix("[WARNING]")
-						log.Println(getLogPrefix(), field.Name, "- of Kind ->", fieldKind, "- not handled")
+			var ptrValue reflect.Value
+
+			if fieldKind == reflect.Pointer {
+				// NOTE: This handles only one level of pointer. At this moment we don't expect to get pointer to pointer.
+				// This will fetch the reflect.Kind of object pointed to by this field pointer
+				fieldKind = value.Type().Elem().Kind()
+				// This will fetch the reflect.Value of object pointed to by this field pointer.
+				ptrValue = value
+				// capturing the reflect.Value of the pointer if it's a pointer to be passed to recursive processStruct method.
+				value = value.Elem()
+			}
+			// In case the node is pointer, it will check if given Value contains valid pointer address.
+			if value.IsValid() {
+				switch fieldKind {
+				case reflect.String, reflect.Int, reflect.Bool, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64, reflect.Float32, reflect.Float64, reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+					if value.Type().String() == "token.Token" {
+						objectMap[field.Name] = value.Interface().(token.Token).String()
+					} else {
+						objectMap[field.Name] = value.Interface()
 					}
+				case reflect.Struct:
+					objectMap[field.Name] = processStruct(value.Interface(), ptrValue, fset, lastNodeId, nodeAddressMap)
+				case reflect.Map:
+					objectMap[field.Name] = processMap(value.Interface(), fset, lastNodeId, nodeAddressMap)
+				case reflect.Array, reflect.Slice:
+					objectMap[field.Name] = processArrayOrSlice(value.Interface(), fset, lastNodeId, nodeAddressMap)
+				default:
+					log.SetPrefix("[WARNING]")
+					log.Println(getLogPrefix(), field.Name, "- of Kind ->", fieldKind, "- not handled")
 				}
 			}
 		}
