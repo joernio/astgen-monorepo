@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"privado.ai/goastgen/goastgen"
+	"regexp"
 	"runtime"
 	"strings"
 )
@@ -14,8 +15,8 @@ import (
 var Version = "dev"
 
 func main() {
-	out, inputPath := parseArguments()
-	processRequest(out, inputPath)
+	out, inputPath, excludeFiles := parseArguments()
+	processRequest(out, inputPath, excludeFiles)
 }
 
 func processFile(out string, inputPath string, path string, info os.FileInfo, resultErr chan error, sem chan int) {
@@ -50,7 +51,7 @@ func processFile(out string, inputPath string, path string, info os.FileInfo, re
 	resultErr <- err
 }
 
-func processRequest(out string, inputPath string) {
+func processRequest(out string, inputPath string, excludeFiles string) {
 	if strings.HasSuffix(inputPath, ".go") {
 		fileInfo, err := os.Stat(inputPath)
 		if err != nil {
@@ -94,8 +95,11 @@ func processRequest(out string, inputPath string) {
 				return err
 			}
 			if !info.IsDir() && (strings.HasSuffix(info.Name(), ".go") || strings.HasSuffix(info.Name(), ".mod")) {
-				totalSentForProcessing++
-				go processFile(out, inputPath, path, info, resultErrChan, sem)
+				matched, _ := regexp.MatchString(excludeFiles, info.Name())
+				if excludeFiles == "" || matched == false {
+					totalSentForProcessing++
+					go processFile(out, inputPath, path, info, resultErrChan, sem)
+				}
 			}
 			return nil
 		})
@@ -118,16 +122,18 @@ func processRequest(out string, inputPath string) {
 	}
 }
 
-func parseArguments() (string, string) {
+func parseArguments() (string, string, string) {
 	var (
-		out       string
-		inputPath string = ""
-		version   bool
-		help      bool
+		out          string
+		inputPath    string = ""
+		version      bool
+		help         bool
+		excludeFiles string
 	)
 	flag.StringVar(&out, "out", ".ast", "Out put location of ast")
 	flag.BoolVar(&version, "version", false, "print the version")
 	flag.BoolVar(&help, "help", false, "print the usage")
+	flag.StringVar(&excludeFiles, "exclude", "", "regex to exclude files")
 	flag.Parse()
 	if version {
 		fmt.Println(Version)
@@ -146,7 +152,7 @@ func parseArguments() (string, string) {
 		flag.PrintDefaults()
 		os.Exit(1)
 	}
-	return out, inputPath
+	return out, inputPath, excludeFiles
 }
 
 func writeFileContents(location string, contents string) error {
