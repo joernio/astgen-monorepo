@@ -6,49 +6,45 @@ import (
 )
 
 func TestArrayWithnillPointerCheck(t *testing.T) {
-	lastNodeId := 1
-	var nodeAddressMap = make(map[uintptr]interface{})
+	var goFile = GoFile{File: "", lastNodeId: 1, nodeAddressMap: make(map[uintptr]interface{})}
 
 	var nilStr *string
 	var nilObj *Phone
 	var nilMap *map[string]Phone
 	arrayWithnil := [4]interface{}{"valid string", nilStr, nilObj, nilMap}
-	result := processArrayOrSlice(arrayWithnil, nil, &lastNodeId, nodeAddressMap)
+	result := goFile.processArrayOrSlice(arrayWithnil)
 	expectedResult := []interface{}{"valid string"}
 
 	assert.Equal(t, expectedResult, result, "It should process valid values of the array successfully")
 }
 
 func TestSimpleInterfaceWithArray(t *testing.T) {
-	lastNodeId := 1
-	var nodeAddressMap = make(map[uintptr]interface{})
+	var goFile = GoFile{File: "", lastNodeId: 1, nodeAddressMap: make(map[uintptr]interface{})}
 
 	arrayType := [2]interface{}{"first", "second"}
-	result := processArrayOrSlice(arrayType, nil, &lastNodeId, nodeAddressMap)
+	result := goFile.processArrayOrSlice(arrayType)
 	expectedResult := []interface{}{"first", "second"}
 	assert.Equal(t, expectedResult, result, "Array of interface containing string pointers should match with expected results")
 }
 
 func TestSimpleInterfaceWithArrayOfPointersType(t *testing.T) {
-	lastNodeId := 1
-	var nodeAddressMap = make(map[uintptr]interface{})
+	var goFile = GoFile{File: "", lastNodeId: 1, nodeAddressMap: make(map[uintptr]interface{})}
 
 	first := "first"
 	second := "second"
 	arrayType := [2]interface{}{&first, &second}
-	result := processArrayOrSlice(arrayType, nil, &lastNodeId, nodeAddressMap)
+	result := goFile.processArrayOrSlice(arrayType)
 	expectedResult := []interface{}{"first", "second"}
 	assert.Equal(t, expectedResult, result, "Array of interface containing string pointers should match with expected results")
 }
 
 func TestObjectInterfaceWithArrayOfPointers(t *testing.T) {
-	lastNodeId := 1
-	var nodeAddressMap = make(map[uintptr]interface{})
+	var goFile = GoFile{File: "", lastNodeId: 1, nodeAddressMap: make(map[uintptr]interface{})}
 
 	phone1 := Phone{PhoneNo: "1234567890", Type: "Home"}
 	phone2 := Phone{PhoneNo: "0987654321", Type: "Office"}
 	arrayType := [2]interface{}{&phone1, &phone2}
-	result := processArrayOrSlice(arrayType, nil, &lastNodeId, nodeAddressMap)
+	result := goFile.processArrayOrSlice(arrayType)
 	firstPhoneItem := make(map[string]interface{})
 	firstPhoneItem["PhoneNo"] = "1234567890"
 	firstPhoneItem["Type"] = "Home"
@@ -64,13 +60,12 @@ func TestObjectInterfaceWithArrayOfPointers(t *testing.T) {
 }
 
 func TestSliceObjctPtrType(t *testing.T) {
-	lastNodeId := 1
-	var nodeAddressMap = make(map[uintptr]interface{})
+	var goFile = GoFile{File: "", lastNodeId: 1, nodeAddressMap: make(map[uintptr]interface{})}
 
 	phone1 := Phone{PhoneNo: "1234567890", Type: "Home"}
 	phone2 := Phone{PhoneNo: "0987654321", Type: "Office"}
 	objArrayType := SliceObjPtrType{Id: 20, PhoneList: []*Phone{&phone1, &phone2}}
-	result := serilizeToMap(objArrayType, nil, &lastNodeId, nodeAddressMap)
+	result := goFile.serilizeToMap(objArrayType)
 	expectedResult := make(map[string]interface{})
 	expectedResult["Id"] = 20
 	expectedResult["node_type"] = "goastgen.SliceObjPtrType"
@@ -91,14 +86,13 @@ func TestSliceObjctPtrType(t *testing.T) {
 }
 
 func TestArrayPtrType(t *testing.T) {
-	lastNodeId := 1
-	var nodeAddressMap = make(map[uintptr]interface{})
+	var goFile = GoFile{File: "", lastNodeId: 1, nodeAddressMap: make(map[uintptr]interface{})}
 
 	firstStr := "First"
 	secondStr := "Second"
 	thirdStr := "Third"
 	arrayType := ArrayPtrType{Id: 10, NameList: [3]*string{&firstStr, &secondStr, &thirdStr}}
-	result := serilizeToMap(arrayType, nil, &lastNodeId, nodeAddressMap)
+	result := goFile.serilizeToMap(arrayType)
 	expectedResult := make(map[string]interface{})
 	expectedResult["Id"] = 10
 	expectedResult["node_type"] = "goastgen.ArrayPtrType"
@@ -109,11 +103,10 @@ func TestArrayPtrType(t *testing.T) {
 }
 
 func TestObjectSliceType(t *testing.T) {
-	lastNodeId := 1
-	var nodeAddressMap = make(map[uintptr]interface{})
+	var goFile = GoFile{File: "", lastNodeId: 1, nodeAddressMap: make(map[uintptr]interface{})}
 
 	objArrayType := ObjectSliceType{Id: 20, PhoneList: []Phone{{PhoneNo: "1234567890", Type: "Home"}, {PhoneNo: "0987654321", Type: "Office"}}}
-	result := serilizeToMap(objArrayType, nil, &lastNodeId, nodeAddressMap)
+	result := goFile.serilizeToMap(objArrayType)
 	expectedResult := make(map[string]interface{})
 	expectedResult["Id"] = 20
 	expectedResult["node_type"] = "goastgen.ObjectSliceType"
@@ -134,11 +127,10 @@ func TestObjectSliceType(t *testing.T) {
 }
 
 func TestArrayType(t *testing.T) {
-	lastNodeId := 1
-	var nodeAddressMap = make(map[uintptr]interface{})
+	var goFile = GoFile{File: "", lastNodeId: 1, nodeAddressMap: make(map[uintptr]interface{})}
 
 	arrayType := ArrayType{Id: 10, NameList: [3]string{"First", "Second", "Third"}}
-	result := serilizeToMap(arrayType, nil, &lastNodeId, nodeAddressMap)
+	result := goFile.serilizeToMap(arrayType)
 	expectedResult := make(map[string]interface{})
 	expectedResult["Id"] = 10
 	expectedResult["NameList"] = []interface{}{"First", "Second", "Third"}
@@ -148,10 +140,9 @@ func TestArrayType(t *testing.T) {
 }
 
 func TestSliceType(t *testing.T) {
-	lastNodeId := 1
-	var nodeAddressMap = make(map[uintptr]interface{})
+	var goFile = GoFile{File: "", lastNodeId: 1, nodeAddressMap: make(map[uintptr]interface{})}
 	arrayType := SliceType{Id: 10, NameList: []string{"First", "Second"}}
-	result := serilizeToMap(arrayType, nil, &lastNodeId, nodeAddressMap)
+	result := goFile.serilizeToMap(arrayType)
 	expectedResult := make(map[string]interface{})
 	expectedResult["Id"] = 10
 	expectedResult["NameList"] = []interface{}{"First", "Second"}
@@ -161,14 +152,13 @@ func TestSliceType(t *testing.T) {
 }
 
 func TestSimpleArrayType(t *testing.T) {
-	lastNodeId := 1
-	var nodeAddressMap = make(map[uintptr]interface{})
+	var goFile = GoFile{File: "", lastNodeId: 1, nodeAddressMap: make(map[uintptr]interface{})}
 
 	phone1 := Phone{PhoneNo: "1234567890", Type: "Home"}
 	phone2 := Phone{PhoneNo: "0987654321", Type: "Office"}
 	simplePtrStr := "Simple PTR String"
 	arrayType := []interface{}{&phone1, phone2, "Simple String", 90, &simplePtrStr}
-	result := serilizeToMap(arrayType, nil, &lastNodeId, nodeAddressMap)
+	result := goFile.serilizeToMap(arrayType)
 
 	firstPhone := make(map[string]interface{})
 	firstPhone["PhoneNo"] = "1234567890"

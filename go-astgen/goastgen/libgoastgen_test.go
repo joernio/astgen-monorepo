@@ -76,11 +76,10 @@ type InterfaceStrObjPtrType struct {
 }
 
 func TestInterfaceObjPtrType(t *testing.T) {
-	lastNodeId := 1
-	var nodeAddressMap = make(map[uintptr]interface{})
+	var goFile = GoFile{File: "", lastNodeId: 1, nodeAddressMap: make(map[uintptr]interface{})}
 	phone := Phone{PhoneNo: "1234567890", Type: "Home"}
 	interfaceObjPtrType := InterfaceStrObjPtrType{Id: 200, Phone: &phone}
-	result := serilizeToMap(interfaceObjPtrType, nil, &lastNodeId, nodeAddressMap)
+	result := goFile.serilizeToMap(interfaceObjPtrType)
 	expectedResult := make(map[string]interface{})
 	expectedResult["Id"] = 200
 	expectedResult["node_type"] = "goastgen.InterfaceStrObjPtrType"
@@ -96,11 +95,10 @@ func TestInterfaceObjPtrType(t *testing.T) {
 }
 
 func TestInterfaceStrPtrType(t *testing.T) {
-	lastNodeId := 1
-	var nodeAddressMap = make(map[uintptr]interface{})
+	var goFile = GoFile{File: "", lastNodeId: 1, nodeAddressMap: make(map[uintptr]interface{})}
 	sampleStr := "Sample"
 	interfaceStrPtrType := InterfaceStrObjPtrType{Id: 100, Name: &sampleStr}
-	result := serilizeToMap(interfaceStrPtrType, nil, &lastNodeId, nodeAddressMap)
+	result := goFile.serilizeToMap(interfaceStrPtrType)
 	expectedResult := make(map[string]interface{})
 	expectedResult["Id"] = 100
 	expectedResult["Name"] = "Sample"
@@ -110,53 +108,49 @@ func TestInterfaceStrPtrType(t *testing.T) {
 }
 
 func TestObjectWithNullValueCheck(t *testing.T) {
-	lastNodeId := 1
-	var nodeAddressMap = make(map[uintptr]interface{})
+	var goFile = GoFile{File: "", lastNodeId: 1, nodeAddressMap: make(map[uintptr]interface{})}
 	type SimpleObj struct {
 		Id   int
 		Name *string
 	}
 
 	simpleObj := SimpleObj{Id: 10}
-	result := serilizeToMap(simpleObj, nil, &lastNodeId, nodeAddressMap)
+	result := goFile.serilizeToMap(simpleObj)
 	expectedResult := make(map[string]interface{})
 	expectedResult["Id"] = 10
 	expectedResult["node_type"] = "goastgen.SimpleObj"
 	expectedResult["node_id"] = 1
 	assert.Equal(t, expectedResult, result, "It should not process those fields which contains nil pointer, rest of the fields should be processed")
 
-	lastNodeId = 1
-	nodeAddressMap = make(map[uintptr]interface{})
+	goFile = GoFile{File: "", lastNodeId: 1, nodeAddressMap: make(map[uintptr]interface{})}
 	type SimpleObjObj struct {
 		Id    int
 		Phone *Phone
 	}
 
 	simpleObjObj := SimpleObjObj{Id: 20}
-	result = serilizeToMap(simpleObjObj, nil, &lastNodeId, nodeAddressMap)
+	result = goFile.serilizeToMap(simpleObjObj)
 	expectedResult = make(map[string]interface{})
 	expectedResult["Id"] = 20
 	expectedResult["node_type"] = "goastgen.SimpleObjObj"
 	expectedResult["node_id"] = 1
 	assert.Equal(t, expectedResult, result, "It should not process those fields which contains nil pointer, rest of the fields should be processed")
 
-	lastNodeId = 1
-	nodeAddressMap = make(map[uintptr]interface{})
+	goFile = GoFile{File: "", lastNodeId: 1, nodeAddressMap: make(map[uintptr]interface{})}
 	type SimpleObjMap struct {
 		Id       int
 		Document *map[string]interface{}
 	}
 
 	simpleObjMap := SimpleObjObj{Id: 30}
-	result = serilizeToMap(simpleObjMap, nil, &lastNodeId, nodeAddressMap)
+	result = goFile.serilizeToMap(simpleObjMap)
 	expectedResult = make(map[string]interface{})
 	expectedResult["Id"] = 30
 	expectedResult["node_type"] = "goastgen.SimpleObjObj"
 	expectedResult["node_id"] = 1
 	assert.Equal(t, expectedResult, result, "It should not process those fields which contains nil pointer, rest of the fields should be processed")
 
-	lastNodeId = 1
-	nodeAddressMap = make(map[uintptr]interface{})
+	goFile = GoFile{File: "", lastNodeId: 1, nodeAddressMap: make(map[uintptr]interface{})}
 	type SimpleObjArray struct {
 		Id    int
 		Array *[2]string
@@ -164,7 +158,7 @@ func TestObjectWithNullValueCheck(t *testing.T) {
 	}
 
 	simpleObjArray := SimpleObjArray{Id: 40}
-	result = serilizeToMap(simpleObjArray, nil, &lastNodeId, nodeAddressMap)
+	result = goFile.serilizeToMap(simpleObjArray)
 	expectedResult = make(map[string]interface{})
 	expectedResult["Id"] = 40
 	expectedResult["node_type"] = "goastgen.SimpleObjArray"
@@ -174,20 +168,18 @@ func TestObjectWithNullValueCheck(t *testing.T) {
 }
 
 func TestSimpleTypeWithNullValue(t *testing.T) {
-	lastNodeId := 1
-	var nodeAddressMap = make(map[uintptr]interface{})
+	var goFile = GoFile{File: "", lastNodeId: 1, nodeAddressMap: make(map[uintptr]interface{})}
 	address := Address{Addone: "First line address"}
-	result := serilizeToMap(address, nil, &lastNodeId, nodeAddressMap)
+	result := goFile.serilizeToMap(address)
 	expectedResult := make(map[string]interface{})
 	expectedResult["Addone"] = "First line address"
 	expectedResult["node_type"] = "goastgen.Address"
 	expectedResult["node_id"] = 1
 	assert.Equal(t, expectedResult, result, "Simple type result Map should match with expected result Map")
 
-	lastNodeId = 1
-	nodeAddressMap = make(map[uintptr]interface{})
+	goFile = GoFile{File: "", lastNodeId: 1, nodeAddressMap: make(map[uintptr]interface{})}
 	phone := Phone{PhoneNo: "1234567890"}
-	result = serilizeToMap(phone, nil, &lastNodeId, nodeAddressMap)
+	result = goFile.serilizeToMap(phone)
 	expectedResult = make(map[string]interface{})
 	expectedResult["PhoneNo"] = "1234567890"
 	expectedResult["Type"] = ""
@@ -197,10 +189,9 @@ func TestSimpleTypeWithNullValue(t *testing.T) {
 }
 
 func TestSimpleType(t *testing.T) {
-	lastNodeId := 1
-	var nodeAddressMap = make(map[uintptr]interface{})
+	var goFile = GoFile{File: "", lastNodeId: 1, nodeAddressMap: make(map[uintptr]interface{})}
 	phone := Phone{PhoneNo: "1234567890", Type: "Home"}
-	result := serilizeToMap(phone, nil, &lastNodeId, nodeAddressMap)
+	result := goFile.serilizeToMap(phone)
 	expectedResult := make(map[string]interface{})
 	expectedResult["PhoneNo"] = "1234567890"
 	expectedResult["Type"] = "Home"
@@ -210,12 +201,11 @@ func TestSimpleType(t *testing.T) {
 }
 
 func TestSimplePointerType(t *testing.T) {
-	lastNodeId := 1
-	var nodeAddressMap = make(map[uintptr]interface{})
+	var goFile = GoFile{File: "", lastNodeId: 1, nodeAddressMap: make(map[uintptr]interface{})}
 	addtwo := "Second line address"
 	var p *Address
 	p = &Address{Addone: "First line address", Addtwo: &addtwo}
-	result := serilizeToMap(p, nil, &lastNodeId, nodeAddressMap)
+	result := goFile.serilizeToMap(p)
 	expectedResult := make(map[string]interface{})
 	expectedResult["Addone"] = "First line address"
 	expectedResult["Addtwo"] = "Second line address"
@@ -226,15 +216,14 @@ func TestSimplePointerType(t *testing.T) {
 }
 
 func TestSecondLevelType(t *testing.T) {
-	lastNodeId := 1
-	var nodeAddressMap = make(map[uintptr]interface{})
+	var goFile = GoFile{File: "", lastNodeId: 1, nodeAddressMap: make(map[uintptr]interface{})}
 	addtwo := "Second line address"
 	var a *Address
 	a = &Address{Addone: "First line address", Addtwo: &addtwo}
 
 	var p *Person
 	p = &Person{Name: "Sample Name", Address: a}
-	result := serilizeToMap(p, nil, &lastNodeId, nodeAddressMap)
+	result := goFile.serilizeToMap(p)
 	expectedResult := make(map[string]interface{})
 	expectedResult["Name"] = "Sample Name"
 	expectedResult["node_type"] = "goastgen.Person"
@@ -250,44 +239,42 @@ func TestSecondLevelType(t *testing.T) {
 }
 
 func TestSimplePrimitive(t *testing.T) {
-	lastNodeId := 1
-	var nodeAddressMap = make(map[uintptr]interface{})
-	result := serilizeToMap("Hello", nil, &lastNodeId, nodeAddressMap)
+	var goFile = GoFile{File: "", lastNodeId: 1, nodeAddressMap: make(map[uintptr]interface{})}
+	result := goFile.serilizeToMap("Hello")
 	assert.Equal(t, "Hello", result, "Simple string test should return same value")
 
 	message := "Hello another message"
-	result = serilizeToMap(&message, nil, &lastNodeId, nodeAddressMap)
+	result = goFile.serilizeToMap(&message)
 
 	assert.Equal(t, "Hello another message", result, "Simple string pointer test should return same value string")
 }
 
 func TestSimpleNullCheck(t *testing.T) {
-	lastNodeId := 1
-	var nodeAddressMap = make(map[uintptr]interface{})
+	var goFile = GoFile{File: "", lastNodeId: 1, nodeAddressMap: make(map[uintptr]interface{})}
 	var emptyStr string
 
-	result := serilizeToMap(emptyStr, nil, &lastNodeId, nodeAddressMap)
+	result := goFile.serilizeToMap(emptyStr)
 	assert.Equal(t, "", result, "result should be empty string")
 
 	var nilValue *string = nil
-	nilResult := serilizeToMap(nilValue, nil, &lastNodeId, nodeAddressMap)
+	nilResult := goFile.serilizeToMap(nilValue)
 	assert.Nil(t, nilResult, "Null value should return null")
 
 	var nillObj *Phone
 
-	nilResult = serilizeToMap(nillObj, nil, &lastNodeId, nodeAddressMap)
+	nilResult = goFile.serilizeToMap(nillObj)
 	assert.Nil(t, nilResult, "Null object should return null")
 
 	var nillMap *map[string]interface{}
-	nilResult = serilizeToMap(nillMap, nil, &lastNodeId, nodeAddressMap)
+	nilResult = goFile.serilizeToMap(nillMap)
 	assert.Nil(t, nilResult, "Null map should return null")
 
 	var nilSlice *[]string
-	nilResult = serilizeToMap(nilSlice, nil, &lastNodeId, nodeAddressMap)
+	nilResult = goFile.serilizeToMap(nilSlice)
 	assert.Nil(t, nilResult, "Null Slice should return null")
 
 	var nilArray *[2]string
-	nilResult = serilizeToMap(nilArray, nil, &lastNodeId, nodeAddressMap)
+	nilResult = goFile.serilizeToMap(nilArray)
 	assert.Nil(t, nilResult, "Null Array should return null")
 
 }

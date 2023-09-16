@@ -13,12 +13,11 @@ type RecursivePtrType struct {
 }
 
 func TestRecursivePointerCheck(t *testing.T) {
-	lastNodeId := 1
-	var nodeAddressMap = make(map[uintptr]interface{})
+	var goFile = GoFile{File: "", lastNodeId: 1, nodeAddressMap: make(map[uintptr]interface{})}
 
 	recursivePtrType := RecursivePtrType{Id: 10, Name: "Gajraj"}
 	recursivePtrType.NodePtr = &recursivePtrType
-	result := serilizeToMap(&recursivePtrType, nil, &lastNodeId, nodeAddressMap)
+	result := goFile.serilizeToMap(&recursivePtrType)
 	expectedResult := make(map[string]interface{})
 	expectedResult["Id"] = 10
 	expectedResult["Name"] = "Gajraj"
@@ -39,8 +38,8 @@ func TestFirst(t *testing.T) {
 		"func main() {\n" +
 		"fmt.Println(\"Hello World\")\n" +
 		"}"
-
-	result, _ := ParseAstFromSource("helloworld.go", code)
+	var goFile = GoFile{File: "helloworld.go"}
+	result, _ := goFile.ParseAstFromSource(code)
 	fmt.Println(result)
 
 }
