@@ -12,7 +12,7 @@ The AST is created by using SwiftSyntax.
 ## Building
 
 ```bash
-swift build
+> swift build
 ```
 
 ## Getting Help
@@ -28,7 +28,7 @@ Options:
 
 ## Example
 
-Navigate to the project and run `astgen` command.
+Navigate to the project and run `SwiftAstGen`.
 
 ```bash
 > cd <path to project>
