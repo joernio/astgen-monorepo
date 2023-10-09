@@ -1,33 +1,31 @@
 import Foundation
 
 final class TreeNode: Codable {
-  let id: Int
-  var parent: Int?
+  var index: Int
+  var name: String
+  var tokenKind: String
+  var nodeType: String
+  var range: Range
+  var children: [TreeNode]
 
-  var text: String
-  var range = Range(startRow: 0, startColumn: 0, graphemeStartColumn: 0, endRow: 0, endColumn: 0, graphemeEndColumn: 0)
-  var structure = [StructureProperty]()
-  var type: SyntaxType
-  var token: Token?
-  var `class`: String?
-
-  init(id: Int, text: String, range: Range, type: SyntaxType) {
-    self.id = id
-    self.text = text
+  init(tokenKind: String, nodeType: String, range: Range, children: [TreeNode]) {
+    self.index = -1
+    self.name = ""
+    self.tokenKind = tokenKind
+    self.nodeType = nodeType
     self.range = range
-    self.type = type
+    self.children = children
   }
 }
 
 extension TreeNode: Equatable {
   static func == (lhs: TreeNode, rhs: TreeNode) -> Bool {
-    lhs.id == rhs.id &&
-    lhs.parent == rhs.parent &&
-    lhs.text == rhs.text &&
+    lhs.index == rhs.index &&
+    lhs.name == rhs.name &&
+    lhs.tokenKind == rhs.tokenKind &&
+    lhs.nodeType == rhs.nodeType &&
     lhs.range == rhs.range &&
-    lhs.structure == rhs.structure &&
-    lhs.type == rhs.type &&
-    lhs.token == rhs.token
+    lhs.children == rhs.children
   }
 }
 
@@ -35,113 +33,32 @@ extension TreeNode: CustomStringConvertible {
   var description: String {
     """
     {
-      id: \(id)
-      parent: \(String(describing: parent))
-      text: \(text)
+      index: \(name)
+      name: \(name)
+      tokenKind: \(tokenKind)
+      nodeType: \(nodeType)
       range: \(range)
-      structure: \(structure)
-      type: \(type)
-      token: \(String(describing: token))
+      children: \(String(describing: children))
     }
     """
   }
 }
 
 struct Range: Codable, Equatable {
-  let startRow: Int
+  let startLine: Int
   let startColumn: Int
-  let graphemeStartColumn: Int
-  let endRow: Int
+  let endLine: Int
   let endColumn: Int
-  let graphemeEndColumn: Int
 }
 
 extension Range: CustomStringConvertible {
   var description: String {
     """
     {
-      startRow: \(startRow)
+      startLine: \(startLine)
       startColumn: \(startColumn)
-      endRow: \(endRow)
+      endLine: \(endLine)
       endColumn: \(endColumn)
-    }
-    """
-  }
-}
-
-struct StructureProperty: Codable, Equatable {
-  let name: String
-  let value: StructureValue?
-  let ref: String?
-
-  init(name: String, value: StructureValue? = nil, ref: String? = nil) {
-    self.name = name
-    self.value = value
-    self.ref = ref
-  }
-}
-
-extension StructureProperty: CustomStringConvertible {
-  var description: String {
-    """
-    {
-      name: \(name)
-      value: \(String(describing: value))
-      ref: \(String(describing: ref))
-    }
-    """
-  }
-}
-
-struct StructureValue: Codable, Equatable {
-  let text: String
-  let kind: String?
-
-  init(text: String, kind: String? = nil) {
-    self.text = text
-    self.kind = kind
-  }
-}
-
-extension StructureValue: CustomStringConvertible {
-  var description: String {
-    """
-    {
-      text: \(text)
-      kind: \(String(describing: kind))
-    }
-    """
-  }
-}
-
-enum SyntaxType: String, Codable {
-  case decl
-  case expr
-  case pattern
-  case type
-  case collection
-  case other
-}
-
-struct Token: Codable, Equatable {
-  let kind: String
-  var leadingTrivia: String
-  var trailingTrivia: String
-
-  init(kind: String, leadingTrivia: String, trailingTrivia: String) {
-    self.kind = kind
-    self.leadingTrivia = leadingTrivia
-    self.trailingTrivia = trailingTrivia
-  }
-}
-
-extension Token: CustomStringConvertible {
-  var description: String {
-    """
-    {
-      kind: \(kind)
-      leadingTrivia: \(leadingTrivia)
-      trailingTrivia: \(trailingTrivia)
     }
     """
   }
