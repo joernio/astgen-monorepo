@@ -4,6 +4,9 @@ import PackageDescription
 
 let package = Package(
     name: "SwiftAstGen",
+    platforms: [
+        .macOS(.v10_15)
+    ],
     dependencies: [
         .package(url: "https://github.com/apple/swift-argument-parser", from: "1.2.0"),
         .package(url: "https://github.com/apple/swift-log.git", from: "1.0.0"),
