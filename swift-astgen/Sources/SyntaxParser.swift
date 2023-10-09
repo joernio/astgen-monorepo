@@ -15,6 +15,8 @@ public extension SyntaxProtocol {
 
     let sourceRange = sourceRange(converter: converter)
     let rangeNode = Range(
+      startOffset: sourceRange.start.offset,
+      endOffset: sourceRange.end.offset,
       startLine: sourceRange.start.line,
       startColumn: sourceRange.start.column,
       endLine: sourceRange.end.line,

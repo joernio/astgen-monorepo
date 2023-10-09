@@ -45,6 +45,8 @@ extension TreeNode: CustomStringConvertible {
 }
 
 struct Range: Codable, Equatable {
+  let startOffset: Int
+  let endOffset: Int
   let startLine: Int
   let startColumn: Int
   let endLine: Int
@@ -55,6 +57,8 @@ extension Range: CustomStringConvertible {
   var description: String {
     """
     {
+      startOffset: \(startOffset)
+      endOffset: \(endOffset)
       startLine: \(startLine)
       startColumn: \(startColumn)
       endLine: \(endLine)
