@@ -1,0 +1,68 @@
+name: release
+
+on:
+  push:
+    branches: [master, main]
+    tags: ["*"]
+
+concurrency: production
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: '0'
+      - name: Install swift
+        uses: swift-actions/setup-swift@v1
+      - name: Get next release version (dry run)
+        id: taggerDryRun
+        uses: anothrNick/github-tag-action@1.61.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          WITH_V: true
+          DRY_RUN: true
+      - name: echo new tag
+        run: |
+          echo "The next tag version will be: ${{ steps.taggerDryRun.outputs.new_tag }}"
+      - name: echo tag
+        run: |
+          echo "The current tag is: ${{ steps.taggerDryRun.outputs.tag }}"
+      - name: Run Linux Build
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          swift build -c release
+          mv ./.build/release/SwiftAstGen SwiftAstGen-linux
+          gzexe SwiftAstGen-linux
+          chmod +x SwiftAstGen-linux     
+      - name: Run Mac Build
+        if: matrix.os == 'macos-latest'
+        run: |
+          swift build -c release
+          mv ./.build/release/SwiftAstGen SwiftAstGen-mac
+          chmod +x SwiftAstGen-mac
+      - name: Run Windows Build
+        if: matrix.os == 'windows-latest'
+        run: |
+          swift build -c release
+          mv .\.build\release\SwiftAstGen.exe SwiftAstGen-win.exe
+      - name: Set next release version
+        id: taggerFinal
+        uses: anothrNick/github-tag-action@1.61.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          WITH_V: true
+      - name: Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ steps.taggerDryRun.outputs.new_tag }}
+          files: |
+            SwiftAstGen-linux
+            SwiftAstGen-mac
+            SwiftAstGen-win.exe
+            
