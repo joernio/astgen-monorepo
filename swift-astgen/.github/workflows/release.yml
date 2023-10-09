@@ -24,6 +24,8 @@ jobs:
           fetch-depth: '0'
       - name: Install swift
         uses: swift-actions/setup-swift@v1
+        with:
+          swift-version: ${{ matrix.swift }}
       - name: Get next release version (dry run)
         id: taggerDryRun
         uses: anothrNick/github-tag-action@1.61.0
