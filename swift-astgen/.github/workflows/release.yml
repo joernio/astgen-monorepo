@@ -23,7 +23,7 @@ jobs:
         with:
           fetch-depth: '0'
       - name: Install swift
-        uses: swift-actions/setup-swift@v1
+        uses: swift-actions/setup-swift@v1.25.0
         with:
           swift-version: ${{ matrix.swift }}
       - name: Run Linux Build
