@@ -35,20 +35,18 @@ jobs:
       - name: Run Linux Build
         if: matrix.os == 'ubuntu-latest'
         run: |
-          swift build -c release
+          swift build -c release --arch arm64 --arch x86_64
           mv ./.build/release/SwiftAstGen SwiftAstGen-linux
           gzexe SwiftAstGen-linux
-          chmod +x SwiftAstGen-linux     
       - name: Run Mac Build
         if: matrix.os == 'macos-latest'
         run: |
-          swift build -c release
+          swift build -c release --arch arm64 --arch x86_64
           mv ./.build/release/SwiftAstGen SwiftAstGen-mac
-          chmod +x SwiftAstGen-mac
       - name: Run Windows Build
         if: matrix.os == 'windows-latest'
         run: |
-          swift build -c release
+          swift build -c release --arch arm64 --arch x86_64
           mv .\.build\release\SwiftAstGen.exe SwiftAstGen-win.exe
       - name: Release
         uses: softprops/action-gh-release@v1
