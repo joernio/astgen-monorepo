@@ -21,52 +21,66 @@ class SwiftAstGenerator {
 		)
 	}
 
-	private func filter(fileURL: URL) throws -> Bool {
-		let fileAttributes = try fileURL.resourceValues(forKeys: [.isRegularFileKey])
-		return fileAttributes.isRegularFile! 
-			&& !fileURL.path.contains("/.")
-			&& !fileURL.path.contains("/__")
-			&& !fileURL.path.contains("/Tests/")
-			&& !fileURL.path.contains("/Specs/")
-			&& !fileURL.path.contains("/Test/")
-			&& !fileURL.path.contains("/Spec/")
-			&& fileURL.path.hasSuffix(".swift")
+	private func ignoreDirectory(name: String) -> Bool {
+		return name.starts(with: ".")
+			|| name.starts(with: "__")
+			|| name.starts(with: "Tests/")
+			|| name.starts(with: "Specs/")
+			|| name.starts(with: "Test/")
+			|| name.starts(with: "Spec/")
 	}
 
 	func generate() throws {
-		if let enumerator = FileManager.default.enumerator(at: srcDir, includingPropertiesForKeys: [.isRegularFileKey], options: [.skipsHiddenFiles, .skipsPackageDescendants]) {
-    		for case let fileURL as URL in enumerator {
-        		if try filter(fileURL: fileURL) {
-            		do {
-            			let astJson = try SyntaxParser.parse(fileURL: fileURL)
+		let localFileManager = FileManager()
+		let resourceKeys = Set<URLResourceKey>([.nameKey, .isDirectoryKey, .isRegularFileKey])
+		let directoryEnumerator = localFileManager.enumerator(
+			at: srcDir,
+			includingPropertiesForKeys: Array(resourceKeys),
+			options: [.skipsHiddenFiles, .skipsPackageDescendants])!
 
-						let str = fileURL.absoluteString
-						let replaced = str.replacingOccurrences(of: srcDir.absoluteString, with: "")
-            			let outFile = outputDir.appendingPathComponent(replaced).deletingPathExtension().appendingPathExtension("json")
-						let dirUrl = outFile.deletingLastPathComponent()
+		for case let fileURL as URL in directoryEnumerator {
+			guard let resourceValues = try? fileURL.resourceValues(forKeys: resourceKeys),
+				let isDirectory = resourceValues.isDirectory,
+				let isRegularFile = resourceValues.isRegularFile,
+				let name = resourceValues.name
+				else {
+					continue
+			}
+			
+			if isDirectory {
+				if ignoreDirectory(name: name) {
+					directoryEnumerator.skipDescendants()
+				}
+			} else if isRegularFile && name.hasSuffix(".swift") {
+				do {
+					let astJsonString = try SyntaxParser.parse(fileURL: fileURL)
 
-						try FileManager.default.createDirectory(
-							atPath: dirUrl.path,
-							withIntermediateDirectories: true,
-							attributes: nil
-						)
+					let absoluteFilePath = fileURL.absoluteString
+					let relativeFilePath = absoluteFilePath.replacingOccurrences(of: srcDir.absoluteString, with: "")
+					let outFileUrl = outputDir.appendingPathComponent(relativeFilePath).deletingPathExtension().appendingPathExtension("json")
+					let outfileDirUrl = outFileUrl.deletingLastPathComponent()
 
-            			FileManager.default.createFile(
-							atPath: outFile.path,
-							contents: nil,
-							attributes: nil
-						)
-            			try astJson.write(
-							to: outFile,
-							atomically: true,
-							encoding: String.Encoding.utf8
-						)
-						logger.warning("Generated AST for file: `\(fileURL.path)`")
-        			} catch {
-        				logger.warning("Parsing failed for file: \(fileURL.path) (\(error))")
-        			}
-        		}
-    		}
+					try FileManager.default.createDirectory(
+						atPath: outfileDirUrl.path,
+						withIntermediateDirectories: true,
+						attributes: nil
+					)
+
+					FileManager.default.createFile(
+						atPath: outFileUrl.path,
+						contents: nil,
+						attributes: nil
+					)
+					try astJsonString.write(
+						to: outFileUrl,
+						atomically: true,
+						encoding: String.Encoding.utf8
+					)
+					logger.info("Generated AST for file: `\(fileURL.path)`")
+				} catch {
+					logger.warning("Parsing failed for file: `\(fileURL.path)` (\(error))")
+				}
+			}
 		}
 	}
 

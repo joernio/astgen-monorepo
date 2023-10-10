@@ -1,6 +1,5 @@
 import ArgumentParser
 import Foundation
-import Logging
 
 struct Defaults {
 	static let defaultSrcDir = "."
@@ -23,7 +22,7 @@ struct SwiftAstGen: ParsableCommand {
     	transform: URL.init(fileURLWithPath:))
   	var output: URL = URL(fileURLWithPath: Defaults.defaultOutDir)
 
-  	mutating func validate() throws {
+  	func validate() throws {
     	guard FileManager.default.fileExists(atPath: src.path) else {
       		throw ValidationError("Directory does not exist: `\(src.path)`")
     	}
@@ -31,14 +30,7 @@ struct SwiftAstGen: ParsableCommand {
 }
 
 extension SwiftAstGen {
-	var logger: Logger {
-		get { Logger(label: "io.joern.SwiftAstGen") }
-	}
-
-    mutating func run() throws {
-      logger.info("Src directory is: `\(src.path)`")
-      logger.info("Out directory is: `\(output.path)`")
-
+    func run() throws {
       try SwiftAstGenerator(srcDir: src, outputDir: output).generate()
     }
 

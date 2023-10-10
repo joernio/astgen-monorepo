@@ -1,5 +1,3 @@
-import Foundation
-
 final class TreeNode: Codable {
   var index: Int
   var name: String
@@ -15,17 +13,6 @@ final class TreeNode: Codable {
     self.nodeType = nodeType
     self.range = range
     self.children = children
-  }
-}
-
-extension TreeNode: Equatable {
-  static func == (lhs: TreeNode, rhs: TreeNode) -> Bool {
-    lhs.index == rhs.index &&
-    lhs.name == rhs.name &&
-    lhs.tokenKind == rhs.tokenKind &&
-    lhs.nodeType == rhs.nodeType &&
-    lhs.range == rhs.range &&
-    lhs.children == rhs.children
   }
 }
 

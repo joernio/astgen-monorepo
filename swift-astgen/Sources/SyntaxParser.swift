@@ -1,6 +1,5 @@
 import Foundation
 @_spi(RawSyntax) import SwiftSyntax
-import SwiftOperators
 import SwiftParser
 
 public extension SyntaxProtocol {
@@ -56,4 +55,5 @@ struct SyntaxParser {
 
     return String(decoding: try JSONEncoder().encode(jsonNode), as: UTF8.self)
   }
+
 }
