@@ -1,8 +1,8 @@
 import Foundation
-@_spi(RawSyntax) import SwiftSyntax
 import SwiftParser
+@_spi(RawSyntax) import SwiftSyntax
 
-public extension SyntaxProtocol {
+extension SyntaxProtocol {
   internal func toJson(converter: SourceLocationConverter) -> TreeNode {
     var tokenKind = ""
     var nodeType = ""
@@ -39,7 +39,8 @@ public extension SyntaxProtocol {
       childrenNodes.append(childNode)
     }
 
-    return TreeNode(tokenKind: tokenKind, nodeType: nodeType, range: rangeNode, children: childrenNodes)
+    return TreeNode(
+      tokenKind: tokenKind, nodeType: nodeType, range: rangeNode, children: childrenNodes)
   }
 }
 
