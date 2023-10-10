@@ -5,6 +5,8 @@ class SwiftAstGenerator {
 
 	private var srcDir: URL
 	private var outputDir: URL
+	private let fileManager = FileManager.default
+	private let availableProcessors = ProcessInfo.processInfo.activeProcessorCount
 
 	private var logger: Logger = Logger(label: "io.joern.SwiftAstGenerator")
 
@@ -30,21 +32,55 @@ class SwiftAstGenerator {
 			|| name.starts(with: "Spec/")
 	}
 
+	private func parseFile(fileUrl: URL) {
+		do {
+			let astJsonString = try SyntaxParser.parse(fileURL: fileUrl)
+			let absoluteFilePath = fileUrl.absoluteString
+			let relativeFilePath = absoluteFilePath.replacingOccurrences(of: srcDir.absoluteString, with: "")
+			let outFileUrl = outputDir.appendingPathComponent(relativeFilePath).deletingPathExtension().appendingPathExtension("json")
+			let outfileDirUrl = outFileUrl.deletingLastPathComponent()
+
+			try fileManager.createDirectory(
+				atPath: outfileDirUrl.path,
+				withIntermediateDirectories: true,
+				attributes: nil
+			)
+
+			fileManager.createFile(
+				atPath: outFileUrl.path,
+				contents: nil,
+				attributes: nil
+			)
+			try astJsonString.write(
+				to: outFileUrl,
+				atomically: true,
+				encoding: String.Encoding.utf8
+			)
+			logger.info("Generated AST for file: `\(fileUrl.path)`")
+		} catch {
+			logger.warning("Parsing failed for file: `\(fileUrl.path)` (\(error))")
+		}
+	}
+
 	func generate() throws {
-		let localFileManager = FileManager()
 		let resourceKeys = Set<URLResourceKey>([.nameKey, .isDirectoryKey, .isRegularFileKey])
-		let directoryEnumerator = localFileManager.enumerator(
+		let directoryEnumerator = fileManager.enumerator(
 			at: srcDir,
 			includingPropertiesForKeys: Array(resourceKeys),
 			options: [.skipsHiddenFiles, .skipsPackageDescendants])!
 
-		for case let fileURL as URL in directoryEnumerator {
-			guard let resourceValues = try? fileURL.resourceValues(forKeys: resourceKeys),
+		let queue = OperationQueue()
+		queue.name = "SwiftAstGen"
+		queue.qualityOfService = .userInitiated
+		queue.maxConcurrentOperationCount = availableProcessors
+
+		for case let fileUrl as URL in directoryEnumerator {
+			guard let resourceValues = try? fileUrl.resourceValues(forKeys: resourceKeys),
 				let isDirectory = resourceValues.isDirectory,
 				let isRegularFile = resourceValues.isRegularFile,
 				let name = resourceValues.name
-				else {
-					continue
+			else {
+				continue
 			}
 			
 			if isDirectory {
@@ -52,36 +88,13 @@ class SwiftAstGenerator {
 					directoryEnumerator.skipDescendants()
 				}
 			} else if isRegularFile && name.hasSuffix(".swift") {
-				do {
-					let astJsonString = try SyntaxParser.parse(fileURL: fileURL)
-
-					let absoluteFilePath = fileURL.absoluteString
-					let relativeFilePath = absoluteFilePath.replacingOccurrences(of: srcDir.absoluteString, with: "")
-					let outFileUrl = outputDir.appendingPathComponent(relativeFilePath).deletingPathExtension().appendingPathExtension("json")
-					let outfileDirUrl = outFileUrl.deletingLastPathComponent()
-
-					try FileManager.default.createDirectory(
-						atPath: outfileDirUrl.path,
-						withIntermediateDirectories: true,
-						attributes: nil
-					)
-
-					FileManager.default.createFile(
-						atPath: outFileUrl.path,
-						contents: nil,
-						attributes: nil
-					)
-					try astJsonString.write(
-						to: outFileUrl,
-						atomically: true,
-						encoding: String.Encoding.utf8
-					)
-					logger.info("Generated AST for file: `\(fileURL.path)`")
-				} catch {
-					logger.warning("Parsing failed for file: `\(fileURL.path)` (\(error))")
+				queue.addOperation {
+					self.parseFile(fileUrl: fileUrl)
 				}
 			}
 		}
+
+		queue.waitUntilAllOperationsAreFinished()
 	}
 
 }
