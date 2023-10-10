@@ -42,7 +42,7 @@ jobs:
         if: matrix.os == 'macos-latest'
         run: |
           swift build -c release --arch arm64 --arch x86_64
-          mv ./.build/release/SwiftAstGen SwiftAstGen-mac
+          mv ./.build/apple/Products/Release/SwiftAstGen SwiftAstGen-mac
       - name: Run Windows Build
         if: matrix.os == 'windows-latest'
         run: |
