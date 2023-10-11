@@ -3,8 +3,7 @@ name: release
 on:
   push:
     tags:
-      - '**'            # only run on new tags 
-  workflow_dispatch:    # but also allow to manually trigger this workflow
+      - '**' 
 
 concurrency: production
 
@@ -33,23 +32,18 @@ jobs:
         with:
           branch: swift-5.9-release
           tag: 5.9-RELEASE
-      - name: Setup spm caching
-        uses: actions/cache@v3
-        with:
-          path: .build
-          key: ${{ runner.os }}-spm-${{ hashFiles('**/Package.resolved') }}
-          restore-keys: |
-            ${{ runner.os }}-spm-
       - name: Run Linux Build
         if: matrix.os == 'ubuntu-latest'
         run: |
           swift build -c release --arch arm64 --arch x86_64
           mv ./.build/release/SwiftAstGen SwiftAstGen-linux
+          gzexe SwiftAstGen-linux
       - name: Run Mac Build
         if: matrix.os == 'macos-latest'
         run: |
           swift build -c release --arch arm64 --arch x86_64
           mv ./.build/apple/Products/Release/SwiftAstGen SwiftAstGen-mac
+          gzexe SwiftAstGen-mac
       - name: Run Windows Build
         if: matrix.os == 'windows-latest'
         run: |

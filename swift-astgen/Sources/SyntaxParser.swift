@@ -22,7 +22,7 @@ extension SyntaxProtocol {
       endColumn: sourceRange.end.column
     )
 
-    let allChildren = children(viewMode: .all)
+    let allChildren = children(viewMode: .fixedUp)
     var childrenNodes: [TreeNode] = []
 
     for (num, child) in allChildren.enumerated() {
@@ -48,15 +48,14 @@ struct SyntaxParser {
 
   static func parse(fileURL: URL, prettyPrint: Bool) throws -> String {
     let code = try String(contentsOf: fileURL)
-    let sourceFile = Parser.parse(source: code)
-    let syntax = Syntax(sourceFile)
+    let ast = Parser.parse(source: code)
 
-    let locationConverter = SourceLocationConverter(fileName: fileURL.path, tree: sourceFile)
-    let jsonNode = syntax.toJson(converter: locationConverter)
+    let locationConverter = SourceLocationConverter(fileName: fileURL.path, tree: ast)
+    let json = ast.toJson(converter: locationConverter)
 
     let encoder = JSONEncoder()
     if prettyPrint { encoder.outputFormatting = .prettyPrinted }
-    return String(decoding: try encoder.encode(jsonNode), as: UTF8.self)
+    return String(decoding: try encoder.encode(json), as: UTF8.self)
   }
 
 }
