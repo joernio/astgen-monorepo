@@ -16,41 +16,11 @@ final class TreeNode: Codable {
   }
 }
 
-extension TreeNode: CustomStringConvertible {
-  var description: String {
-    """
-    {
-      index: \(name)
-      name: \(name)
-      tokenKind: \(tokenKind)
-      nodeType: \(nodeType)
-      range: \(range)
-      children: \(String(describing: children))
-    }
-    """
-  }
-}
-
-struct Range: Codable, Equatable {
+struct Range: Codable {
   let startOffset: Int
   let endOffset: Int
   let startLine: Int
   let startColumn: Int
   let endLine: Int
   let endColumn: Int
-}
-
-extension Range: CustomStringConvertible {
-  var description: String {
-    """
-    {
-      startOffset: \(startOffset)
-      endOffset: \(endOffset)
-      startLine: \(startLine)
-      startColumn: \(startColumn)
-      endLine: \(endLine)
-      endColumn: \(endColumn)
-    }
-    """
-  }
 }
