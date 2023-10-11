@@ -4,12 +4,14 @@ class SwiftAstGenerator {
 
   private var srcDir: URL
   private var outputDir: URL
+  private var prettyPrint: Bool
   private let fileManager = FileManager.default
   private let availableProcessors = ProcessInfo.processInfo.activeProcessorCount
 
-  init(srcDir: URL, outputDir: URL) throws {
+  init(srcDir: URL, outputDir: URL, prettyPrint: Bool) throws {
     self.srcDir = srcDir
     self.outputDir = outputDir
+    self.prettyPrint = prettyPrint
     if FileManager.default.fileExists(atPath: outputDir.path) {
       try FileManager.default.removeItem(at: outputDir)
     }
@@ -31,7 +33,7 @@ class SwiftAstGenerator {
 
   private func parseFile(fileUrl: URL) {
     do {
-      let astJsonString = try SyntaxParser.parse(fileURL: fileUrl)
+      let astJsonString = try SyntaxParser.parse(fileURL: fileUrl, prettyPrint: prettyPrint)
       let absoluteFilePath = fileUrl.absoluteString
       let relativeFilePath = absoluteFilePath.replacingOccurrences(
         of: srcDir.absoluteString, with: "")

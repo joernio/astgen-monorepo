@@ -19,11 +19,13 @@ The AST is created by using SwiftSyntax.
 
 ```bash
 > SwiftAstGen -h
-Options:
-  -i, --src      Source directory                                 [default: "."]
-  -o, --output   Output directory for generated AST json files
-                                                            [default: "ast_out"]
-  -h             Show help                                             [boolean]
+USAGE: swift-ast-gen [--src <src>] [--output <output>] [--prettyPrint]
+
+OPTIONS:
+  -i, --src <src>         Source directory (default: `.`).
+  -o, --output <output>   Output directory for generated AST json files (default: `./ast_out`).
+  -p, --prettyPrint       Pretty print the generated AST json files (default: `false`).
+  -h, --help              Show help information.
 ```
 
 ## Example

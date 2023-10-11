@@ -22,6 +22,11 @@ struct SwiftAstGen: ParsableCommand {
     transform: URL.init(fileURLWithPath:))
   var output: URL = URL(fileURLWithPath: Defaults.defaultOutDir)
 
+  @Flag(
+    name: [.customLong("prettyPrint"), .customShort("p")],
+    help: "Pretty print the generated AST json files (default: `false`).")
+  var prettyPrint: Bool = false
+
   func validate() throws {
     guard FileManager.default.fileExists(atPath: src.path) else {
       throw ValidationError("Directory does not exist: `\(src.path)`")
@@ -31,7 +36,7 @@ struct SwiftAstGen: ParsableCommand {
 
 extension SwiftAstGen {
   func run() throws {
-    try SwiftAstGenerator(srcDir: src, outputDir: output).generate()
+    try SwiftAstGenerator(srcDir: src, outputDir: output, prettyPrint: prettyPrint).generate()
   }
 
 }

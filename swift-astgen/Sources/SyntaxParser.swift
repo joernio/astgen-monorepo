@@ -46,7 +46,7 @@ extension SyntaxProtocol {
 
 struct SyntaxParser {
 
-  static func parse(fileURL: URL) throws -> String {
+  static func parse(fileURL: URL, prettyPrint: Bool) throws -> String {
     let code = try String(contentsOf: fileURL)
     let sourceFile = Parser.parse(source: code)
     let syntax = Syntax(sourceFile)
@@ -54,7 +54,9 @@ struct SyntaxParser {
     let locationConverter = SourceLocationConverter(fileName: fileURL.path, tree: sourceFile)
     let jsonNode = syntax.toJson(converter: locationConverter)
 
-    return String(decoding: try JSONEncoder().encode(jsonNode), as: UTF8.self)
+    let encoder = JSONEncoder()
+    if prettyPrint { encoder.outputFormatting = .prettyPrinted }
+    return String(decoding: try encoder.encode(jsonNode), as: UTF8.self)
   }
 
 }
