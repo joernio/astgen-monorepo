@@ -1,5 +1,4 @@
 import Foundation
-import Logging
 
 class SwiftAstGenerator {
 
@@ -7,8 +6,6 @@ class SwiftAstGenerator {
   private var outputDir: URL
   private let fileManager = FileManager.default
   private let availableProcessors = ProcessInfo.processInfo.activeProcessorCount
-
-  private var logger: Logger = Logger(label: "io.joern.SwiftAstGenerator")
 
   init(srcDir: URL, outputDir: URL) throws {
     self.srcDir = srcDir
@@ -58,9 +55,9 @@ class SwiftAstGenerator {
         atomically: true,
         encoding: String.Encoding.utf8
       )
-      logger.info("Generated AST for file: `\(fileUrl.path)`")
+      print("Generated AST for file: `\(fileUrl.path)`")
     } catch {
-      logger.warning("Parsing failed for file: `\(fileUrl.path)` (\(error))")
+      print("Parsing failed for file: `\(fileUrl.path)` (\(error))")
     }
   }
 
