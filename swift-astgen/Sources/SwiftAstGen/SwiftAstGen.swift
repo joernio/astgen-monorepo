@@ -1,10 +1,6 @@
 import ArgumentParser
 import Foundation
-
-struct Defaults {
-  static let defaultSrcDir = "."
-  static let defaultOutDir = "./ast_out"
-}
+import SwiftAstGenLib
 
 @main
 struct SwiftAstGen: ParsableCommand {

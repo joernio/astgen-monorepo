@@ -15,6 +15,12 @@ The AST is created by using SwiftSyntax.
 > swift build
 ```
 
+## Testing
+
+```bash
+> swift test
+```
+
 ## Getting Help
 
 ```bash
