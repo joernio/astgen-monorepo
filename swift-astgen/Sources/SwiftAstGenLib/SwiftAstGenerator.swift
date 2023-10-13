@@ -1,14 +1,13 @@
 import Foundation
 
-class SwiftAstGenerator {
+public class SwiftAstGenerator {
 
   private var srcDir: URL
   private var outputDir: URL
   private var prettyPrint: Bool
-  private let fileManager = FileManager.default
   private let availableProcessors = ProcessInfo.processInfo.activeProcessorCount
 
-  init(srcDir: URL, outputDir: URL, prettyPrint: Bool) throws {
+  public init(srcDir: URL, outputDir: URL, prettyPrint: Bool) throws {
     self.srcDir = srcDir
     self.outputDir = outputDir
     self.prettyPrint = prettyPrint
@@ -34,20 +33,17 @@ class SwiftAstGenerator {
   private func parseFile(fileUrl: URL) {
     do {
       let astJsonString = try SyntaxParser.parse(fileURL: fileUrl, prettyPrint: prettyPrint)
-      let absoluteFilePath = fileUrl.absoluteString
-      let relativeFilePath = absoluteFilePath.replacingOccurrences(
-        of: srcDir.absoluteString, with: "")
-      let outFileUrl = outputDir.appendingPathComponent(relativeFilePath).deletingPathExtension()
+      let relativeFileUrl = fileUrl.relativePath(from: srcDir)!
+      let outFileUrl = outputDir.appendingPathComponent(relativeFileUrl).deletingPathExtension()
         .appendingPathExtension("json")
       let outfileDirUrl = outFileUrl.deletingLastPathComponent()
 
-      try fileManager.createDirectory(
+      try FileManager.default.createDirectory(
         atPath: outfileDirUrl.path,
         withIntermediateDirectories: true,
         attributes: nil
       )
-
-      fileManager.createFile(
+      FileManager.default.createFile(
         atPath: outFileUrl.path,
         contents: nil,
         attributes: nil
@@ -57,18 +53,19 @@ class SwiftAstGenerator {
         atomically: true,
         encoding: String.Encoding.utf8
       )
+
       print("Generated AST for file: `\(fileUrl.path)`")
     } catch {
       print("Parsing failed for file: `\(fileUrl.path)` (\(error))")
     }
   }
 
-  func generate() throws {
+  public func generate() throws {
     let resourceKeys = Set<URLResourceKey>([.nameKey, .isDirectoryKey, .isRegularFileKey])
-    let directoryEnumerator = fileManager.enumerator(
+    let directoryEnumerator = FileManager.default.enumerator(
       at: srcDir,
       includingPropertiesForKeys: Array(resourceKeys),
-      options: [.skipsHiddenFiles, .skipsPackageDescendants])!
+      options: [.skipsPackageDescendants])!
 
     let queue = OperationQueue()
     queue.name = "SwiftAstGen"
