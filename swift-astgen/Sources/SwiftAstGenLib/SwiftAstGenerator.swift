@@ -32,9 +32,15 @@ public class SwiftAstGenerator {
 
   private func parseFile(fileUrl: URL) {
     do {
-      let astJsonString = try SyntaxParser.parse(fileURL: fileUrl, prettyPrint: prettyPrint)
-      let relativeFileUrl = fileUrl.relativePath(from: srcDir)!
-      let outFileUrl = outputDir.appendingPathComponent(relativeFileUrl).deletingPathExtension()
+      let relativeFilePath = fileUrl.relativePath(from: srcDir)!
+      let astJsonString = try SyntaxParser.parse(
+        srcDir: srcDir,
+        fileUrl: fileUrl,
+        relativeFilePath: relativeFilePath,
+        prettyPrint: prettyPrint)
+      let outFileUrl =
+        outputDir
+        .appendingPathComponent(relativeFilePath)
         .appendingPathExtension("json")
       let outfileDirUrl = outFileUrl.deletingLastPathComponent()
 

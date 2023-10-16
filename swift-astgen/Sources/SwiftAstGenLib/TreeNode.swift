@@ -1,4 +1,9 @@
 final class TreeNode: Codable {
+
+  var projectFullPath: String?
+  var relativeFilePath: String?
+  var fullFilePath: String?
+
   var index: Int
   var name: String
   var tokenKind: String
@@ -6,7 +11,12 @@ final class TreeNode: Codable {
   var range: Range
   var children: [TreeNode]
 
-  init(tokenKind: String, nodeType: String, range: Range, children: [TreeNode]) {
+  init(
+    tokenKind: String,
+    nodeType: String,
+    range: Range,
+    children: [TreeNode]
+  ) {
     self.index = -1
     self.name = ""
     self.tokenKind = tokenKind

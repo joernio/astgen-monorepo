@@ -40,22 +40,34 @@ extension SyntaxProtocol {
     }
 
     return TreeNode(
-      tokenKind: tokenKind, nodeType: nodeType, range: rangeNode, children: childrenNodes)
+      tokenKind: tokenKind,
+      nodeType: nodeType,
+      range: rangeNode,
+      children: childrenNodes)
   }
 }
 
 struct SyntaxParser {
 
-  static func parse(fileURL: URL, prettyPrint: Bool) throws -> String {
-    let code = try String(contentsOf: fileURL)
+  static func parse(
+    srcDir: URL,
+    fileUrl: URL,
+    relativeFilePath: String,
+    prettyPrint: Bool
+  ) throws -> String {
+    let code = try String(contentsOf: fileUrl)
     let ast = Parser.parse(source: code)
 
-    let locationConverter = SourceLocationConverter(fileName: fileURL.path, tree: ast)
-    let json = ast.toJson(converter: locationConverter)
+    let locationConverter = SourceLocationConverter(fileName: fileUrl.path, tree: ast)
+    let treeNode = ast.toJson(converter: locationConverter)
+
+    treeNode.projectFullPath = srcDir.standardized.resolvingSymlinksInPath().path
+    treeNode.fullFilePath = fileUrl.standardized.resolvingSymlinksInPath().path
+    treeNode.relativeFilePath = relativeFilePath
 
     let encoder = JSONEncoder()
     if prettyPrint { encoder.outputFormatting = .prettyPrinted }
-    return String(decoding: try encoder.encode(json), as: UTF8.self)
+    return String(decoding: try encoder.encode(treeNode), as: UTF8.self)
   }
 
 }
