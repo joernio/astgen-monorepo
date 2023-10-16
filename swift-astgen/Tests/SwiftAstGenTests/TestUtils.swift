@@ -33,7 +33,7 @@ extension TestUtils {
     let srcTmpDir = temporaryFileURL(fileName: createUniqueName())!
     let outTmpDir = srcTmpDir.appendingPathComponent("out", isDirectory: true)
     let srcFile = srcTmpDir.appendingPathComponent("source.swift")
-    let jsonFile = outTmpDir.appendingPathComponent("source.json")
+    let jsonFile = outTmpDir.appendingPathComponent("source.swift.json")
 
     try FileManager.default.createDirectory(
       atPath: srcTmpDir.path,
