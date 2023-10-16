@@ -61,9 +61,9 @@ struct SyntaxParser {
     let locationConverter = SourceLocationConverter(fileName: fileUrl.path, tree: ast)
     let treeNode = ast.toJson(converter: locationConverter)
 
-    treeNode.projectFullPath = srcDir.path
+    treeNode.projectFullPath = srcDir.standardized.resolvingSymlinksInPath().path
+    treeNode.fullFilePath = fileUrl.standardized.resolvingSymlinksInPath().path
     treeNode.relativeFilePath = relativeFilePath
-    treeNode.fullFilePath = fileUrl.path
 
     let encoder = JSONEncoder()
     if prettyPrint { encoder.outputFormatting = .prettyPrinted }
