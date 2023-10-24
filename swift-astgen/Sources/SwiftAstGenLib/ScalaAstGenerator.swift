@@ -144,7 +144,7 @@ public class ScalaAstGenerator {
           }
 
           if (tokenKind.nonEmpty) {
-            \(Token.allCases.map { "if (tokenKind == \"\($0)\") return \($0)(json)" }.joined(separator: "\n\t\t\t"))
+            \(Token.allCases.map { "if (tokenKind.startsWith(\"\($0)\")) return \($0)(json)" }.joined(separator: "\n\t\t\t"))
             throw new UnsupportedOperationException(s"TokenKind '$tokenKind' is not a known Swift TokenKind!")
           }
 
