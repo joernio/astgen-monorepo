@@ -23,6 +23,11 @@ struct SwiftAstGen: ParsableCommand {
     help: "Pretty print the generated AST json files (default: `false`).")
   var prettyPrint: Bool = false
 
+  @Flag(
+    name: [.customLong("scalaAstOnly"), .customShort("s")],
+    help: "Only print the generated Scala SwiftSyntax AST nodes (default: `false`).")
+  var scalaAstOnly: Bool = false
+
   func validate() throws {
     guard FileManager.default.fileExists(atPath: src.path) else {
       throw ValidationError("Directory does not exist: `\(src.path)`")
@@ -32,7 +37,11 @@ struct SwiftAstGen: ParsableCommand {
 
 extension SwiftAstGen {
   func run() throws {
-    try SwiftAstGenerator(srcDir: src, outputDir: output, prettyPrint: prettyPrint).generate()
+    if scalaAstOnly {
+      try ScalaAstGenerator().generate()
+    } else {
+      try SwiftAstGenerator(srcDir: src, outputDir: output, prettyPrint: prettyPrint).generate()
+    }
   }
 
 }
