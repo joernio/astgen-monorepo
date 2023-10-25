@@ -25,12 +25,13 @@ The AST is created by using SwiftSyntax.
 
 ```bash
 > SwiftAstGen -h
-USAGE: swift-ast-gen [--src <src>] [--output <output>] [--prettyPrint]
+USAGE: swift-ast-gen [--src <src>] [--output <output>] [--prettyPrint] [--scalaAstOnly]
 
 OPTIONS:
   -i, --src <src>         Source directory (default: `.`).
   -o, --output <output>   Output directory for generated AST json files (default: `./ast_out`).
-  -p, --prettyPrint       Pretty print the generated AST json files (default: `false`).
+  -p, --prettyPrint       Pretty print the generated AST json files.
+  -s, --scalaAstOnly      Only print the generated Scala SwiftSyntax AST nodes.
   -h, --help              Show help information.
 ```
 

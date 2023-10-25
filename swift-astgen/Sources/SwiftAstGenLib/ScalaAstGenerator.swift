@@ -80,7 +80,7 @@ public class ScalaAstGenerator {
             let returnType = isOptional ? "Option[Value]" : "Value"
             let returnAccess = isOptional ? "" : ".head"
             return
-              "\tdef \(name): \(returnType) = json(\"children\").arr.toList.find(_(\"name\").str == \"\(name)\")\(returnAccess)"
+              "\tdef \(name): \(returnType) = json(\"children\").arr.toList.find(_(\"name\").str == \"\(child.varOrCaseName)\")\(returnAccess)"
           }.joined(separator: "\n\t")
       } else {
         childrenString = "\tdef children: Seq[Value] = json(\"children\").arr.toList"
@@ -101,9 +101,6 @@ public class ScalaAstGenerator {
       var containedInDocString = String(describing: node.containedIn)
       containedInDocString = containedInDocString.replacingOccurrences(of: "\n", with: "\n\t")
 
-      var subTypesDocString = String(describing: node.subtypes)
-      subTypesDocString = subTypesDocString.replacingOccurrences(of: "\n", with: "\n\t")
-
       return """
         \n\t/// ### Documentation
         \t///
@@ -112,8 +109,6 @@ public class ScalaAstGenerator {
         \t\(childrenDocString)
         \t///
         \t\(containedInDocString.isEmpty ? "/// ### Nowhere contained in" : containedInDocString)
-        \t///
-        \t\(subTypesDocString.isEmpty ? "/// ### No Subtypes" : subTypesDocString)
         \tcase class \(syntaxType)(json: Value) \(inheritsString) {
           \(childrenString)
         \t}

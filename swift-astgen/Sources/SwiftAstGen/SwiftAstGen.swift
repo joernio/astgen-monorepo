@@ -20,12 +20,12 @@ struct SwiftAstGen: ParsableCommand {
 
   @Flag(
     name: [.customLong("prettyPrint"), .customShort("p")],
-    help: "Pretty print the generated AST json files (default: `false`).")
+    help: "Pretty print the generated AST json files.")
   var prettyPrint: Bool = false
 
   @Flag(
     name: [.customLong("scalaAstOnly"), .customShort("s")],
-    help: "Only print the generated Scala SwiftSyntax AST nodes (default: `false`).")
+    help: "Only print the generated Scala SwiftSyntax AST nodes.")
   var scalaAstOnly: Bool = false
 
   func validate() throws {

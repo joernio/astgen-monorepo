@@ -19,9 +19,7 @@ let package = Package(
       name: "SwiftAstGenLib",
       dependencies: [
         .product(name: "SwiftSyntax", package: "swift-syntax"),
-        .product(name: "SwiftOperators", package: "swift-syntax"),
         .product(name: "SwiftParser", package: "swift-syntax"),
-        .product(name: "ArgumentParser", package: "swift-argument-parser"),
         "CodeGeneration",
       ]
     ),
@@ -30,13 +28,14 @@ let package = Package(
       dependencies: [
         .product(name: "SwiftSyntax", package: "swift-syntax"),
         .product(name: "SwiftSyntaxBuilder", package: "swift-syntax"),
-        .product(name: "SwiftOperators", package: "swift-syntax"),
-        .product(name: "SwiftParser", package: "swift-syntax"),
       ]
     ),
     .executableTarget(
       name: "SwiftAstGen",
-      dependencies: ["SwiftAstGenLib"],
+      dependencies: [
+        .product(name: "ArgumentParser", package: "swift-argument-parser"),
+        "SwiftAstGenLib",
+      ],
       swiftSettings: [
         .unsafeFlags(["-cross-module-optimization"], .when(configuration: .release))
       ]
