@@ -38,6 +38,7 @@ jobs:
           swift build -c release --arch arm64 --arch x86_64
           mv ./.build/release/SwiftAstGen SwiftAstGen-linux
           gzexe SwiftAstGen-linux
+          ./SwiftAstGen-linux -s
       - name: Run Mac Build
         if: matrix.os == 'macos-latest'
         run: |
@@ -65,4 +66,5 @@ jobs:
             SwiftAstGen-linux
             SwiftAstGen-mac
             SwiftAstGen-win.exe
+            SwiftNodeSyntax.scala
             

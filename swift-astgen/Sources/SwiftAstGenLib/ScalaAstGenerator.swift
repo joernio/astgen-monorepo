@@ -57,8 +57,7 @@ public class ScalaAstGenerator {
       }
     }
 
-    let filteredNodes = SYNTAX_NODES.filter { !allBaseNodeNames.contains("\($0.kind.syntaxType)") }
-    let allNodes = filteredNodes.map { node in
+    let allNodes = NON_BASE_SYNTAX_NODES.map { node in
       let syntaxType = node.kind.syntaxType
       let inherits = inheritsFrom(node: node)
       let inheritsString =
@@ -76,14 +75,15 @@ public class ScalaAstGenerator {
           .filter { !$0.isUnexpectedNodes }
           .map { child in
             let name = backtickedIfNeeded(name: "\(child.varOrCaseName)")
-            let isOptional = child.isOptional
-            let returnType = isOptional ? "Option[Value]" : "Value"
-            let returnAccess = isOptional ? "" : ".head"
+            let returnTypeAndCast = TypeGenerator.returnTypeAndCast(for: child)
             return
-              "\tdef \(name): \(returnType) = json(\"children\").arr.toList.find(_(\"name\").str == \"\(child.varOrCaseName)\")\(returnAccess)"
+              "\tdef \(name): \(returnTypeAndCast.returnType) = json(\"children\").arr.toList.find(_(\"name\").str == \"\(child.varOrCaseName)\").map(createSwiftNode)\(returnTypeAndCast.cast)"
           }.joined(separator: "\n\t")
       } else {
-        childrenString = "\tdef children: Seq[Value] = json(\"children\").arr.toList"
+        let collection = node.collectionNode!
+        let returnTypeAndCast = TypeGenerator.returnTypeAndCast(for: collection)
+        childrenString =
+          "\tdef children: \(returnTypeAndCast.returnType) = json(\"children\").arr.toList.map(createSwiftNode)\(returnTypeAndCast.cast)"
       }
 
       var documentation = String(describing: node.documentation)
@@ -101,14 +101,23 @@ public class ScalaAstGenerator {
       var containedInDocString = String(describing: node.containedIn)
       containedInDocString = containedInDocString.replacingOccurrences(of: "\n", with: "\n\t")
 
-      return """
-        \n\t/// ### Documentation
+      let docString = """
+        \n\t/**
+        \t/// ### Documentation
         \t///
         \t\(documentation)
         \t///
         \t\(childrenDocString)
         \t///
         \t\(containedInDocString.isEmpty ? "/// ### Nowhere contained in" : containedInDocString)
+        \t */
+        """
+        .replacingOccurrences(of: "///", with: " *")
+        .replacingOccurrences(of: "```swift", with: "{{{")
+        .replacingOccurrences(of: "```", with: "}}}")
+
+      return """
+        \(docString)
         \tcase class \(syntaxType)(json: Value) \(inheritsString) {
           \(childrenString)
         \t}
@@ -131,10 +140,11 @@ public class ScalaAstGenerator {
           val tokenKind = json("tokenKind").str
 
           if (nodeType.nonEmpty) {
-            \(filteredNodes.map { node in
+            \(NON_BASE_SYNTAX_NODES.map { node in
               let syntaxType = node.kind.syntaxType
               return "if (nodeType == \"\(syntaxType)\") return \(syntaxType)(json)"
             }.joined(separator: "\n\t\t\t"))
+            if (nodeType == \"TokenSyntax\") return TokenSyntax(json)
             throw new UnsupportedOperationException(s"NodeType '$nodeType' is not a known Swift NodeType!")
           }
 
@@ -163,6 +173,8 @@ public class ScalaAstGenerator {
 
         // MARK: syntax nodes:
         \(allNodes.joined(separator: "\n\t"))
+
+        case class TokenSyntax(json: Value) extends Syntax
 
       }
       """
