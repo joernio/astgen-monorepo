@@ -21,17 +21,10 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: '0'
-      - name: Install swift (Linux and MacOS)
-        if: matrix.os == 'ubuntu-latest' || matrix.os == 'macos-latest'
-        uses: swift-actions/setup-swift@v1.25.0
+      - name: Install swift 
+        uses: SwiftyLab/setup-swift@latest
         with:
           swift-version: "5.9"
-      - name: Install swift (Windows)
-        if: matrix.os == 'windows-latest'
-        uses: compnerd/gha-setup-swift@main
-        with:
-          branch: swift-5.9-release
-          tag: 5.9-RELEASE
       - name: Run Linux Build
         if: matrix.os == 'ubuntu-latest'
         run: |
@@ -67,4 +60,3 @@ jobs:
             SwiftAstGen-mac
             SwiftAstGen-win.exe
             SwiftNodeSyntax.scala
-            

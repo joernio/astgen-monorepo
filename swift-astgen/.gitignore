@@ -9,3 +9,6 @@ DerivedData/
 /ast_out
 /.vscode
 SwiftNodeSyntax.scala
+target/
+.bsp/
+.idea/
