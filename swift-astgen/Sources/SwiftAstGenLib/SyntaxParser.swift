@@ -1,5 +1,6 @@
 import Foundation
 import SwiftParser
+import SwiftOperators
 @_spi(RawSyntax) import SwiftSyntax
 
 extension SyntaxProtocol {
@@ -56,10 +57,12 @@ struct SyntaxParser {
 		prettyPrint: Bool
 	) throws -> String {
 		let code = try String(contentsOf: fileUrl)
+		let opPrecedence = OperatorTable.standardOperators
 		let ast = Parser.parse(source: code)
+		let folded = try opPrecedence.foldAll(ast)
 
-		let locationConverter = SourceLocationConverter(fileName: fileUrl.path, tree: ast)
-		let treeNode = ast.toJson(converter: locationConverter)
+		let locationConverter = SourceLocationConverter(fileName: fileUrl.path, tree: folded)
+		let treeNode = folded.toJson(converter: locationConverter)
 
 		treeNode.projectFullPath = srcDir.standardized.resolvingSymlinksInPath().path
 		treeNode.fullFilePath = fileUrl.standardized.resolvingSymlinksInPath().path
