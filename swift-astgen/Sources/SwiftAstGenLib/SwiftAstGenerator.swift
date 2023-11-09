@@ -5,7 +5,6 @@ public class SwiftAstGenerator {
 	private var srcDir: URL
 	private var outputDir: URL
 	private var prettyPrint: Bool
-	private let availableProcessors = ProcessInfo.processInfo.activeProcessorCount
 
 	public init(srcDir: URL, outputDir: URL, prettyPrint: Bool) throws {
 		self.srcDir = srcDir
@@ -43,17 +42,20 @@ public class SwiftAstGenerator {
 				.appendingPathComponent(relativeFilePath)
 				.appendingPathExtension("json")
 			let outfileDirUrl = outFileUrl.deletingLastPathComponent()
-
-			try FileManager.default.createDirectory(
-				atPath: outfileDirUrl.path,
-				withIntermediateDirectories: true,
-				attributes: nil
-			)
-			FileManager.default.createFile(
-				atPath: outFileUrl.path,
-				contents: nil,
-				attributes: nil
-			)
+			if !FileManager.default.fileExists(atPath: outfileDirUrl.path) {
+				try FileManager.default.createDirectory(
+					atPath: outfileDirUrl.path,
+					withIntermediateDirectories: true,
+					attributes: nil
+				)
+			}
+			if !FileManager.default.fileExists(atPath: outFileUrl.path) {
+				FileManager.default.createFile(
+					atPath: outFileUrl.path,
+					contents: nil,
+					attributes: nil
+				)
+			}
 			try astJsonString.write(
 				to: outFileUrl,
 				atomically: true,
@@ -73,11 +75,6 @@ public class SwiftAstGenerator {
 			includingPropertiesForKeys: Array(resourceKeys),
 			options: [.skipsPackageDescendants])!
 
-		let queue = OperationQueue()
-		queue.name = "SwiftAstGen"
-		queue.qualityOfService = .userInitiated
-		queue.maxConcurrentOperationCount = availableProcessors
-
 		for case let fileUrl as URL in directoryEnumerator {
 			guard let resourceValues = try? fileUrl.resourceValues(forKeys: resourceKeys),
 				let isDirectory = resourceValues.isDirectory,
@@ -92,13 +89,9 @@ public class SwiftAstGenerator {
 					directoryEnumerator.skipDescendants()
 				}
 			} else if isRegularFile && name.hasSuffix(".swift") {
-				queue.addOperation {
-					self.parseFile(fileUrl: fileUrl)
-				}
+				parseFile(fileUrl: fileUrl)
 			}
 		}
-
-		queue.waitUntilAllOperationsAreFinished()
 	}
 
 }
