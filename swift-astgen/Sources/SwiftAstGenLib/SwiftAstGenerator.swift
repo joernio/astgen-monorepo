@@ -10,14 +10,13 @@ public class SwiftAstGenerator {
 		self.srcDir = srcDir
 		self.outputDir = outputDir
 		self.prettyPrint = prettyPrint
-		if FileManager.default.fileExists(atPath: outputDir.path) {
-			try FileManager.default.removeItem(at: outputDir)
+		if !FileManager.default.fileExists(atPath: outputDir.path) {
+			try FileManager.default.createDirectory(
+				atPath: outputDir.path,
+				withIntermediateDirectories: true,
+				attributes: nil
+			)
 		}
-		try FileManager.default.createDirectory(
-			atPath: outputDir.path,
-			withIntermediateDirectories: true,
-			attributes: nil
-		)
 	}
 
 	private func ignoreDirectory(name: String) -> Bool {
