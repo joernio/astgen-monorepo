@@ -128,6 +128,41 @@ class SwiftNodeSyntaxTest extends AnyWordSpec with Matchers {
       projectUnderTest.delete(swallowIOExceptions = true)
     }
 
+    "allow to grab node attributes correctly" in {
+      val projectUnderTest: File = File.newTemporaryDirectory("swiftastgentests")
+      val testFile = projectUnderTest / "main.swift"
+      val testContent = "var x = 1"
+      testFile.createIfNotExists(createParents = true)
+      testFile.write(testContent)
+      runSwiftAstGen(projectUnderTest)
+
+      val lines = (projectUnderTest / "ast_out" / s"${testFile.name}.json").contentAsString
+      val json = ujson.read(lines)
+      val sourceFileSyntax = SwiftNodeSyntax.createSwiftNode(json).asInstanceOf[SourceFileSyntax]
+
+      val Seq(codeBlock) = sourceFileSyntax.statements.children
+      codeBlock.item match {
+        case v: VariableDeclSyntax =>
+          v.bindings.children.head.pattern match {
+            case ident: IdentifierPatternSyntax =>
+              ident.identifier match {
+                case identifier: SwiftNode =>
+                  identifier.startOffset.get shouldBe 4
+                  identifier.endOffset.get shouldBe 5
+                  identifier.startLine.get shouldBe 1
+                  identifier.startColumn.get shouldBe 5
+                  identifier.endLine.get shouldBe 1
+                  identifier.endColumn.get shouldBe 6
+                case null => fail("Should have a token identifier here but got 'null'")
+              }
+            case other => fail("Should have a IdentifierPatternSyntax here but got: " + other)
+          }
+        case other => fail("Should have a VariableDeclSyntax here but got: " + other)
+      }
+
+      projectUnderTest.delete(swallowIOExceptions = true)
+    }
+
   }
 
 }
