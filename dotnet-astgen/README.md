@@ -10,7 +10,7 @@ This script creates an Abstract Syntax Tree (AST) of all `.cs` files in JSON for
 
 ## Building
 
-TODO
+* Use `dotnet run` to compile and run the project.
 
 ## Testing
 
