@@ -44,16 +44,20 @@ jobs:
           dotnet publish -c Release -r osx-arm64 -o ./release/macos-arm DotNetAstGen/DotNetAstGen.csproj
           dotnet publish -c Release -r win-x64 -o ./release/win DotNetAstGen/DotNetAstGen.csproj
           dotnet publish -c Release -r win-arm -o ./release/win-arm DotNetAstGen/DotNetAstGen.csproj
+      - name: Rename
+        run: |
+          mv ./release/linux/DotNetAstGen dotnetastgen-linux
+          mv ./release/linux-arm/DotNetAstGen dotnetastgen-linux-arm
+          mv ./release/macos/DotNetAstGen dotnetastgen-macos
+          mv ./release/macos-arm/DotNetAstGen dotnetastgen-macos-arm
+          mv ./release/win/DotNetAstGen.exe dotnetastgen-win.exe
+          mv ./release/win-arm/DotNetAstGen.exe dotnetastgen-win-arm.exe
       - name: Make executable
         run: |
-          chmod +x ./release/macos/DotNetAstGen
-          chmod +x ./release/macos-arm/DotNetAstGen
-          chmod +x ./release/linux/DotNetAstGen
-          chmod +x ./release/linux-arm/DotNetAstGen
-      - name: ZIP Release Directory
-        run: |
-          mv ./release DotNetAstGen
-          zip -r DotNetAstGen.zip ./DotNetAstGen  
+          chmod +x dotnetastgen-linux
+          chmod +x dotnetastgen-linux-arm
+          chmod +x dotnetastgen-macos
+          chmod +x dotnetastgen-macos-arm
       - name: Set next release version
         id: taggerFinal
         uses: anothrNick/github-tag-action@1.61.0
@@ -64,4 +68,10 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           tag_name: ${{ steps.taggerDryRun.outputs.new_tag }}
-          files: DotNetAstGen.zip
+          files: |
+            dotnetastgen-linux
+            dotnetastgen-linux-arm
+            dotnetastgen-macos
+            dotnetastgen-macos-arm
+            dotnetastgen-win.exe
+            dotnetastgen-win-arm.exe
