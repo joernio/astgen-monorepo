@@ -1,19 +1,16 @@
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
-using Newtonsoft.Json.Linq;
-using System.Data;
-using System.Runtime.InteropServices;
-using DotNetAstGen.Utils;
 using Microsoft.Extensions.Logging;
+using Newtonsoft.Json.Linq;
 
 namespace DotNetAstGen.Utils
 {
     public class MapSerializer
 
     {
-        private static ILogger? _logger = Program.LoggerFactory?.CreateLogger("MapSerializer");
-        
+        private static readonly ILogger? Logger = Program.LoggerFactory?.CreateLogger("MapSerializer");
+
         public static JArray ProcessSyntaxTokenList(SyntaxTokenList list)
         {
             JArray syntaxTokenList = new();

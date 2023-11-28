@@ -1,4 +1,4 @@
-﻿using System.Reflection;
+﻿using System.Diagnostics;
 using System.Text;
 using CommandLine;
 using DotNetAstGen.Utils;
@@ -34,52 +34,70 @@ namespace DotNetAstGen
                     _logger = LoggerFactory.CreateLogger<Program>();
                     _logger.LogDebug("Show verbose output.");
 
-                    _RunAstGet(options.InputFilePath);
+                    _RunAstGet(options.InputFilePath, new DirectoryInfo(options.OutputDirectory));
                 });
         }
 
-        private static void _RunAstGet(string inputPath)
+        private static void _RunAstGet(string inputPath, DirectoryInfo rootOutputPath)
         {
+            if (!rootOutputPath.Exists)
+            {
+                rootOutputPath.Create();
+            }
+
             if (Directory.Exists(inputPath))
             {
                 _logger?.LogInformation("Parsing directory {dirName}", inputPath);
-                foreach (FileInfo fileInfo in new DirectoryInfo(inputPath).EnumerateFiles("*.cs"))
+                var rootDirectory = new DirectoryInfo(inputPath);
+                foreach (var inputFile in new DirectoryInfo(inputPath).EnumerateFiles("*.cs"))
                 {
-                    _AstForFile(fileInfo);
+                    _AstForFile(rootDirectory, rootOutputPath, inputFile);
                 }
             }
             else if (File.Exists(inputPath))
             {
                 _logger?.LogInformation("Parsing file {fileName}", inputPath);
-                _AstForFile(new FileInfo(inputPath));
+                var file = new FileInfo(inputPath);
+                Debug.Assert(file.Directory != null, "Given file has a null parent directory!");
+                _AstForFile(file.Directory, rootOutputPath, file);
             }
             else
             {
                 _logger?.LogError("The path {inputPath} does not exist!", inputPath);
                 Environment.Exit(1);
             }
-            _logger?.LogInformation("Parsing successful!");
+
+            _logger?.LogInformation("AST generation complete");
         }
 
-        private static void _AstForFile(FileInfo filePath)
+        private static void _AstForFile(FileSystemInfo rootInputPath, FileSystemInfo rootOutputPath, FileInfo filePath)
         {
             var fullPath = filePath.FullName;
             _logger?.LogDebug("Parsing file: {filePath}", fullPath);
-            using var streamReader = new StreamReader(fullPath, Encoding.UTF8);
-            var programText = streamReader.ReadToEnd();
-            var tree = CSharpSyntaxTree.ParseText(programText);
-            _logger?.LogDebug("Successfully parsed: {filePath}", fullPath);
-            var root = tree.GetCompilationUnitRoot();
-            var rootType = root.GetType();
-            IList<PropertyInfo> props = new List<PropertyInfo>(rootType.GetProperties());
-            var jsonString = JsonConvert.SerializeObject(root, Formatting.Indented, new JsonSerializerSettings
+            try
             {
-                ReferenceLoopHandling = ReferenceLoopHandling.Ignore,
-                ContractResolver = new IgnorePropertiesResolver() // Comment this to see the unfiltered parser output
-            });
-            var outputName = Path.Combine(filePath.DirectoryName ?? "./", $"{Path.GetFileNameWithoutExtension(fullPath)}.json");
-            _logger?.LogDebug("Writing AST to {astJsonPath}", outputName);
-            File.WriteAllText(outputName, jsonString);
+                using var streamReader = new StreamReader(fullPath, Encoding.UTF8);
+                var programText = streamReader.ReadToEnd();
+                var tree = CSharpSyntaxTree.ParseText(programText);
+                _logger?.LogDebug("Successfully parsed: {filePath}", fullPath);
+                var root = tree.GetCompilationUnitRoot();
+                var jsonString = JsonConvert.SerializeObject(root, Formatting.Indented, new JsonSerializerSettings
+                {
+                    ReferenceLoopHandling = ReferenceLoopHandling.Ignore,
+                    ContractResolver =
+                        new IgnorePropertiesResolver() // Comment this to see the unfiltered parser output
+                });
+                var outputName = Path.Combine(filePath.DirectoryName ?? "./",
+                        $"{Path.GetFileNameWithoutExtension(fullPath)}.json")
+                    .Replace(rootInputPath.FullName, rootOutputPath.FullName);
+
+                File.WriteAllText(outputName, jsonString);
+                _logger?.LogInformation("Successfully wrote AST to '{astJsonPath}'", outputName);
+            }
+            catch (Exception e)
+            {
+                _logger?.LogError("Error encountered while parsing '{filePath}': {errorMsg}", fullPath, e.Message);
+            }
         }
     }
 
@@ -87,9 +105,12 @@ namespace DotNetAstGen
     internal class Options
     {
         [Option('v', "verbose", Required = false, HelpText = "Enable verbose output.")]
-        public bool Verbose { get; set; }
+        public bool Verbose { get; set; } = false;
 
         [Option('i', "input", Required = true, HelpText = "Input file or directory.")]
-        public string InputFilePath { get; set; }
+        public string InputFilePath { get; set; } = "";
+
+        [Option('o', "input", Required = false, HelpText = "Output directory. (default `./.ast`)")]
+        public string OutputDirectory { get; set; } = ".ast";
     }
 }

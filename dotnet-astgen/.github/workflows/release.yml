@@ -58,6 +58,14 @@ jobs:
           chmod +x dotnetastgen-linux-arm
           chmod +x dotnetastgen-macos
           chmod +x dotnetastgen-macos-arm
+      - name: Compress all executables
+        run: |
+          zip dotnetastgen-linux.zip dotnetastgen-linux
+          zip dotnetastgen-linux-arm.zip  dotnetastgen-linux-arm
+          zip dotnetastgen-macos.zip  dotnetastgen-macos
+          zip dotnetastgen-macos-arm.zip  dotnetastgen-macos-arm
+          zip dotnetastgen-win.zip dotnetastgen-win.exe
+          zip dotnetastgen-win-arm.zip dotnetastgen-win-arm.exe
       - name: Set next release version
         id: taggerFinal
         uses: anothrNick/github-tag-action@1.61.0
@@ -69,9 +77,9 @@ jobs:
         with:
           tag_name: ${{ steps.taggerDryRun.outputs.new_tag }}
           files: |
-            dotnetastgen-linux
-            dotnetastgen-linux-arm
-            dotnetastgen-macos
-            dotnetastgen-macos-arm
-            dotnetastgen-win.exe
-            dotnetastgen-win-arm.exe
+            dotnetastgen-linux.zip
+            dotnetastgen-linux-arm.zip
+            dotnetastgen-macos.zip
+            dotnetastgen-macos-arm.zip
+            dotnetastgen-win.exe.zip
+            dotnetastgen-win-arm.exe.zip
