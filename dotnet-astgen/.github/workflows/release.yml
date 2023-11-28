@@ -81,5 +81,5 @@ jobs:
             dotnetastgen-linux-arm.zip
             dotnetastgen-macos.zip
             dotnetastgen-macos-arm.zip
-            dotnetastgen-win.exe.zip
-            dotnetastgen-win-arm.exe.zip
+            dotnetastgen-win.zip
+            dotnetastgen-win-arm.zip
