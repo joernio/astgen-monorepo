@@ -36,7 +36,7 @@ jobs:
       - name: Install dependencies
         run: dotnet restore
       - name: Compile
-        run: ./build-with-version $NEXT_VERSION
+        run: ./build-with-version.sh $NEXT_VERSION
       - name: Build
         run: |
           ./publish-release.sh linux x64
