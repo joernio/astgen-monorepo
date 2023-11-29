@@ -48,7 +48,8 @@ namespace DotNetAstGen
             {
                 _logger?.LogInformation("Parsing directory {dirName}", inputPath);
                 var rootDirectory = new DirectoryInfo(inputPath);
-                foreach (var inputFile in new DirectoryInfo(inputPath).EnumerateFiles("*.cs"))
+                foreach (var inputFile in new DirectoryInfo(inputPath).EnumerateFiles("*.cs",
+                             SearchOption.AllDirectories))
                 {
                     _AstForFile(rootDirectory, rootOutputPath, inputFile);
                 }
@@ -89,7 +90,14 @@ namespace DotNetAstGen
                 var outputName = Path.Combine(filePath.DirectoryName ?? "./",
                         $"{Path.GetFileNameWithoutExtension(fullPath)}.json")
                     .Replace(rootInputPath.FullName, rootOutputPath.FullName);
-
+                
+                // Create dirs if they do not exist
+                var outputParentDir = Path.GetDirectoryName(outputName);
+                if (outputParentDir != null)
+                {
+                    Directory.CreateDirectory(outputParentDir);
+                }
+                
                 File.WriteAllText(outputName, jsonString);
                 _logger?.LogInformation("Successfully wrote AST to '{astJsonPath}'", outputName);
             }

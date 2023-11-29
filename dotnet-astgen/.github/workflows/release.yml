@@ -4,6 +4,7 @@ on:
   push:
     branches: [master, main]
     tags: ["*"]
+    paths-ignore: ['**.md']
 
 concurrency: production
 
