@@ -19,10 +19,6 @@ jobs:
         uses: actions/setup-dotnet@v3
         with:
           dotnet-version: '7.x'
-      - name: Install dependencies
-        run: dotnet restore
-      - name: Build
-        run: dotnet build
       - name: Get next release version (dry run)
         id: taggerDryRun
         uses: anothrNick/github-tag-action@1.61.0
@@ -32,18 +28,23 @@ jobs:
           DRY_RUN: true
       - name: echo new tag
         run: |
-          echo "The next tag version will be: ${{ steps.taggerDryRun.outputs.new_tag }}"
+          export NEXT_VERSION=${{ steps.taggerDryRun.outputs.new_tag }}
+          echo "The next tag version will be: $NEXT_VERSION"
       - name: echo tag
         run: |
-          echo "The current tag is: ${{ steps.taggerDryRun.outputs.tag }}"
+          echo "The current tag is: ${{ steps.taggerDryRun.outputs.tag }}"    
+      - name: Install dependencies
+        run: dotnet restore
+      - name: Compile
+        run: ./build-with-version $NEXT_VERSION
       - name: Build
         run: |
-          dotnet publish -c Release -r linux-x64 -o ./release/linux DotNetAstGen/DotNetAstGen.csproj
-          dotnet publish -c Release -r linux-arm -o ./release/linux-arm DotNetAstGen/DotNetAstGen.csproj
-          dotnet publish -c Release -r osx-x64 -o ./release/macos DotNetAstGen/DotNetAstGen.csproj
-          dotnet publish -c Release -r osx-arm64 -o ./release/macos-arm DotNetAstGen/DotNetAstGen.csproj
-          dotnet publish -c Release -r win-x64 -o ./release/win DotNetAstGen/DotNetAstGen.csproj
-          dotnet publish -c Release -r win-arm -o ./release/win-arm DotNetAstGen/DotNetAstGen.csproj
+          ./publish-release.sh linux x64
+          ./publish-release.sh linux arm
+          ./publish-release.sh osx x64
+          ./publish-release.sh osx arm64
+          ./publish-release.sh win x64
+          ./publish-release.sh win arm 
       - name: Rename
         run: |
           mv ./release/linux/DotNetAstGen dotnetastgen-linux

@@ -1,33 +1,34 @@
 using System.Reflection;
 using System.Text.RegularExpressions;
+using Microsoft.CodeAnalysis;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 
-namespace DotNetAstGen.Utils
+namespace DotNetAstGen
 {
-    internal class IgnorePropertiesResolver : DefaultContractResolver
+    internal class SyntaxNodePropertiesResolver : DefaultContractResolver
     {
-        private static readonly ILogger? Logger = Program.LoggerFactory?.CreateLogger("IgnorePropertiesResolver");
-
-
+        private static readonly ILogger? Logger = Program.LoggerFactory?.CreateLogger("SyntaxNodePropertiesResolver");
+        
         private readonly HashSet<string> _propsToAllow = new(new[]
         {
-            "Value", "Externs", "Usings", "Name", "Identifier", "Left", "Right", "Members", "ConstraintClauses",
+            "Value", "Usings", "Name", "Identifier", "Left", "Right", "Members", "ConstraintClauses",
             "Alias", "NamespaceOrType", "Arguments", "Expression", "Declaration", "ElementType", "Initializer", "Else",
             "Condition", "Statement", "Statements", "Variables", "WhenNotNull", "AllowsAnyExpression", "Expressions",
             "Modifiers", "ReturnType", "IsUnboundGenericName", "Default", "IsConst", "Parameters", "Types",
-            "ExplicitInterfaceSpecifier", "Text", "Length", "Location"
+            "ExplicitInterfaceSpecifier", "MetaData", "Kind"
         });
 
         private readonly List<string> _regexToAllow = new(new[]
         {
-            ".*Token$", ".*Keyword$", ".*Lists?$", ".*Body$", "(Span)?Start"
+            ".*Token$", ".*Keyword$", ".*Lists?$", ".*Body$", "(Line|Column)(Start|End)"
         });
 
         private readonly List<string> _regexToIgnore = new(new[]
         {
-            ".*(Semicolon|Brace|Bracket|EndOfFile|Paren|Dot)Token$"
+            ".*(Semicolon|Brace|Bracket|EndOfFile|Paren|Dot)Token$", "AttributeLists",
+            "(Unsafe|Global|Static|Using)Keyword"
         });
 
         private bool MatchesAllow(string input)
@@ -38,6 +39,15 @@ namespace DotNetAstGen.Utils
         private bool MatchesIgnore(string input)
         {
             return _regexToIgnore.Any(regex => Regex.IsMatch(input, regex));
+        }
+
+        protected override IList<JsonProperty> CreateProperties(Type type, MemberSerialization memberSerialization)
+        {
+            var properties = base.CreateProperties(type, memberSerialization);
+            var isSyntaxNode = type.IsAssignableTo(typeof(SyntaxNode));
+            if (!isSyntaxNode) return properties;
+            properties.Add(SyntaxMetaDataProvider.CreateMetaDataProperty());
+            return properties;
         }
 
         protected override JsonProperty CreateProperty(MemberInfo member, MemberSerialization memberSerialization)

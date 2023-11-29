@@ -1,7 +1,6 @@
 ﻿using System.Diagnostics;
 using System.Text;
 using CommandLine;
-using DotNetAstGen.Utils;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
@@ -25,7 +24,7 @@ namespace DotNetAstGen
                             .AddConsole()
                             .AddDebug();
 
-                        if (options.Verbose)
+                        if (options.Debug)
                         {
                             builder.SetMinimumLevel(LogLevel.Debug);
                         }
@@ -85,7 +84,7 @@ namespace DotNetAstGen
                 {
                     ReferenceLoopHandling = ReferenceLoopHandling.Ignore,
                     ContractResolver =
-                        new IgnorePropertiesResolver() // Comment this to see the unfiltered parser output
+                        new SyntaxNodePropertiesResolver() // Comment this to see the unfiltered parser output
                 });
                 var outputName = Path.Combine(filePath.DirectoryName ?? "./",
                         $"{Path.GetFileNameWithoutExtension(fullPath)}.json")
@@ -104,8 +103,8 @@ namespace DotNetAstGen
 
     internal class Options
     {
-        [Option('v', "verbose", Required = false, HelpText = "Enable verbose output.")]
-        public bool Verbose { get; set; } = false;
+        [Option('d', "debug", Required = false, HelpText = "Enable verbose output.")]
+        public bool Debug { get; set; } = false;
 
         [Option('i', "input", Required = true, HelpText = "Input file or directory.")]
         public string InputFilePath { get; set; } = "";
