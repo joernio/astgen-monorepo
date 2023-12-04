@@ -28,7 +28,7 @@ jobs:
       - name: Run Linux Build
         if: matrix.os == 'ubuntu-latest'
         run: |
-          swift build -c release --arch arm64 --arch x86_64
+          swift build -c release --arch arm64 --arch x86_64 --static-swift-stdlib
           mv ./.build/release/SwiftAstGen SwiftAstGen-linux
           gzexe SwiftAstGen-linux
           ./SwiftAstGen-linux -s
@@ -41,7 +41,7 @@ jobs:
       - name: Run Windows Build
         if: matrix.os == 'windows-latest'
         run: |
-          swift build -c release --arch x86_64
+          swift build -c release --arch x86_64 --static-swift-stdlib
           mv .\.build\release\SwiftAstGen.exe SwiftAstGen-win.exe
       - name: Run UPX for Windows Build
         if: matrix.os == 'windows-latest'
