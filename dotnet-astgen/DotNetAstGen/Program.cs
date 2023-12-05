@@ -122,28 +122,27 @@ namespace DotNetAstGen
                 else
                 {
                     _logger?.LogInformation("Successfully parsed: {filePath}", fullPath);
-                }
+                    var astGenResult = new AstGenWrapper(fullPath, tree);
+                    var jsonString = JsonConvert.SerializeObject(astGenResult, Formatting.Indented,
+                        new JsonSerializerSettings
+                        {
+                            ReferenceLoopHandling = ReferenceLoopHandling.Ignore,
+                            ContractResolver =
+                                new SyntaxNodePropertiesResolver() // Comment this to see the unfiltered parser output
+                        });
+                    var outputName = Path.Combine(filePath.DirectoryName ?? "./",
+                            $"{Path.GetFileNameWithoutExtension(fullPath)}.json")
+                        .Replace(rootInputPath.FullName, rootOutputPath.FullName);
 
-                var astGenResult = new AstGenWrapper(fullPath, tree);
-                var jsonString = JsonConvert.SerializeObject(astGenResult, Formatting.Indented,
-                    new JsonSerializerSettings
+                    // Create dirs if they do not exist
+                    var outputParentDir = Path.GetDirectoryName(outputName);
+                    if (outputParentDir != null)
                     {
-                        ReferenceLoopHandling = ReferenceLoopHandling.Ignore,
-                        ContractResolver =
-                            new SyntaxNodePropertiesResolver() // Comment this to see the unfiltered parser output
-                    });
-                var outputName = Path.Combine(filePath.DirectoryName ?? "./",
-                        $"{Path.GetFileNameWithoutExtension(fullPath)}.json")
-                    .Replace(rootInputPath.FullName, rootOutputPath.FullName);
+                        Directory.CreateDirectory(outputParentDir);
+                    }
 
-                // Create dirs if they do not exist
-                var outputParentDir = Path.GetDirectoryName(outputName);
-                if (outputParentDir != null)
-                {
-                    Directory.CreateDirectory(outputParentDir);
+                    File.WriteAllText(outputName, jsonString);
                 }
-
-                File.WriteAllText(outputName, jsonString);
             }
             catch (Exception e)
             {
