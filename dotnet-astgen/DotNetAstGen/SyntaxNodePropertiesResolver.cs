@@ -10,14 +10,14 @@ namespace DotNetAstGen
     internal class SyntaxNodePropertiesResolver : DefaultContractResolver
     {
         private static readonly ILogger? Logger = Program.LoggerFactory?.CreateLogger("SyntaxNodePropertiesResolver");
-        
+
         private readonly HashSet<string> _propsToAllow = new(new[]
         {
             "Value", "Usings", "Name", "Identifier", "Left", "Right", "Members", "ConstraintClauses",
             "Alias", "NamespaceOrType", "Arguments", "Expression", "Declaration", "ElementType", "Initializer", "Else",
             "Condition", "Statement", "Statements", "Variables", "WhenNotNull", "AllowsAnyExpression", "Expressions",
             "Modifiers", "ReturnType", "IsUnboundGenericName", "Default", "IsConst", "Parameters", "Types",
-            "ExplicitInterfaceSpecifier", "MetaData", "Kind"
+            "ExplicitInterfaceSpecifier", "MetaData", "Kind", "AstRoot", "FileName"
         });
 
         private readonly List<string> _regexToAllow = new(new[]

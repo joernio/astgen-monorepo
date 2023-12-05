@@ -80,24 +80,25 @@ namespace DotNetAstGen
                 var programText = streamReader.ReadToEnd();
                 var tree = CSharpSyntaxTree.ParseText(programText);
                 _logger?.LogDebug("Successfully parsed: {filePath}", fullPath);
-                var root = tree.GetCompilationUnitRoot();
-                var jsonString = JsonConvert.SerializeObject(root, Formatting.Indented, new JsonSerializerSettings
-                {
-                    ReferenceLoopHandling = ReferenceLoopHandling.Ignore,
-                    ContractResolver =
-                        new SyntaxNodePropertiesResolver() // Comment this to see the unfiltered parser output
-                });
+                var astGenResult = new AstGenWrapper(fullPath, tree);
+                var jsonString = JsonConvert.SerializeObject(astGenResult, Formatting.Indented,
+                    new JsonSerializerSettings
+                    {
+                        ReferenceLoopHandling = ReferenceLoopHandling.Ignore,
+                        ContractResolver =
+                            new SyntaxNodePropertiesResolver() // Comment this to see the unfiltered parser output
+                    });
                 var outputName = Path.Combine(filePath.DirectoryName ?? "./",
                         $"{Path.GetFileNameWithoutExtension(fullPath)}.json")
                     .Replace(rootInputPath.FullName, rootOutputPath.FullName);
-                
+
                 // Create dirs if they do not exist
                 var outputParentDir = Path.GetDirectoryName(outputName);
                 if (outputParentDir != null)
                 {
                     Directory.CreateDirectory(outputParentDir);
                 }
-                
+
                 File.WriteAllText(outputName, jsonString);
                 _logger?.LogInformation("Successfully wrote AST to '{astJsonPath}'", outputName);
             }
