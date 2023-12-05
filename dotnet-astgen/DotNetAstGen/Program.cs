@@ -1,6 +1,8 @@
 ﻿using System.Diagnostics;
 using System.Text;
+using System.Text.RegularExpressions;
 using CommandLine;
+using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
@@ -21,8 +23,12 @@ namespace DotNetAstGen
                     {
                         builder
                             .ClearProviders()
-                            .AddConsole()
-                            .AddDebug();
+                            .AddDebug()
+                            .AddSimpleConsole(consoleOptions =>
+                            {
+                                consoleOptions.IncludeScopes = false;
+                                consoleOptions.SingleLine = true;
+                            });
 
                         if (options.Debug)
                         {
@@ -33,11 +39,14 @@ namespace DotNetAstGen
                     _logger = LoggerFactory.CreateLogger<Program>();
                     _logger.LogDebug("Show verbose output.");
 
-                    _RunAstGet(options.InputFilePath, new DirectoryInfo(options.OutputDirectory));
+                    _RunAstGet(
+                        options.InputFilePath,
+                        new DirectoryInfo(options.OutputDirectory),
+                        options.ExclusionRegex);
                 });
         }
 
-        private static void _RunAstGet(string inputPath, DirectoryInfo rootOutputPath)
+        private static void _RunAstGet(string inputPath, DirectoryInfo rootOutputPath, string? exclusionRegex)
         {
             if (!rootOutputPath.Exists)
             {
@@ -51,7 +60,7 @@ namespace DotNetAstGen
                 foreach (var inputFile in new DirectoryInfo(inputPath).EnumerateFiles("*.cs",
                              SearchOption.AllDirectories))
                 {
-                    _AstForFile(rootDirectory, rootOutputPath, inputFile);
+                    _AstForFile(rootDirectory, rootOutputPath, inputFile, exclusionRegex);
                 }
             }
             else if (File.Exists(inputPath))
@@ -59,7 +68,7 @@ namespace DotNetAstGen
                 _logger?.LogInformation("Parsing file {fileName}", inputPath);
                 var file = new FileInfo(inputPath);
                 Debug.Assert(file.Directory != null, "Given file has a null parent directory!");
-                _AstForFile(file.Directory, rootOutputPath, file);
+                _AstForFile(file.Directory, rootOutputPath, file, exclusionRegex);
             }
             else
             {
@@ -70,16 +79,51 @@ namespace DotNetAstGen
             _logger?.LogInformation("AST generation complete");
         }
 
-        private static void _AstForFile(FileSystemInfo rootInputPath, FileSystemInfo rootOutputPath, FileInfo filePath)
+        private static void _AstForFile(
+            FileSystemInfo rootInputPath,
+            FileSystemInfo rootOutputPath,
+            FileInfo filePath,
+            string? exclusionRegex)
         {
             var fullPath = filePath.FullName;
-            _logger?.LogDebug("Parsing file: {filePath}", fullPath);
+            if (exclusionRegex != null && Regex.IsMatch(fullPath, exclusionRegex))
+            {
+                _logger?.LogInformation("Skipping file: {filePath}", fullPath);
+                return;
+            }
+
+            _logger?.LogInformation("Parsing file: {filePath}", fullPath);
+
             try
             {
                 using var streamReader = new StreamReader(fullPath, Encoding.UTF8);
                 var programText = streamReader.ReadToEnd();
                 var tree = CSharpSyntaxTree.ParseText(programText);
-                _logger?.LogDebug("Successfully parsed: {filePath}", fullPath);
+                var diagnostics = new List<Diagnostic>(tree.GetDiagnostics());
+                var errorWhileParsing = false;
+                foreach (var diagnostic in diagnostics)
+                {
+                    switch (diagnostic.Severity)
+                    {
+                        case DiagnosticSeverity.Warning:
+                            _logger?.LogWarning(diagnostic.ToString());
+                            break;
+                        case DiagnosticSeverity.Error:
+                            _logger?.LogError(diagnostic.ToString());
+                            errorWhileParsing = true;
+                            break;
+                    }
+                }
+
+                if (errorWhileParsing)
+                {
+                    _logger?.LogError("Error(s) encountered while parsing: {filePath}", fullPath);
+                }
+                else
+                {
+                    _logger?.LogInformation("Successfully parsed: {filePath}", fullPath);
+                }
+
                 var astGenResult = new AstGenWrapper(fullPath, tree);
                 var jsonString = JsonConvert.SerializeObject(astGenResult, Formatting.Indented,
                     new JsonSerializerSettings
@@ -100,7 +144,6 @@ namespace DotNetAstGen
                 }
 
                 File.WriteAllText(outputName, jsonString);
-                _logger?.LogInformation("Successfully wrote AST to '{astJsonPath}'", outputName);
             }
             catch (Exception e)
             {
@@ -120,5 +163,8 @@ namespace DotNetAstGen
 
         [Option('o', "input", Required = false, HelpText = "Output directory. (default `./.ast`)")]
         public string OutputDirectory { get; set; } = ".ast";
+
+        [Option('e', "exclude", Required = false, HelpText = "Exclusion regex for while files to filter out.")]
+        public string? ExclusionRegex { get; set; } = null;
     }
 }
