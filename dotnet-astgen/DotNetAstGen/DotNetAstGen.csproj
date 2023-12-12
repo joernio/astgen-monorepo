@@ -9,6 +9,8 @@
         <Nullable>enable</Nullable>
         <SelfContained>true</SelfContained>
         <PublishSingleFile>true</PublishSingleFile>
+        <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
+        <InvariantGlobalization>true</InvariantGlobalization>
     </PropertyGroup>
 
     <ItemGroup>
