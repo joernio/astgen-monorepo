@@ -50,6 +50,7 @@ func (mod *ModFile) Parse() (string, error) {
 		node := make(map[string]interface{})
 		node["Module"] = req.Mod.Path
 		node["Version"] = req.Mod.Version
+		node["Indirect"] = req.Indirect
 		node["node_line_no"] = req.Syntax.Start.Line
 		node["node_col_no"] = req.Syntax.Start.LineRune
 		node["node_line_no_end"] = req.Syntax.End.Line
