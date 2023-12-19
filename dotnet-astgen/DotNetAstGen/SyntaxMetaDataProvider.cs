@@ -22,7 +22,8 @@ namespace DotNetAstGen
                 span.StartLinePosition.Line,
                 span.EndLinePosition.Line,
                 span.StartLinePosition.Character,
-                span.EndLinePosition.Character
+                span.EndLinePosition.Character,
+                node.GetText().ToString().Trim()
             );
         }
 
@@ -53,13 +54,14 @@ namespace DotNetAstGen
         {
         }
 
-        public SyntaxMetaData(string kind, int lineStart, int lineEnd, int columnStart, int columnEnd)
+        public SyntaxMetaData(string kind, int lineStart, int lineEnd, int columnStart, int columnEnd, string code)
         {
             Kind = kind;
             LineStart = lineStart;
             LineEnd = lineEnd;
             ColumnStart = columnStart;
             ColumnEnd = columnEnd;
+            Code = code;
         }
 
         public string Kind { get; set; } = "ast.None";
@@ -67,6 +69,7 @@ namespace DotNetAstGen
         public int LineEnd { get; set; } = -1;
         public int ColumnStart { get; set; } = -1;
         public int ColumnEnd { get; set; } = -1;
+        public string Code { get; set; } = "<empty>";
 
         public override string ToString()
         {
