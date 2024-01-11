@@ -43,7 +43,6 @@ jobs:
           ./publish-release.sh linux x64
           ./publish-release.sh linux arm
           ./publish-release.sh osx x64
-          ./publish-release.sh osx arm64
           ./publish-release.sh win x64
           ./publish-release.sh win arm 
       - name: Rename
@@ -51,7 +50,6 @@ jobs:
           mv ./release/linux/DotNetAstGen dotnetastgen-linux
           mv ./release/linux-arm/DotNetAstGen dotnetastgen-linux-arm
           mv ./release/macos/DotNetAstGen dotnetastgen-macos
-          mv ./release/macos-arm/DotNetAstGen dotnetastgen-macos-arm
           mv ./release/win/DotNetAstGen.exe dotnetastgen-win.exe
           mv ./release/win-arm/DotNetAstGen.exe dotnetastgen-win-arm.exe
       - name: Make executable
@@ -59,15 +57,6 @@ jobs:
           chmod +x dotnetastgen-linux
           chmod +x dotnetastgen-linux-arm
           chmod +x dotnetastgen-macos
-          chmod +x dotnetastgen-macos-arm
-      - name: Compress all executables
-        run: |
-          zip dotnetastgen-linux.zip dotnetastgen-linux
-          zip dotnetastgen-linux-arm.zip  dotnetastgen-linux-arm
-          zip dotnetastgen-macos.zip  dotnetastgen-macos
-          zip dotnetastgen-macos-arm.zip  dotnetastgen-macos-arm
-          zip dotnetastgen-win.zip dotnetastgen-win.exe
-          zip dotnetastgen-win-arm.zip dotnetastgen-win-arm.exe
       - name: Set next release version
         id: taggerFinal
         uses: anothrNick/github-tag-action@1.61.0
@@ -79,9 +68,8 @@ jobs:
         with:
           tag_name: ${{ steps.taggerDryRun.outputs.new_tag }}
           files: |
-            dotnetastgen-linux.zip
-            dotnetastgen-linux-arm.zip
-            dotnetastgen-macos.zip
-            dotnetastgen-macos-arm.zip
-            dotnetastgen-win.zip
-            dotnetastgen-win-arm.zip
+            dotnetastgen-linux
+            dotnetastgen-linux-arm
+            dotnetastgen-macos
+            dotnetastgen-win
+            dotnetastgen-win-arm
