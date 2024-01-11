@@ -71,5 +71,5 @@ jobs:
             dotnetastgen-linux
             dotnetastgen-linux-arm
             dotnetastgen-macos
-            dotnetastgen-win
-            dotnetastgen-win-arm
+            dotnetastgen-win.exe
+            dotnetastgen-win-arm.exe
