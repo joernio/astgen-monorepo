@@ -17,12 +17,13 @@ namespace DotNetAstGen
             "Alias", "NamespaceOrType", "Arguments", "Expression", "Declaration", "ElementType", "Initializer", "Else",
             "Condition", "Statement", "Statements", "Variables", "WhenNotNull", "AllowsAnyExpression", "Expressions",
             "Modifiers", "ReturnType", "IsUnboundGenericName", "Default", "IsConst", "Parameters", "Types",
-            "ExplicitInterfaceSpecifier", "MetaData", "Kind", "AstRoot", "FileName", "Code", "Operand"
+            "ExplicitInterfaceSpecifier", "MetaData", "Kind", "AstRoot", "FileName", "Code", "Operand", "Block",
+            "Catches", "Finally"
         });
 
         private readonly List<string> _regexToAllow = new(new[]
         {
-            ".*Token$", ".*Keyword$", ".*Lists?$", ".*Body$", "(Line|Column)(Start|End)", ".*Type$",
+            ".*Token$", ".*Lists?$", ".*Body$", "(Line|Column)(Start|End)", ".*Type$",
         });
 
         private readonly List<string> _regexToIgnore = new(new[]
