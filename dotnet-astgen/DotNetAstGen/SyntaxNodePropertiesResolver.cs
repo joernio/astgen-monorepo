@@ -18,7 +18,7 @@ namespace DotNetAstGen
             "Condition", "Statement", "Statements", "Variables", "WhenNotNull", "AllowsAnyExpression", "Expressions",
             "Modifiers", "ReturnType", "IsUnboundGenericName", "Default", "IsConst", "Parameters", "Types",
             "ExplicitInterfaceSpecifier", "MetaData", "Kind", "AstRoot", "FileName", "Code", "Operand", "Block",
-            "Catches", "Finally", "Keyword", "Incrementors"
+            "Catches", "Finally", "Keyword", "Incrementors", "Sections", "Pattern"
         });
 
         private readonly List<string> _regexToAllow = new(new[]
