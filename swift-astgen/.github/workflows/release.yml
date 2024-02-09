@@ -52,7 +52,7 @@ jobs:
             SwiftAstGen-win.exe
           args: -fq
       - name: Release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v4
         with:
           tag_name: ${{ github.ref_name }}
           files: |
