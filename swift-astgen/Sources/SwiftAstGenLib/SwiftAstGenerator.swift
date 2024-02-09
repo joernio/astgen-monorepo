@@ -67,30 +67,28 @@ public class SwiftAstGenerator {
 		}
 	}
 
-	public func generate() throws {
-		let resourceKeys = Set<URLResourceKey>([.nameKey, .isDirectoryKey, .isRegularFileKey])
-		let directoryEnumerator = FileManager.default.enumerator(
-			at: srcDir,
-			includingPropertiesForKeys: Array(resourceKeys),
-			options: [.skipsPackageDescendants])!
-
-		for case let fileUrl as URL in directoryEnumerator {
-			guard let resourceValues = try? fileUrl.resourceValues(forKeys: resourceKeys),
-				let isDirectory = resourceValues.isDirectory,
-				let isRegularFile = resourceValues.isRegularFile,
-				let name = resourceValues.name
-			else {
-				continue
-			}
-
-			if isDirectory {
-				if ignoreDirectory(name: name) {
-					directoryEnumerator.skipDescendants()
-				}
-			} else if isRegularFile && name.hasSuffix(".swift") {
-				parseFile(fileUrl: fileUrl)
-			}
+	private func iterateFilesInDirectory(_ directoryURL: URL) throws {
+		let contents = try FileManager.default.contentsOfDirectory(at: directoryURL, includingPropertiesForKeys: nil, options: .skipsHiddenFiles)
+		for item in contents {
+		    var isDirectory: ObjCBool = false
+		    if FileManager.default.fileExists(atPath: item.path, isDirectory: &isDirectory) {
+		        if isDirectory.boolValue {
+		            if ignoreDirectory(name: item.lastPathComponent) {
+		                continue
+		            }
+		            try iterateFilesInDirectory(item)
+		        } else {
+					if item.lastPathComponent.hasSuffix(".swift") {
+						parseFile(fileUrl: item)
+					}
+		        }
+		    }
 		}
+	   
+	}
+
+	public func generate() throws {
+		try iterateFilesInDirectory(srcDir)
 	}
 
 }
