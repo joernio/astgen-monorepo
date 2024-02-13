@@ -20,12 +20,13 @@ public class SwiftAstGenerator {
 	}
 
 	private func ignoreDirectory(name: String) -> Bool {
-		return name.starts(with: ".")
-			|| name.starts(with: "__")
-			|| name.starts(with: "Tests/")
-			|| name.starts(with: "Specs/")
-			|| name.starts(with: "Test/")
-			|| name.starts(with: "Spec/")
+		let nameLowercased = name.lowercased()
+		return nameLowercased.contains("/.")
+			|| nameLowercased.contains("/__")
+			|| nameLowercased.contains("/tests/")
+			|| nameLowercased.contains("/specs/")
+			|| nameLowercased.contains("/test/")
+			|| nameLowercased.contains("/spec/")
 	}
 
 	private func parseFile(fileUrl: URL) {
@@ -42,19 +43,14 @@ public class SwiftAstGenerator {
 				.appendingPathExtension("json")
 			let outfileDirUrl = outFileUrl.deletingLastPathComponent()
 
-			do {
+			if !FileManager.default.fileExists(atPath: outfileDirUrl.path) {
 				try FileManager.default.createDirectory(
 					atPath: outfileDirUrl.path,
 					withIntermediateDirectories: true,
 					attributes: nil
 				)
-			} catch { /* this is ok; another thread may already created that dir */ }
+			}
 
-			FileManager.default.createFile(
-				atPath: outFileUrl.path,
-				contents: nil,
-				attributes: nil
-			)
 			try astJsonString.write(
 				to: outFileUrl,
 				atomically: true,
@@ -67,28 +63,32 @@ public class SwiftAstGenerator {
 		}
 	}
 
-	private func iterateFilesInDirectory(_ directoryURL: URL) throws {
-		let contents = try FileManager.default.contentsOfDirectory(at: directoryURL, includingPropertiesForKeys: nil, options: .skipsHiddenFiles)
-		for item in contents {
-		    var isDirectory: ObjCBool = false
-		    if FileManager.default.fileExists(atPath: item.path, isDirectory: &isDirectory) {
-		        if isDirectory.boolValue {
-		            if ignoreDirectory(name: item.lastPathComponent) {
-		                continue
+	private func listSwiftFiles(at url: URL) -> [URL] {
+		var files = [URL]()
+		if let enumerator = FileManager.default.enumerator(
+			at: url,
+			includingPropertiesForKeys: [.isRegularFileKey],
+			options: [.skipsHiddenFiles, .skipsPackageDescendants]) {
+		    for case let fileURL as URL in enumerator {
+		        do {
+		            let fileAttributes = try fileURL.resourceValues(forKeys:[.isRegularFileKey])
+		            if fileAttributes.isRegularFile! && fileURL.pathExtension == "swift" {
+		            	let relativeFilePath = fileURL.relativePath(from: srcDir)!
+		            	if !ignoreDirectory(name: "/\(relativeFilePath)") {
+		            		files.append(fileURL)
+		            	}
 		            }
-		            try iterateFilesInDirectory(item)
-		        } else {
-					if item.lastPathComponent.hasSuffix(".swift") {
-						parseFile(fileUrl: item)
-					}
-		        }
+		        } catch { }
 		    }
 		}
-	   
-	}
+		return files
+	} 
 
 	public func generate() throws {
-		try iterateFilesInDirectory(srcDir)
+	    let swiftFiles = listSwiftFiles(at: srcDir)
+	    for swiftFile in swiftFiles {
+        	parseFile(fileUrl: swiftFile)
+        }
 	}
 
 }
