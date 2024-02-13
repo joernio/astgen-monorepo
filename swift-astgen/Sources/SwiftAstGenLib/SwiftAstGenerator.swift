@@ -63,32 +63,25 @@ public class SwiftAstGenerator {
 		}
 	}
 
-	private func listSwiftFiles(at url: URL) -> [URL] {
-		var files = [URL]()
+	private func iterateSwiftFiles(at url: URL) {
 		if let enumerator = FileManager.default.enumerator(
 			at: url,
 			includingPropertiesForKeys: [.isRegularFileKey],
 			options: [.skipsHiddenFiles, .skipsPackageDescendants]) {
 		    for case let fileURL as URL in enumerator {
-		        do {
-		            let fileAttributes = try fileURL.resourceValues(forKeys:[.isRegularFileKey])
-		            if fileAttributes.isRegularFile! && fileURL.pathExtension == "swift" {
-		            	let relativeFilePath = fileURL.relativePath(from: srcDir)!
-		            	if !ignoreDirectory(name: "/\(relativeFilePath)") {
-		            		files.append(fileURL)
-		            	}
-		            }
-		        } catch { }
+	            let fileAttributes = try! fileURL.resourceValues(forKeys:[.isRegularFileKey])
+	            if fileAttributes.isRegularFile! && fileURL.pathExtension == "swift" {
+	            	let relativeFilePath = fileURL.relativePath(from: srcDir)!
+	            	if !ignoreDirectory(name: "/\(relativeFilePath)") {
+	            		parseFile(fileUrl: fileURL)
+	            	}
+	            }
 		    }
 		}
-		return files
 	} 
 
 	public func generate() throws {
-	    let swiftFiles = listSwiftFiles(at: srcDir)
-	    for swiftFile in swiftFiles {
-        	parseFile(fileUrl: swiftFile)
-        }
+	    iterateSwiftFiles(at: srcDir)
 	}
 
 }
