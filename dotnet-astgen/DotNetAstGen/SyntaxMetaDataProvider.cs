@@ -27,7 +27,7 @@ namespace DotNetAstGen
             );
         }
 
-        public void SetValue(object target, object value)
+        public void SetValue(object target, object? value)
         {
             // ignore
         }

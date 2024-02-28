@@ -4,7 +4,7 @@
         <Version Condition=" '$(NEXT_VERSION)' == '' ">0.0.1-local</Version>
         <Version Condition=" '$(NEXT_VERSION)' != '' ">$(NEXT_VERSION)</Version>
         <OutputType>Exe</OutputType>
-        <TargetFramework>net7.0</TargetFramework>
+        <TargetFramework>net8.0</TargetFramework>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
         <SelfContained>true</SelfContained>
@@ -17,6 +17,7 @@
       <PackageReference Include="CommandLineParser" Version="2.9.1" />
       <PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" Version="3.0.0" />
       <PackageReference Include="Microsoft.CodeAnalysis" Version="4.8.0" />
+      <PackageReference Include="Mono.Cecil" Version="0.11.5" />
       <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
     </ItemGroup>
 
