@@ -44,14 +44,12 @@ jobs:
           ./publish-release.sh linux arm
           ./publish-release.sh osx x64
           ./publish-release.sh win x64
-          ./publish-release.sh win arm 
       - name: Rename
         run: |
           mv ./release/linux/DotNetAstGen dotnetastgen-linux
           mv ./release/linux-arm/DotNetAstGen dotnetastgen-linux-arm
           mv ./release/macos/DotNetAstGen dotnetastgen-macos
           mv ./release/win/DotNetAstGen.exe dotnetastgen-win.exe
-          mv ./release/win-arm/DotNetAstGen.exe dotnetastgen-win-arm.exe
       - name: Make executable
         run: |
           chmod +x dotnetastgen-linux
@@ -72,4 +70,3 @@ jobs:
             dotnetastgen-linux-arm
             dotnetastgen-macos
             dotnetastgen-win.exe
-            dotnetastgen-win-arm.exe
