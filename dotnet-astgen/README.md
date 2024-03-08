@@ -13,6 +13,10 @@ This script creates an Abstract Syntax Tree (AST) of all `.cs` files in JSON for
 Use `dotnet run --project DotNetAstGen -i <target_source> -o <target_output>` to compile and run the
 project. This will generate JSON AST files from the given source code.
 
+For parsing symbols of DLL files, one needs the DLL and PDB file (of the same name) to live together
+in the same directory. The names of the symbol summaries will be the name of the DLL file with the
+prefix `_Symbols.json` and will live in the output directory.
+
 ## Releasing
 
 To build a single all-in-one executable, make use of `./publish-release.sh <os> <arch>`, e.g.

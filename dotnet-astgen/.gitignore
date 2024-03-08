@@ -479,3 +479,6 @@ $RECYCLE.BIN/
 .idea
 **/*.json
 .ast
+
+# Experiment code
+Program.cs
