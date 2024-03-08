@@ -187,12 +187,13 @@ namespace DotNetAstGen
                 foreach (var inputFile in new DirectoryInfo(inputPath).EnumerateFiles("*.dll",
                              SearchOption.AllDirectories))
                 {
+                    _logger?.LogInformation("Parsing file {fileName}", inputPath);
                     _SummaryForDLLFile(inputFile, exclusionRegex);
                 }
             }
             else if (File.Exists(inputPath))
             {
-                _logger?.LogInformation("Parsing DLL file {fileName}", inputPath);
+                _logger?.LogInformation("Parsing file {fileName}", inputPath);
                 var file = new FileInfo(inputPath);
                 Debug.Assert(file.Directory != null, "Given file has a null parent directory!");
                 _SummaryForDLLFile(file, exclusionRegex);
