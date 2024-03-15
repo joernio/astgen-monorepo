@@ -48,8 +48,7 @@ public struct TokenSpec {
   /// This is typically used to mark APIs as SPI when the keyword is part of an experimental language feature.
   public var apiAttributes: AttributeListSyntax {
     guard isExperimental else { return "" }
-    return AttributeListSyntax("@_spi(ExperimentalLanguageFeatures)").with(
-      \.trailingTrivia, .newline)
+    return AttributeListSyntax("@_spi(ExperimentalLanguageFeatures)").with(\.trailingTrivia, .newline)
   }
 
   /// Initializes a new `TokenSpec` instance.

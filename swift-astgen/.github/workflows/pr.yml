@@ -14,21 +14,31 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: '0'
-      - name: Install swift 
+      - name: Install Swift (MacOS)
+        if: matrix.os == 'macos-latest'
         uses: SwiftyLab/setup-swift@latest
         with:
-          swift-version: "5.9"
+          swift-version: '5.10'
+          check-latest: true
+      - name: Install Swift (Windows)
+        if: matrix.os == 'windows-latest'
+        uses: compnerd/gha-setup-swift@main
+        with:
+          branch: swift-5.10-release
+          tag: 5.10-RELEASE
       - name: Run Linux Build
         if: matrix.os == 'ubuntu-20.04'
         run: |
           swift build
           mv ./.build/debug/SwiftAstGen SwiftAstGen-linux
+          gzexe SwiftAstGen-linux
           ./SwiftAstGen-linux -s
       - name: Run Mac Build
         if: matrix.os == 'macos-latest'
         run: |
           swift build
           mv ./.build/debug/SwiftAstGen SwiftAstGen-mac
+          gzexe SwiftAstGen-mac
           ./SwiftAstGen-mac -s
       - name: Run Windows Build
         if: matrix.os == 'windows-latest'
@@ -36,13 +46,23 @@ jobs:
           swift build
           mv .\.build\debug\SwiftAstGen.exe SwiftAstGen-win.exe
           .\SwiftAstGen-win.exe -s
+      - name: Run UPX for Windows Build
+        if: matrix.os == 'windows-latest'
+        uses: crazy-max/ghaction-upx@v3
+        with:
+          version: latest
+          files: |
+            SwiftAstGen-win.exe
+          args: -fq
       - name: Run Swift Tests
         run: swift test
       - name: Set up JDK
-        uses: actions/setup-java@v3
+        if: matrix.os != 'windows-latest'
+        uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '19'
       - name: Run Scala Tests
+        if: matrix.os != 'windows-latest'
         run: sbt test
         working-directory: ./Tests/ScalaSwiftNodeSyntaxTests

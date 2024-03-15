@@ -147,10 +147,7 @@ public class Node {
     let childrenWithUnexpected: [Child]
     if children.isEmpty {
       childrenWithUnexpected = [
-        Child(
-          name: "unexpected",
-          kind: .collection(kind: .unexpectedNodes, collectionElementName: "Unexpected"),
-          isOptional: true)
+        Child(name: "unexpected", kind: .collection(kind: .unexpectedNodes, collectionElementName: "Unexpected"), isOptional: true)
       ]
     } else {
       // Add implicitly generated UnexpectedNodes children between
@@ -164,18 +161,13 @@ public class Node {
 
           if i == 0 {
             unexpectedName = "unexpectedBefore\(childName)"
-            unexpectedDeprecatedName = child.deprecatedName.map {
-              "unexpectedBefore\($0.withFirstCharacterUppercased)"
-            }
+            unexpectedDeprecatedName = child.deprecatedName.map { "unexpectedBefore\($0.withFirstCharacterUppercased)" }
           } else {
-            unexpectedName =
-              "unexpectedBetween\(children[i - 1].name.withFirstCharacterUppercased)And\(childName)"
+            unexpectedName = "unexpectedBetween\(children[i - 1].name.withFirstCharacterUppercased)And\(childName)"
             if let deprecatedName = children[i - 1].deprecatedName?.withFirstCharacterUppercased {
-              unexpectedDeprecatedName =
-                "unexpectedBetween\(deprecatedName)And\(child.deprecatedName?.withFirstCharacterUppercased ?? childName)"
+              unexpectedDeprecatedName = "unexpectedBetween\(deprecatedName)And\(child.deprecatedName?.withFirstCharacterUppercased ?? childName)"
             } else if let deprecatedName = child.deprecatedName?.withFirstCharacterUppercased {
-              unexpectedDeprecatedName =
-                "unexpectedBetween\(children[i - 1].name.withFirstCharacterUppercased)And\(deprecatedName)"
+              unexpectedDeprecatedName = "unexpectedBetween\(children[i - 1].name.withFirstCharacterUppercased)And\(deprecatedName)"
             } else {
               unexpectedDeprecatedName = nil
             }
@@ -190,13 +182,8 @@ public class Node {
         } + [
           Child(
             name: "unexpectedAfter\(children.last!.name.withFirstCharacterUppercased)",
-            deprecatedName: children.last!.deprecatedName.map {
-              "unexpectedAfter\($0.withFirstCharacterUppercased)"
-            },
-            kind: .collection(
-              kind: .unexpectedNodes,
-              collectionElementName:
-                "UnexpectedAfter\(children.last!.name.withFirstCharacterUppercased)"),
+            deprecatedName: children.last!.deprecatedName.map { "unexpectedAfter\($0.withFirstCharacterUppercased)" },
+            kind: .collection(kind: .unexpectedNodes, collectionElementName: "UnexpectedAfter\(children.last!.name.withFirstCharacterUppercased)"),
             isOptional: true
           )
         ]
@@ -237,9 +224,9 @@ public class Node {
           // This will repeat the syntax type before and after the dot, which is
           // a little unfortunate, but it's the only way I found to get docc to
           // generate a fully-qualified type + member.
-          return " - ``\($0.node.syntaxType)``.``\($0.node.syntaxType)/\(childName)``"
+          return " - \($0.node.doccLink).``\($0.node.syntaxType)/\(childName)``"
         } else {
-          return " - ``\($0.node.syntaxType)``"
+          return " - \($0.node.doccLink)"
         }
       }
       .joined(separator: "\n")
@@ -262,7 +249,7 @@ public class Node {
     let list =
       SYNTAX_NODES
       .filter { $0.base == self.kind && !$0.isExperimental }
-      .map { "- ``\($0.kind.syntaxType)``" }
+      .map { "- \($0.kind.doccLink)" }
       .joined(separator: "\n")
 
     guard !list.isEmpty else {
@@ -330,7 +317,7 @@ public struct LayoutNode {
   /// This includes unexpected children
   public var children: [Child] {
     switch node.data {
-    case .layout(let children, traits: _):
+    case .layout(children: let children, traits: _):
       return children
     case .collection:
       preconditionFailure("NodeLayoutView must wrap a Node with data `.layout`")
@@ -345,7 +332,7 @@ public struct LayoutNode {
   /// Traits that the node conforms to.
   public var traits: [String] {
     switch node.data {
-    case .layout(children: _, let traits):
+    case .layout(children: _, traits: let traits):
       return traits
     case .collection:
       preconditionFailure("NodeLayoutView must wrap a Node with data `.layout`")
@@ -397,7 +384,7 @@ public struct CollectionNode {
     switch node.data {
     case .layout:
       preconditionFailure("NodeLayoutView must wrap a Node with data `.collection`")
-    case .collection(let choices):
+    case .collection(choices: let choices):
       return choices
     }
   }
@@ -405,9 +392,9 @@ public struct CollectionNode {
   public var grammar: SwiftSyntax.Trivia {
     let grammar: String
     if let onlyElement = elementChoices.only {
-      grammar = "``\(onlyElement.syntaxType)`` `*`"
+      grammar = "\(onlyElement.doccLink) `*`"
     } else {
-      grammar = "(\(elementChoices.map { "``\($0.syntaxType)``" }.joined(separator: " | "))) `*`"
+      grammar = "(\(elementChoices.map { "\($0.doccLink)" }.joined(separator: " | "))) `*`"
     }
 
     return .docCommentTrivia(
@@ -420,21 +407,17 @@ public struct CollectionNode {
   }
 }
 
-extension Child {
-  fileprivate var kinds: [SyntaxNodeKind] {
+fileprivate extension Child {
+  var kinds: [SyntaxNodeKind] {
     switch kind {
     case .node(let kind):
       return [kind]
     case .nodeChoices(let choices):
       return choices.flatMap(\.kinds)
-    case .collection(let kind, _, _, _):
+    case .collection(kind: let kind, _, _, _):
       return [kind]
     case .token:
       return [.token]
     }
   }
-}
-
-extension Node {
-
 }

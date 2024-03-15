@@ -180,9 +180,7 @@ public let ATTRIBUTE_NODES: [Node] = [
       Child(
         name: "availabilityArguments",
         deprecatedName: "availabilityList",
-        kind: .collection(
-          kind: .availabilityArgumentList, collectionElementName: "AvailabilityArgument",
-          deprecatedCollectionElementName: "Availability")
+        kind: .collection(kind: .availabilityArgumentList, collectionElementName: "AvailabilityArgument", deprecatedCollectionElementName: "Availability")
       ),
       Child(
         name: "semicolon",
@@ -238,9 +236,7 @@ public let ATTRIBUTE_NODES: [Node] = [
       Child(
         name: "platforms",
         deprecatedName: "versionList",
-        kind: .collection(
-          kind: .platformVersionItemList, collectionElementName: "Platform",
-          deprecatedCollectionElementName: "Availability"),
+        kind: .collection(kind: .platformVersionItemList, collectionElementName: "Platform", deprecatedCollectionElementName: "Availability"),
         documentation: "The list of OS versions in which the declaration became ABI stable."
       ),
     ]
@@ -361,8 +357,7 @@ public let ATTRIBUTE_NODES: [Node] = [
     kind: .differentiabilityArgument,
     base: .syntax,
     nameForDiagnostics: "differentiability argument",
-    documentation:
-      "A differentiability argument: either the \"self\" identifier, a function parameter name, or a function parameter index.",
+    documentation: "A differentiability argument: either the \"self\" identifier, a function parameter name, or a function parameter index.",
     traits: [
       "WithTrailingComma"
     ],
@@ -476,8 +471,7 @@ public let ATTRIBUTE_NODES: [Node] = [
         name: "genericWhereClause",
         deprecatedName: "whereClause",
         kind: .node(kind: .genericWhereClause),
-        documentation:
-          "A `where` clause that places additional constraints on generic parameters like `where T: Differentiable`.",
+        documentation: "A `where` clause that places additional constraints on generic parameters like `where T: Differentiable`.",
         isOptional: true
       ),
     ]
@@ -563,8 +557,7 @@ public let ATTRIBUTE_NODES: [Node] = [
     kind: .effectsAttributeArgumentList,
     base: .syntaxCollection,
     nameForDiagnostics: "@_effects arguments",
-    documentation:
-      "The arguments of the '@_effects' attribute. These will be parsed during the SIL stage.",
+    documentation: "The arguments of the '@_effects' attribute. These will be parsed during the SIL stage.",
     elementChoices: [.token]
   ),
 
@@ -595,8 +588,7 @@ public let ATTRIBUTE_NODES: [Node] = [
     kind: .implementsAttributeArguments,
     base: .syntax,
     nameForDiagnostics: "@_implements arguemnts",
-    documentation:
-      "The arguments for the `@_implements` attribute of the form `Type, methodName(arg1Label:arg2Label:)`",
+    documentation: "The arguments for the `@_implements` attribute of the form `Type, methodName(arg1Label:arg2Label:)`",
     children: [
       Child(
         name: "type",
@@ -637,7 +629,6 @@ public let ATTRIBUTE_NODES: [Node] = [
           .keyword(.kind),
           .keyword(.spi),
           .keyword(.spiModule),
-          .keyword(.available),
         ]),
         nameForDiagnostics: "label",
         documentation: "The label of the argument"
@@ -708,8 +699,7 @@ public let ATTRIBUTE_NODES: [Node] = [
       Child(
         name: "ordinal",
         kind: .token(choices: [.token(.integerLiteral)]),
-        documentation:
-          "The ordinal corresponding to the 'some' keyword that introduced this opaque type."
+        documentation: "The ordinal corresponding to the 'some' keyword that introduced this opaque type."
       ),
     ]
   ),
@@ -748,18 +738,14 @@ public let ATTRIBUTE_NODES: [Node] = [
     base: .syntaxCollection,
     nameForDiagnostics: "argument to '@_specialize",
     documentation: "A collection of arguments for the `@_specialize` attribute",
-    elementChoices: [
-      .labeledSpecializeArgument, .specializeAvailabilityArgument,
-      .specializeTargetFunctionArgument, .genericWhereClause,
-    ]
+    elementChoices: [.labeledSpecializeArgument, .specializeAvailabilityArgument, .specializeTargetFunctionArgument, .genericWhereClause]
   ),
 
   Node(
     kind: .specializeTargetFunctionArgument,
     base: .syntax,
     nameForDiagnostics: "attribute argument",
-    documentation:
-      "A labeled argument for the `@_specialize` attribute with a function decl value like `target: myFunc(_:)`",
+    documentation: "A labeled argument for the `@_specialize` attribute with a function decl value like `target: myFunc(_:)`",
     traits: [
       "WithTrailingComma"
     ],

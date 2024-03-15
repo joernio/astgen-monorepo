@@ -24,6 +24,15 @@ public enum TokenChoice: Equatable {
     case .token: return false
     }
   }
+
+  public var varOrCaseName: TokenSyntax {
+    switch self {
+    case .keyword(let keyword):
+      return keyword.spec.varOrCaseName
+    case .token(let token):
+      return token.spec.varOrCaseName
+    }
+  }
 }
 
 public enum ChildKind {
@@ -32,14 +41,11 @@ public enum ChildKind {
   /// The child always contains a node that matches one of the `choices`.
   case nodeChoices(choices: [Child])
   /// The child is a collection of `kind`.
-  case collection(
-    kind: SyntaxNodeKind, collectionElementName: String, defaultsToEmpty: Bool = false,
-    deprecatedCollectionElementName: String? = nil)
+  case collection(kind: SyntaxNodeKind, collectionElementName: String, defaultsToEmpty: Bool = false, deprecatedCollectionElementName: String? = nil)
   /// The child is a token that matches one of the given `choices`.
   /// If `requiresLeadingSpace` or `requiresTrailingSpace` is not `nil`, it
   /// overrides the default leading/trailing space behavior of the token.
-  case token(
-    choices: [TokenChoice], requiresLeadingSpace: Bool? = nil, requiresTrailingSpace: Bool? = nil)
+  case token(choices: [TokenChoice], requiresLeadingSpace: Bool? = nil, requiresTrailingSpace: Bool? = nil)
 
   public var isNodeChoices: Bool {
     if case .nodeChoices = self {
@@ -123,11 +129,11 @@ public class Child {
 
   public var syntaxNodeKind: SyntaxNodeKind {
     switch kind {
-    case .node(let kind):
+    case .node(kind: let kind):
       return kind
     case .nodeChoices:
       return .syntax
-    case .collection(let kind, _, _, _):
+    case .collection(kind: let kind, _, _, _):
       return kind
     case .token:
       return .token
@@ -143,8 +149,7 @@ public class Child {
   ///
   /// For any other kind of child nodes, accessing this property crashes.
   public var syntaxChoicesType: TypeSyntax {
-    precondition(
-      kind.isNodeChoices, "Cannot get `syntaxChoicesType` for node that doesn’t have nodeChoices")
+    precondition(kind.isNodeChoices, "Cannot get `syntaxChoicesType` for node that doesn’t have nodeChoices")
     return "\(raw: name.withFirstCharacterUppercased)"
   }
 
@@ -223,7 +228,7 @@ public class Child {
       return choices.isEmpty
     case .node(let kind):
       return kind.isBase
-    case .collection(let kind, _, _, _):
+    case .collection(kind: let kind, _, _, _):
       return kind.isBase
     case .token:
       return false
@@ -236,8 +241,7 @@ public class Child {
   /// an experimental language feature.
   public var apiAttributes: AttributeListSyntax {
     guard isExperimental else { return "" }
-    return AttributeListSyntax("@_spi(ExperimentalLanguageFeatures)").with(
-      \.trailingTrivia, .newline)
+    return AttributeListSyntax("@_spi(ExperimentalLanguageFeatures)").with(\.trailingTrivia, .newline)
   }
 
   /// If a classification is passed, it specifies the color identifiers in
@@ -254,19 +258,15 @@ public class Child {
     documentation: String? = nil,
     isOptional: Bool = false
   ) {
-    precondition(
-      name.first?.isLowercase ?? true, "The first letter of a child’s name should be lowercase")
-    precondition(
-      deprecatedName?.first?.isLowercase ?? true,
-      "The first letter of a child’s deprecatedName should be lowercase")
+    precondition(name.first?.isLowercase ?? true, "The first letter of a child’s name should be lowercase")
+    precondition(deprecatedName?.first?.isLowercase ?? true, "The first letter of a child’s deprecatedName should be lowercase")
     self.name = name
     self.deprecatedName = deprecatedName
     self.kind = kind
     self.experimentalFeature = experimentalFeature
     self.nameForDiagnostics = nameForDiagnostics
     self.documentationSummary = SwiftSyntax.Trivia.docCommentTrivia(from: documentation)
-    self.documentationAbstract = String(
-      documentation?.split(whereSeparator: \.isNewline).first ?? "")
+    self.documentationAbstract = String(documentation?.split(whereSeparator: \.isNewline).first ?? "")
     self.isOptional = isOptional
   }
 }

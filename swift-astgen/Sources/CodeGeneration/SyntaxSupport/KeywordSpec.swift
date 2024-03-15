@@ -19,6 +19,7 @@ public struct KeywordSpec {
   /// The experimental feature the keyword is part of, or `nil` if this isn't
   /// for an experimental feature.
   public let experimentalFeature: ExperimentalFeature?
+  public let experimentalFeature2: ExperimentalFeature?
 
   /// Indicates if the token kind is switched from being an identifier to a keyword in the lexer.
   public let isLexerClassified: Bool
@@ -43,8 +44,7 @@ public struct KeywordSpec {
   /// This is typically used to mark APIs as SPI when the keyword is part of an experimental language feature.
   public var apiAttributes: AttributeListSyntax {
     guard isExperimental else { return "" }
-    return AttributeListSyntax("@_spi(ExperimentalLanguageFeatures)").with(
-      \.trailingTrivia, .newline)
+    return AttributeListSyntax("@_spi(ExperimentalLanguageFeatures)").with(\.trailingTrivia, .newline)
   }
 
   /// Initializes a new `KeywordSpec` instance.
@@ -60,6 +60,26 @@ public struct KeywordSpec {
   ) {
     self.name = name
     self.experimentalFeature = experimentalFeature
+    self.experimentalFeature2 = nil
+    self.isLexerClassified = isLexerClassified
+  }
+
+  /// Initializes a new `KeywordSpec` instance.
+  ///
+  /// - Parameters:
+  ///   - name: A name of the keyword.
+  ///   - experimentalFeature: The experimental feature the keyword is part of, or `nil` if this isn't for an experimental feature.
+  ///   - or: A second experimental feature the keyword is also part of, or `nil` if this isn't for an experimental feature.
+  ///   - isLexerClassified: Indicates if the token kind is switched from being an identifier to a keyword in the lexer.
+  init(
+    _ name: String,
+    experimentalFeature: ExperimentalFeature,
+    or experimentalFeature2: ExperimentalFeature,
+    isLexerClassified: Bool = false
+  ) {
+    self.name = name
+    self.experimentalFeature = experimentalFeature
+    self.experimentalFeature2 = experimentalFeature2
     self.isLexerClassified = isLexerClassified
   }
 }
@@ -83,11 +103,14 @@ public enum Keyword: CaseIterable {
   case _backDeploy
   case _borrow
   case _borrowing
+  case _BridgeObject
   case _cdecl
   case _Class
   case _compilerInitialized
   case _const
+  case _consume
   case _consuming
+  case _copy
   case _documentation
   case _dynamicReplacement
   case _effects
@@ -98,6 +121,7 @@ public enum Keyword: CaseIterable {
   case _local
   case _modify
   case _move
+  case _mutate
   case _mutating
   case _NativeClass
   case _NativeRefCountedObject
@@ -120,6 +144,7 @@ public enum Keyword: CaseIterable {
   case _swift_native_objc_runtime_base
   case _Trivial
   case _TrivialAtMost
+  case _TrivialStride
   case _typeEraser
   case _unavailableFromAsync
   case _underlyingVersion
@@ -184,6 +209,7 @@ public enum Keyword: CaseIterable {
   case discard
   case forward
   case `func`
+  case freestanding
   case get
   case `guard`
   case higherThan
@@ -231,6 +257,7 @@ public enum Keyword: CaseIterable {
   case package
   case postfix
   case `precedencegroup`
+  case preconcurrency
   case prefix
   case `private`
   case `Protocol`
@@ -240,6 +267,8 @@ public enum Keyword: CaseIterable {
   case renamed
   case `repeat`
   case required
+  case _resultDependsOn
+  case _resultDependsOnSelf
   case `rethrows`
   case retroactive
   case `return`
@@ -264,6 +293,7 @@ public enum Keyword: CaseIterable {
   case then
   case `throw`
   case `throws`
+  case transferring
   case transpose
   case `true`
   case `try`
@@ -301,6 +331,10 @@ public enum Keyword: CaseIterable {
       return KeywordSpec("_backDeploy")
     case ._borrow:
       return KeywordSpec("_borrow")
+    case ._borrowing:
+      return KeywordSpec("_borrowing", experimentalFeature: .referenceBindings, or: .borrowingSwitch)
+    case ._BridgeObject:
+      return KeywordSpec("_BridgeObject")
     case ._cdecl:
       return KeywordSpec("_cdecl")
     case ._Class:
@@ -309,6 +343,12 @@ public enum Keyword: CaseIterable {
       return KeywordSpec("_compilerInitialized")
     case ._const:
       return KeywordSpec("_const")
+    case ._consume:
+      return KeywordSpec("_consume", experimentalFeature: .nonescapableTypes)
+    case ._consuming:
+      return KeywordSpec("_consuming", experimentalFeature: .referenceBindings)
+    case ._copy:
+      return KeywordSpec("_copy", experimentalFeature: .nonescapableTypes)
     case ._documentation:
       return KeywordSpec("_documentation")
     case ._dynamicReplacement:
@@ -329,6 +369,10 @@ public enum Keyword: CaseIterable {
       return KeywordSpec("_modify")
     case ._move:
       return KeywordSpec("_move")
+    case ._mutate:
+      return KeywordSpec("_mutate", experimentalFeature: .nonescapableTypes)
+    case ._mutating:
+      return KeywordSpec("_mutating", experimentalFeature: .referenceBindings)
     case ._NativeClass:
       return KeywordSpec("_NativeClass")
     case ._NativeRefCountedObject:
@@ -371,6 +415,8 @@ public enum Keyword: CaseIterable {
       return KeywordSpec("_Trivial")
     case ._TrivialAtMost:
       return KeywordSpec("_TrivialAtMost")
+    case ._TrivialStride:
+      return KeywordSpec("_TrivialStride")
     case ._typeEraser:
       return KeywordSpec("_typeEraser")
     case ._unavailableFromAsync:
@@ -499,6 +545,8 @@ public enum Keyword: CaseIterable {
       return KeywordSpec("forward")
     case .func:
       return KeywordSpec("func", isLexerClassified: true)
+    case .freestanding:
+      return KeywordSpec("freestanding")
     case .get:
       return KeywordSpec("get")
     case .guard:
@@ -611,6 +659,10 @@ public enum Keyword: CaseIterable {
       return KeywordSpec("repeat", isLexerClassified: true)
     case .required:
       return KeywordSpec("required")
+    case ._resultDependsOn:
+      return KeywordSpec("_resultDependsOn", experimentalFeature: .nonescapableTypes)
+    case ._resultDependsOnSelf:
+      return KeywordSpec("_resultDependsOnSelf", experimentalFeature: .nonescapableTypes)
     case .rethrows:
       return KeywordSpec("rethrows", isLexerClassified: true)
     case .retroactive:
@@ -659,6 +711,11 @@ public enum Keyword: CaseIterable {
       return KeywordSpec("throw", isLexerClassified: true)
     case .throws:
       return KeywordSpec("throws", isLexerClassified: true)
+    case .transferring:
+      return KeywordSpec(
+        "transferring",
+        experimentalFeature: .transferringArgsAndResults
+      )
     case .transpose:
       return KeywordSpec("transpose")
     case .true:
@@ -673,6 +730,8 @@ public enum Keyword: CaseIterable {
       return KeywordSpec("unavailable")
     case .unchecked:
       return KeywordSpec("unchecked")
+    case .preconcurrency:
+      return KeywordSpec("preconcurrency")
     case .unowned:
       return KeywordSpec("unowned")
     case .unsafe:
@@ -699,12 +758,6 @@ public enum Keyword: CaseIterable {
       return KeywordSpec("wrt")
     case .yield:
       return KeywordSpec("yield")
-    case ._borrowing:
-      return KeywordSpec("_borrowing", experimentalFeature: .referenceBindings)
-    case ._consuming:
-      return KeywordSpec("_consuming", experimentalFeature: .referenceBindings)
-    case ._mutating:
-      return KeywordSpec("_mutating", experimentalFeature: .referenceBindings)
     }
   }
 }

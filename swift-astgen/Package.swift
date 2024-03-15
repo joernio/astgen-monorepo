@@ -1,4 +1,4 @@
-// swift-tools-version: 5.9
+// swift-tools-version: 5.10
 
 import PackageDescription
 
@@ -12,7 +12,7 @@ let package = Package(
   ],
   dependencies: [
     .package(url: "https://github.com/apple/swift-argument-parser", from: "1.2.0"),
-    .package(url: "https://github.com/apple/swift-syntax", from: "509.0.0"),
+    .package(url: "https://github.com/apple/swift-syntax", from: "510.0.1"),
   ],
   targets: [
     .target(
@@ -22,6 +22,9 @@ let package = Package(
         .product(name: "SwiftParser", package: "swift-syntax"),
         .product(name: "SwiftOperators", package: "swift-syntax"),
         "CodeGeneration",
+      ],
+      swiftSettings: [
+        .unsafeFlags(["-warnings-as-errors"])
       ]
     ),
     .target(

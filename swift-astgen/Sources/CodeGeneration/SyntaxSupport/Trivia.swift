@@ -103,8 +103,7 @@ public class Trivia {
 public let TRIVIAS: [Trivia] = [
   Trivia(
     name: "Backslash",
-    comment:
-      #"A backslash that is at the end of a line in a multi-line string literal to escape the newline."#,
+    comment: #"A backslash that is at the end of a line in a multi-line string literal to escape the newline."#,
     characters: [
       Character("\\")
     ],
@@ -186,8 +185,7 @@ public let TRIVIAS: [Trivia] = [
 
   Trivia(
     name: "Pound",
-    comment:
-      #"A '#' that is at the end of a line in a multi-line string literal to escape the newline."#,
+    comment: #"A '#' that is at the end of a line in a multi-line string literal to escape the newline."#,
     characters: [
       Character("#")
     ],

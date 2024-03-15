@@ -27,8 +27,7 @@ public let STMT_NODES: [Node] = [
       Child(
         name: "availabilityArguments",
         deprecatedName: "availabilitySpec",
-        kind: .collection(
-          kind: .availabilityArgumentList, collectionElementName: "AvailabilityArgument")
+        kind: .collection(kind: .availabilityArgumentList, collectionElementName: "AvailabilityArgument")
       ),
       Child(
         name: "rightParen",
@@ -82,8 +81,7 @@ public let STMT_NODES: [Node] = [
       ),
       Child(
         name: "catchItems",
-        kind: .collection(
-          kind: .catchItemList, collectionElementName: "CatchItem", defaultsToEmpty: true)
+        kind: .collection(kind: .catchItemList, collectionElementName: "CatchItem", defaultsToEmpty: true)
       ),
       Child(
         name: "body",
@@ -219,14 +217,19 @@ public let STMT_NODES: [Node] = [
         kind: .token(choices: [.keyword(.do)])
       ),
       Child(
+        name: "throwsClause",
+        kind: .node(kind: .throwsClause),
+        documentation: "The clause specifying the type of errors thrown from the 'do' block.",
+        isOptional: true
+      ),
+      Child(
         name: "body",
         kind: .node(kind: .codeBlock),
         nameForDiagnostics: "body"
       ),
       Child(
         name: "catchClauses",
-        kind: .collection(
-          kind: .catchClauseList, collectionElementName: "CatchClause", defaultsToEmpty: true)
+        kind: .collection(kind: .catchClauseList, collectionElementName: "CatchClause", defaultsToEmpty: true)
       ),
     ]
   ),
@@ -415,8 +418,7 @@ public let STMT_NODES: [Node] = [
         name: "bindingSpecifier",
         deprecatedName: "bindingKeyword",
         kind: .token(choices: [
-          .keyword(.let), .keyword(.var), .keyword(.inout), .keyword(._mutating),
-          .keyword(._borrowing),
+          .keyword(.let), .keyword(.var), .keyword(.inout), .keyword(._mutating), .keyword(._borrowing),
           .keyword(._consuming),
         ])
       ),

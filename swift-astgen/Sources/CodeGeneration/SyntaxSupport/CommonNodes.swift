@@ -22,8 +22,7 @@ public let COMMON_NODES: [Node] = [
     kind: .codeBlockItem,
     base: .syntax,
     nameForDiagnostics: nil,
-    documentation:
-      "A CodeBlockItem is any Syntax node that appears on its own line inside a CodeBlock.",
+    documentation: "A CodeBlockItem is any Syntax node that appears on its own line inside a CodeBlock.",
     parserFunction: "parseNonOptionalCodeBlockItem",
     children: [
       Child(
@@ -57,6 +56,7 @@ public let COMMON_NODES: [Node] = [
     kind: .codeBlock,
     base: .syntax,
     nameForDiagnostics: "code block",
+    parserFunction: "parseCodeBlock",
     traits: [
       "Braced",
       "WithStatements",
@@ -81,29 +81,33 @@ public let COMMON_NODES: [Node] = [
   ),
 
   Node(
-    kind: .thrownTypeClause,
+    kind: .throwsClause,
     base: .syntax,
-    nameForDiagnostics: "thrown type clause",
-    documentation: "The specific error type that a function can throw.",
-    traits: [
-      "Parenthesized"
-    ],
+    nameForDiagnostics: "throws clause",
     children: [
+      Child(
+        name: "throwsSpecifier",
+        kind: .token(choices: [.keyword(.throws), .keyword(.rethrows)]),
+        documentation: "The `throws` keyword."
+      ),
       Child(
         name: "leftParen",
         kind: .token(choices: [.token(.leftParen)]),
-        documentation: "The '(' to open the thrown type clause."
+        documentation: "The '(' to open the thrown error type specification.",
+        isOptional: true
       ),
       Child(
         name: "type",
         kind: .node(kind: .type),
         nameForDiagnostics: "thrown type",
-        documentation: "The thrown error type."
+        documentation: "The thrown error type.",
+        isOptional: true
       ),
       Child(
         name: "rightParen",
         kind: .token(choices: [.token(.rightParen)]),
-        documentation: "The ')' to closure the thrown type clause."
+        documentation: "The ')' to close the thrown error type specification.",
+        isOptional: true
       ),
     ]
   ),
@@ -123,16 +127,9 @@ public let COMMON_NODES: [Node] = [
         isOptional: true
       ),
       Child(
-        name: "throwsSpecifier",
-        kind: .token(choices: [.keyword(.throws)]),
-        documentation: "The `throws` keyword.",
-        isOptional: true
-      ),
-      Child(
-        name: "thrownError",
-        kind: .node(kind: .thrownTypeClause),
-        experimentalFeature: .typedThrows,
-        documentation: "The specific error type thrown by this accessor.",
+        name: "throwsClause",
+        kind: .node(kind: .throwsClause),
+        documentation: "The clause specifying thrown errors",
         isOptional: true
       ),
     ]
@@ -153,16 +150,9 @@ public let COMMON_NODES: [Node] = [
         isOptional: true
       ),
       Child(
-        name: "throwsSpecifier",
-        kind: .token(choices: [.keyword(.throws), .keyword(.rethrows)]),
-        documentation: "The `throws` or `rethrows` keyword.",
-        isOptional: true
-      ),
-      Child(
-        name: "thrownError",
-        kind: .node(kind: .thrownTypeClause),
-        experimentalFeature: .typedThrows,
-        documentation: "The specific error type thrown by this function.",
+        name: "throwsClause",
+        kind: .node(kind: .throwsClause),
+        documentation: "The clause specifying thrown errors",
         isOptional: true
       ),
     ]
@@ -201,8 +191,7 @@ public let COMMON_NODES: [Node] = [
     kind: .missingDecl,
     base: .decl,
     nameForDiagnostics: "declaration",
-    documentation:
-      "In case the source code is missing a declaration, this node stands in place of the missing declaration.",
+    documentation: "In case the source code is missing a declaration, this node stands in place of the missing declaration.",
     traits: [
       "MissingNode",
       "WithAttributes",
@@ -211,22 +200,17 @@ public let COMMON_NODES: [Node] = [
     children: [
       Child(
         name: "attributes",
-        kind: .collection(
-          kind: .attributeList, collectionElementName: "Attribute", defaultsToEmpty: true),
-        documentation:
-          "If there were standalone attributes without a declaration to attach them to, the ``MissingDeclSyntax`` will contain these."
+        kind: .collection(kind: .attributeList, collectionElementName: "Attribute", defaultsToEmpty: true),
+        documentation: "If there were standalone attributes without a declaration to attach them to, the ``MissingDeclSyntax`` will contain these."
       ),
       Child(
         name: "modifiers",
-        kind: .collection(
-          kind: .declModifierList, collectionElementName: "Modifier", defaultsToEmpty: true),
-        documentation:
-          "If there were standalone modifiers without a declaration to attach them to, the ``MissingDeclSyntax`` will contain these."
+        kind: .collection(kind: .declModifierList, collectionElementName: "Modifier", defaultsToEmpty: true),
+        documentation: "If there were standalone modifiers without a declaration to attach them to, the ``MissingDeclSyntax`` will contain these."
       ),
       Child(
         name: "placeholder",
-        kind: .token(
-          choices: [.token(.identifier)], requiresLeadingSpace: false, requiresTrailingSpace: false),
+        kind: .token(choices: [.token(.identifier)], requiresLeadingSpace: false, requiresTrailingSpace: false),
         documentation: """
           A placeholder, i.e. `<#decl#>`, that can be inserted into the source code to represent the missing declaration.
 
@@ -240,16 +224,14 @@ public let COMMON_NODES: [Node] = [
     kind: .missingExpr,
     base: .expr,
     nameForDiagnostics: "expression",
-    documentation:
-      "In case the source code is missing an expression, this node stands in place of the missing expression.",
+    documentation: "In case the source code is missing an expression, this node stands in place of the missing expression.",
     traits: [
       "MissingNode"
     ],
     children: [
       Child(
         name: "placeholder",
-        kind: .token(
-          choices: [.token(.identifier)], requiresLeadingSpace: false, requiresTrailingSpace: false),
+        kind: .token(choices: [.token(.identifier)], requiresLeadingSpace: false, requiresTrailingSpace: false),
         documentation: """
           A placeholder, i.e. `<#expression#>`, that can be inserted into the source code to represent the missing expression.
 
@@ -263,16 +245,14 @@ public let COMMON_NODES: [Node] = [
     kind: .missingPattern,
     base: .pattern,
     nameForDiagnostics: "pattern",
-    documentation:
-      "In case the source code is missing a pattern, this node stands in place of the missing pattern.",
+    documentation: "In case the source code is missing a pattern, this node stands in place of the missing pattern.",
     traits: [
       "MissingNode"
     ],
     children: [
       Child(
         name: "placeholder",
-        kind: .token(
-          choices: [.token(.identifier)], requiresLeadingSpace: false, requiresTrailingSpace: false),
+        kind: .token(choices: [.token(.identifier)], requiresLeadingSpace: false, requiresTrailingSpace: false),
         documentation: """
           A placeholder, i.e. `<#pattern#>`, that can be inserted into the source code to represent the missing pattern.
 
@@ -286,16 +266,14 @@ public let COMMON_NODES: [Node] = [
     kind: .missingStmt,
     base: .stmt,
     nameForDiagnostics: "statement",
-    documentation:
-      "In case the source code is missing a statement, this node stands in place of the missing statement.",
+    documentation: "In case the source code is missing a statement, this node stands in place of the missing statement.",
     traits: [
       "MissingNode"
     ],
     children: [
       Child(
         name: "placeholder",
-        kind: .token(
-          choices: [.token(.identifier)], requiresLeadingSpace: false, requiresTrailingSpace: false),
+        kind: .token(choices: [.token(.identifier)], requiresLeadingSpace: false, requiresTrailingSpace: false),
         documentation: """
           A placeholder, i.e. `<#statement#>`, that can be inserted into the source code to represent the missing pattern.
 
@@ -309,16 +287,14 @@ public let COMMON_NODES: [Node] = [
     kind: .missing,
     base: .syntax,
     nameForDiagnostics: nil,
-    documentation:
-      "In case the source code is missing a syntax node, this node stands in place of the missing node.",
+    documentation: "In case the source code is missing a syntax node, this node stands in place of the missing node.",
     traits: [
       "MissingNode"
     ],
     children: [
       Child(
         name: "placeholder",
-        kind: .token(
-          choices: [.token(.identifier)], requiresLeadingSpace: false, requiresTrailingSpace: false),
+        kind: .token(choices: [.token(.identifier)], requiresLeadingSpace: false, requiresTrailingSpace: false),
         documentation: """
           A placeholder, i.e. `<#syntax#>`, that can be inserted into the source code to represent the missing pattern.
 
@@ -332,16 +308,14 @@ public let COMMON_NODES: [Node] = [
     kind: .missingType,
     base: .type,
     nameForDiagnostics: "type",
-    documentation:
-      "In case the source code is missing a type, this node stands in place of the missing type.",
+    documentation: "In case the source code is missing a type, this node stands in place of the missing type.",
     traits: [
       "MissingNode"
     ],
     children: [
       Child(
         name: "placeholder",
-        kind: .token(
-          choices: [.token(.identifier)], requiresLeadingSpace: false, requiresTrailingSpace: false),
+        kind: .token(choices: [.token(.identifier)], requiresLeadingSpace: false, requiresTrailingSpace: false),
         documentation: """
           A placeholder, i.e. `<#type#>`, that can be inserted into the source code to represent the missing type.
 
@@ -379,15 +353,9 @@ public let COMMON_NODES: [Node] = [
         isOptional: true
       ),
       Child(
-        name: "throwsSpecifier",
-        kind: .token(choices: [.keyword(.throws)]),
-        isOptional: true
-      ),
-      Child(
-        name: "thrownError",
-        kind: .node(kind: .thrownTypeClause),
-        experimentalFeature: .typedThrows,
-        documentation: "The specific error type thrown by this function type.",
+        name: "throwsClause",
+        kind: .node(kind: .throwsClause),
+        documentation: "The clause specifying thrown errors",
         isOptional: true
       ),
     ]
@@ -404,8 +372,7 @@ public let COMMON_NODES: [Node] = [
     kind: .unexpectedNodes,
     base: .syntaxCollection,
     nameForDiagnostics: nil,
-    documentation:
-      "A collection of syntax nodes that occurred in the source code but could not be used to form a valid syntax tree.",
+    documentation: "A collection of syntax nodes that occurred in the source code but could not be used to form a valid syntax tree.",
     elementChoices: [.syntax]
   ),
 

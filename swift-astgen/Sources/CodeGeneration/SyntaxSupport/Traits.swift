@@ -14,12 +14,19 @@ import SwiftSyntax
 
 public class Trait {
   public let traitName: String
+  /// The kind of syntax the trait refines.
+  ///
+  /// Base kind _must_ be a base syntax node, e.g. `.decl`, `.expr` , or
+  /// others. See ``SyntaxNodeKind/isBase`` for more details.
+  public let baseKind: SyntaxNodeKind?
   public let protocolName: TokenSyntax
   public let documentation: SwiftSyntax.Trivia
   public let children: [Child]
 
-  init(traitName: String, documentation: String? = nil, children: [Child]) {
+  init(traitName: String, baseKind: SyntaxNodeKind? = nil, documentation: String? = nil, children: [Child]) {
+    precondition(baseKind?.isBase != false, "`baseKind` must be a base syntax node kind")
     self.traitName = traitName
+    self.baseKind = baseKind
     self.protocolName = .identifier("\(traitName)Syntax")
     self.documentation = SwiftSyntax.Trivia.docCommentTrivia(from: documentation)
     self.children = children
@@ -36,15 +43,20 @@ public let TRAITS: [Trait] = [
   ),
   Trait(
     traitName: "DeclGroup",
+    baseKind: .decl,
     children: [
       Child(name: "attributes", kind: .node(kind: .attributeList)),
       Child(name: "modifiers", kind: .node(kind: .declModifierList)),
+      Child(
+        name: "introducer",
+        kind: .token(choices: [.keyword(.actor), .keyword(.class), .keyword(.enum), .keyword(.extension), .keyword(.protocol), .keyword(.struct)]),
+        documentation: "The token that introduces this declaration, eg. `class` for a class declaration."
+      ),
       Child(name: "inheritanceClause", kind: .node(kind: .inheritanceClause), isOptional: true),
       Child(
         name: "genericWhereClause",
         kind: .node(kind: .genericWhereClause),
-        documentation:
-          "A `where` clause that places additional constraints on generic parameters like `where Element: Hashable`.",
+        documentation: "A `where` clause that places additional constraints on generic parameters like `where Element: Hashable`.",
         isOptional: true
       ),
       Child(name: "memberBlock", kind: .node(kind: .memberBlock)),
@@ -53,46 +65,24 @@ public let TRAITS: [Trait] = [
   Trait(
     traitName: "EffectSpecifiers",
     children: [
-      Child(
-        name: "unexpectedBeforeAsyncSpecifier", kind: .node(kind: .unexpectedNodes),
-        isOptional: true),
-      Child(
-        name: "asyncSpecifier", kind: .token(choices: [.keyword(.async), .keyword(.reasync)]),
-        isOptional: true),
-      Child(
-        name: "unexpectedBetweenAsyncSpecifierAndThrowsSpecifier",
-        kind: .node(kind: .unexpectedNodes), isOptional: true),
-      Child(
-        name: "throwsSpecifier", kind: .token(choices: [.keyword(.throws), .keyword(.rethrows)]),
-        isOptional: true),
-      Child(
-        name: "unexpectedBetweenThrowsSpecifierAndThrownError", kind: .node(kind: .unexpectedNodes),
-        isOptional: true),
-      Child(
-        name: "thrownError",
-        kind: .node(kind: .thrownTypeClause),
-        experimentalFeature: .typedThrows,
-        documentation: "The specific thrown error type.",
-        isOptional: true
-      ),
-      Child(
-        name: "unexpectedAfterThrownError", kind: .node(kind: .unexpectedNodes), isOptional: true),
+      Child(name: "unexpectedBeforeAsyncSpecifier", kind: .node(kind: .unexpectedNodes), isOptional: true),
+      Child(name: "asyncSpecifier", kind: .token(choices: [.keyword(.async), .keyword(.reasync)]), isOptional: true),
+      Child(name: "unexpectedBetweenAsyncSpecifierAndThrowsClause", kind: .node(kind: .unexpectedNodes), isOptional: true),
+      Child(name: "throwsClause", kind: .node(kind: .throwsClause), isOptional: true),
+      Child(name: "unexpectedAfterThrowsClause", kind: .node(kind: .unexpectedNodes), isOptional: true),
     ]
   ),
   Trait(
     traitName: "FreestandingMacroExpansion",
     children: [
       Child(name: "pound", deprecatedName: "poundToken", kind: .token(choices: [.token(.pound)])),
-      Child(
-        name: "macroName", deprecatedName: "macro", kind: .token(choices: [.token(.identifier)])),
-      Child(
-        name: "genericArgumentClause", kind: .node(kind: .genericArgumentClause), isOptional: true),
+      Child(name: "macroName", deprecatedName: "macro", kind: .token(choices: [.token(.identifier)])),
+      Child(name: "genericArgumentClause", kind: .node(kind: .genericArgumentClause), isOptional: true),
       Child(name: "leftParen", kind: .token(choices: [.token(.leftParen)]), isOptional: true),
       Child(name: "arguments", deprecatedName: "argumentList", kind: .node(kind: .labeledExprList)),
       Child(name: "rightParen", kind: .token(choices: [.token(.rightParen)]), isOptional: true),
       Child(name: "trailingClosure", kind: .node(kind: .closureExpr), isOptional: true),
-      Child(
-        name: "additionalTrailingClosures", kind: .node(kind: .multipleTrailingClosureElementList)),
+      Child(name: "additionalTrailingClosures", kind: .node(kind: .multipleTrailingClosureElementList)),
     ]
   ),
   Trait(
@@ -155,8 +145,7 @@ public let TRAITS: [Trait] = [
       Child(
         name: "genericWhereClause",
         kind: .node(kind: .genericWhereClause),
-        documentation:
-          "A `where` clause that places additional constraints on generic parameters like `where Element: Hashable`.",
+        documentation: "A `where` clause that places additional constraints on generic parameters like `where Element: Hashable`.",
         isOptional: true
       ),
     ]
@@ -165,6 +154,12 @@ public let TRAITS: [Trait] = [
     traitName: "WithModifiers",
     children: [
       Child(name: "modifiers", kind: .node(kind: .declModifierList))
+    ]
+  ),
+  Trait(
+    traitName: "WithOptionalCodeBlock",
+    children: [
+      Child(name: "body", kind: .node(kind: .codeBlock), isOptional: true)
     ]
   ),
   Trait(

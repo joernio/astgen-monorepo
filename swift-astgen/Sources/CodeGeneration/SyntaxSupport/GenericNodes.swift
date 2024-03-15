@@ -49,16 +49,13 @@ public let GENERIC_NODES: [Node] = [
       Child(
         name: "parameters",
         deprecatedName: "genericParameterList",
-        kind: .collection(
-          kind: .genericParameterList, collectionElementName: "Parameter",
-          deprecatedCollectionElementName: "GenericParameter"),
+        kind: .collection(kind: .genericParameterList, collectionElementName: "Parameter", deprecatedCollectionElementName: "GenericParameter"),
         documentation: "The list of generic parameters in the clause."
       ),
       Child(
         name: "genericWhereClause",
         kind: .node(kind: .genericWhereClause),
-        documentation:
-          "A `where` clause that places additional constraints on generic parameters like `where Element: Hashable`.",
+        documentation: "A `where` clause that places additional constraints on generic parameters like `where Element: Hashable`.",
         isOptional: true
       ),
       Child(
@@ -88,8 +85,7 @@ public let GENERIC_NODES: [Node] = [
     children: [
       Child(
         name: "attributes",
-        kind: .collection(
-          kind: .attributeList, collectionElementName: "Attribute", defaultsToEmpty: true)
+        kind: .collection(kind: .attributeList, collectionElementName: "Attribute", defaultsToEmpty: true)
       ),
       Child(
         name: "eachKeyword",
@@ -167,8 +163,7 @@ public let GENERIC_NODES: [Node] = [
     kind: .genericWhereClause,
     base: .syntax,
     nameForDiagnostics: "'where' clause",
-    documentation:
-      "A `where` clause that places additional constraints on generic parameters like `where Element: Hashable`.",
+    documentation: "A `where` clause that places additional constraints on generic parameters like `where Element: Hashable`.",
     children: [
       Child(
         name: "whereKeyword",
@@ -210,6 +205,8 @@ public let GENERIC_NODES: [Node] = [
           .keyword(._NativeRefCountedObject),
           .keyword(._Class),
           .keyword(._NativeClass),
+          .keyword(._BridgeObject),
+          .keyword(._TrivialStride),
         ])
       ),
       Child(
@@ -255,8 +252,7 @@ public let GENERIC_NODES: [Node] = [
       Child(
         name: "primaryAssociatedTypes",
         deprecatedName: "primaryAssociatedTypeList",
-        kind: .collection(
-          kind: .primaryAssociatedTypeList, collectionElementName: "PrimaryAssociatedType")
+        kind: .collection(kind: .primaryAssociatedTypeList, collectionElementName: "PrimaryAssociatedType")
       ),
       Child(
         name: "rightAngle",
@@ -308,9 +304,7 @@ public let GENERIC_NODES: [Node] = [
       Child(
         name: "equal",
         deprecatedName: "equalityToken",
-        kind: .token(choices: [
-          .token(.binaryOperator), .token(.prefixOperator), .token(.postfixOperator),
-        ])
+        kind: .token(choices: [.token(.binaryOperator), .token(.prefixOperator), .token(.postfixOperator)])
       ),
       Child(
         name: "rightType",
