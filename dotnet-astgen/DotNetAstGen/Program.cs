@@ -227,10 +227,19 @@ namespace DotNetAstGen
             var dllPath = dllFile.FullName;
             var pdbPath = Path.Combine(dllFile.DirectoryName ?? "./",
                 $"{Path.GetFileNameWithoutExtension(dllPath)}.pdb");
+            
+            // check if PDB exists
             if (!File.Exists(pdbPath))
             {
-                _logger?.LogWarning("{}.dll does not have an accompanying PDB file, skipping...",
-                    Path.GetFileNameWithoutExtension(dllPath));
+                _logger?.LogInformation("PDB not found! trying to generate PDB locally for: {filePath}", dllPath);
+                PDBGenerator pdbgen = new PDBGenerator();
+                pdbgen.GeneratePDBforDLLFile(dllPath, pdbPath);
+            }
+            
+            // check again
+            if (!File.Exists(pdbPath)) {
+                    _logger?.LogWarning("{}.dll does not have an accompanying PDB file, skipping...",
+                        Path.GetFileNameWithoutExtension(dllPath));
             }
             else
             {
