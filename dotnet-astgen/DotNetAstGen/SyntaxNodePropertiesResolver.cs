@@ -19,7 +19,7 @@ namespace DotNetAstGen
             "Modifiers", "ReturnType", "IsUnboundGenericName", "Default", "IsConst", "Types",
             "ExplicitInterfaceSpecifier", "MetaData", "Kind", "AstRoot", "FileName", "Code", "Operand", "Block",
             "Catches", "Finally", "Keyword", "Incrementors", "Sections", "Pattern", "Labels", "Elements" ,"WhenTrue",
-            "WhenFalse", "Initializers", "NameEquals", "Contents"
+            "WhenFalse", "Initializers", "NameEquals", "Contents", "Attributes"
         });
 
         private readonly List<string> _regexToAllow = new(new[]
@@ -29,7 +29,7 @@ namespace DotNetAstGen
 
         private readonly List<string> _regexToIgnore = new(new[]
         {
-            ".*(Semicolon|Brace|Bracket|EndOfFile|Paren|Dot)Token$", "AttributeLists",
+            ".*(Semicolon|Brace|Bracket|EndOfFile|Paren|Dot)Token$",
             "(Unsafe|Global|Static|Using)Keyword"
         });
 
