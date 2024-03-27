@@ -19,7 +19,7 @@ namespace DotNetAstGen
             "Modifiers", "ReturnType", "IsUnboundGenericName", "Default", "IsConst", "Types",
             "ExplicitInterfaceSpecifier", "MetaData", "Kind", "AstRoot", "FileName", "Code", "Operand", "Block",
             "Catches", "Finally", "Keyword", "Incrementors", "Sections", "Pattern", "Labels", "Elements" ,"WhenTrue",
-            "WhenFalse", "Initializers", "NameEquals", "Contents", "Attributes"
+            "WhenFalse", "Initializers", "NameEquals", "Contents", "Attributes", "Designation"
         });
 
         private readonly List<string> _regexToAllow = new(new[]
@@ -63,6 +63,7 @@ namespace DotNetAstGen
                                   !MatchesIgnore(propertyName);
             Logger?.LogDebug(shouldSerialize ? $"Allowing {propertyName}" : $"Ignoring {propertyName}");
             property.ShouldSerialize = _ => shouldSerialize;
+            // property.ShouldSerialize = _ => true;
             return property;
         }
     }
