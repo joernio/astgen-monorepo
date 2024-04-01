@@ -224,79 +224,87 @@ namespace DotNetAstGen
 
         static void ProcessDll(FileInfo dllFile, string jsonPath)
         {
-            var dllPath = dllFile.FullName;
-            var pdbPath = Path.Combine(dllFile.DirectoryName ?? "./",
-                $"{Path.GetFileNameWithoutExtension(dllPath)}.pdb");
-            
-            // check if PDB exists
-            if (!File.Exists(pdbPath))
+            try
             {
-                _logger?.LogInformation("PDB not found! trying to generate PDB locally for: {filePath}", dllPath);
-                PDBGenerator pdbgen = new PDBGenerator();
-                pdbgen.GeneratePDBforDLLFile(dllPath, pdbPath);
-            }
-            
-            // check again
-            if (!File.Exists(pdbPath)) {
+                var dllPath = dllFile.FullName;
+                var pdbPath = Path.Combine(dllFile.DirectoryName ?? "./",
+                    $"{Path.GetFileNameWithoutExtension(dllPath)}.pdb");
+
+                // check if PDB exists
+                if (!File.Exists(pdbPath))
+                {
+                    _logger?.LogInformation("PDB not found! trying to generate PDB locally for: {filePath}", dllPath);
+                    PDBGenerator pdbgen = new PDBGenerator();
+                    pdbgen.GeneratePDBforDLLFile(dllPath, pdbPath);
+                }
+
+                // check again
+                if (!File.Exists(pdbPath))
+                {
                     _logger?.LogWarning("{}.dll does not have an accompanying PDB file, skipping...",
                         Path.GetFileNameWithoutExtension(dllPath));
-            }
-            else
-            {
-                var p = new ReaderParameters
+                }
+                else
                 {
-                    ReadSymbols = true
-                };
-
-                var classInfoList = new List<ClassInfo>();
-
-                using var x = AssemblyDefinition.ReadAssembly(dllPath, p);
-                var typeFilter = new Regex("^(<PrivateImplementationDetails>|<Module>|.*AnonymousType|.*\\/).*",
-                    RegexOptions.IgnoreCase);
-                var methodFilter = new Regex("^.*\\.(ctor|cctor)", RegexOptions.IgnoreCase);
-
-                foreach (var typ in x.MainModule.GetAllTypes().DistinctBy(t => t.FullName).Where(t => t.Name != null)
-                             .Where(t => !typeFilter.IsMatch(t.FullName)))
-                {
-                    var classInfo = new ClassInfo();
-                    var methodInfoList = new List<MethodInfo>();
-
-                    foreach (var method in typ.Methods.Where(m => !methodFilter.IsMatch(m.Name)).Where(m => m.IsPublic))
+                    var p = new ReaderParameters
                     {
-                        var methodInfo = new MethodInfo
-                        {
-                            name = method.Name,
-                            returnType = method.ReturnType.ToString(),
-                            isStatic = method.IsStatic
-                        };
-                        var parameterTypesList = method.Parameters
-                            .Select(param => (List<string>) [param.Name, param.ParameterType.FullName]).ToList();
+                        ReadSymbols = true
+                    };
 
-                        methodInfo.parameterTypes = parameterTypesList;
-                        methodInfoList.Add(methodInfo);
+                    var classInfoList = new List<ClassInfo>();
+
+                    using var x = AssemblyDefinition.ReadAssembly(dllPath, p);
+                    var typeFilter = new Regex("^(<PrivateImplementationDetails>|<Module>|.*AnonymousType|.*\\/).*",
+                        RegexOptions.IgnoreCase);
+                    var methodFilter = new Regex("^.*\\.(ctor|cctor)", RegexOptions.IgnoreCase);
+
+                    foreach (var typ in x.MainModule.GetAllTypes().DistinctBy(t => t.FullName).Where(t => t.Name != null)
+                                 .Where(t => !typeFilter.IsMatch(t.FullName)))
+                    {
+                        var classInfo = new ClassInfo();
+                        var methodInfoList = new List<MethodInfo>();
+
+                        foreach (var method in typ.Methods.Where(m => !methodFilter.IsMatch(m.Name)).Where(m => m.IsPublic))
+                        {
+                            var methodInfo = new MethodInfo
+                            {
+                                name = method.Name,
+                                returnType = method.ReturnType.ToString(),
+                                isStatic = method.IsStatic
+                            };
+                            var parameterTypesList = method.Parameters
+                                .Select(param => (List<string>)[param.Name, param.ParameterType.FullName]).ToList();
+
+                            methodInfo.parameterTypes = parameterTypesList;
+                            methodInfoList.Add(methodInfo);
+                        }
+
+                        classInfo.methods = methodInfoList;
+                        classInfo.fields = [];
+                        classInfo.name = typ.FullName;
+                        classInfoList.Add(classInfo);
                     }
 
-                    classInfo.methods = methodInfoList;
-                    classInfo.fields = [];
-                    classInfo.name = typ.FullName;
-                    classInfoList.Add(classInfo);
+                    var namespaceStructure = new Dictionary<string, List<ClassInfo>>();
+                    foreach (var c in classInfoList)
+                    {
+                        var parentNamespace = string.Join(".",
+                            c.name?.Split('.').Reverse().Skip(1).Reverse() ?? Array.Empty<string>());
+
+                        if (!namespaceStructure.ContainsKey(parentNamespace))
+                            namespaceStructure[parentNamespace] = [];
+
+                        namespaceStructure[parentNamespace].Add(c);
+                    }
+
+                    var jsonString = JsonConvert.SerializeObject(namespaceStructure, Formatting.Indented);
+                    File.WriteAllText(jsonPath, jsonString);
+                    _logger?.LogInformation("Successfully summarized: {filePath}", dllFile.FullName);
                 }
-
-                var namespaceStructure = new Dictionary<string, List<ClassInfo>>();
-                foreach (var c in classInfoList)
-                {
-                    var parentNamespace = string.Join(".",
-                        c.name?.Split('.').Reverse().Skip(1).Reverse() ?? Array.Empty<string>());
-
-                    if (!namespaceStructure.ContainsKey(parentNamespace))
-                        namespaceStructure[parentNamespace] = [];
-
-                    namespaceStructure[parentNamespace].Add(c);
-                }
-
-                var jsonString = JsonConvert.SerializeObject(namespaceStructure, Formatting.Indented);
-                File.WriteAllText(jsonPath, jsonString);
-                _logger?.LogInformation("Successfully summarized: {filePath}", dllFile.FullName);
+            }
+            catch (Exception e)
+            {
+                _logger?.LogError(e.ToString());
             }
         }
     }
