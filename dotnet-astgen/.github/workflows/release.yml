@@ -52,7 +52,7 @@ jobs:
           mv ./release/win/DotNetAstGen.exe dotnetastgen-win.exe
       - name: Make executable
         run: |
-          chmod +x dotnetastgen-linux-arm
+          chmod +x dotnetastgen-linux-arm64
           chmod +x dotnetastgen-macos
       - name: Set next release version
         id: taggerFinal
