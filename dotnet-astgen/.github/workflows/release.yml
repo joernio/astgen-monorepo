@@ -41,18 +41,16 @@ jobs:
       - name: Build
         run: |
           ./publish-release.sh linux x64
-          ./publish-release.sh linux arm
+          ./publish-release.sh linux arm64
           ./publish-release.sh osx x64
           ./publish-release.sh win x64
       - name: Rename
         run: |
-          mv ./release/linux/DotNetAstGen dotnetastgen-linux
-          mv ./release/linux-arm/DotNetAstGen dotnetastgen-linux-arm
+          mv ./release/linux-arm64/DotNetAstGen dotnetastgen-linux-arm64
           mv ./release/macos/DotNetAstGen dotnetastgen-macos
           mv ./release/win/DotNetAstGen.exe dotnetastgen-win.exe
       - name: Make executable
         run: |
-          chmod +x dotnetastgen-linux
           chmod +x dotnetastgen-linux-arm
           chmod +x dotnetastgen-macos
       - name: Set next release version
@@ -66,7 +64,6 @@ jobs:
         with:
           tag_name: ${{ steps.taggerDryRun.outputs.new_tag }}
           files: |
-            dotnetastgen-linux
-            dotnetastgen-linux-arm
+            dotnetastgen-linux-arm64
             dotnetastgen-macos
             dotnetastgen-win.exe
