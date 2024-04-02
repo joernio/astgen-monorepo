@@ -58,7 +58,7 @@ namespace DotNetAstGen
 
                     // Handle .cs
                     _ParseSourceCode(
-                        options.InputFilePath,
+                        new DirectoryInfo(options.InputFilePath),
                         new DirectoryInfo(options.OutputDirectory),
                         options.ExclusionRegex);
 
@@ -69,12 +69,14 @@ namespace DotNetAstGen
                 });
         }
 
-        private static void _ParseSourceCode(string inputPath, DirectoryInfo rootOutputPath, string? exclusionRegex)
+        private static void _ParseSourceCode(DirectoryInfo inputDirPath, DirectoryInfo rootOutputPath, string? exclusionRegex)
         {
             if (!rootOutputPath.Exists)
             {
                 rootOutputPath.Create();
             }
+
+            var inputPath = inputDirPath.FullName;
 
             if (Directory.Exists(inputPath))
             {
