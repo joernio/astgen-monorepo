@@ -46,7 +46,8 @@ jobs:
           ./publish-release.sh win x64
       - name: Rename
         run: |
-          mv ./release/linux-arm64/DotNetAstGen dotnetastgen-linux-arm64
+          mv ./release/linux/DotNetAstGen dotnetastgen-linux
+          mv ./release/linux-arm/DotNetAstGen dotnetastgen-linux-arm64
           mv ./release/macos/DotNetAstGen dotnetastgen-macos
           mv ./release/win/DotNetAstGen.exe dotnetastgen-win.exe
       - name: Make executable
