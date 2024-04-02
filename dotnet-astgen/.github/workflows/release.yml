@@ -65,6 +65,7 @@ jobs:
         with:
           tag_name: ${{ steps.taggerDryRun.outputs.new_tag }}
           files: |
+            dotnetastgen-linux
             dotnetastgen-linux-arm64
             dotnetastgen-macos
             dotnetastgen-win.exe
