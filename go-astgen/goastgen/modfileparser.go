@@ -38,12 +38,21 @@ func (mod *ModFile) Parse() (string, error) {
 	}
 	objMap["node_filename"] = mod.File
 	module := make(map[string]interface{})
-	module["Name"] = modFile.Module.Mod.Path
-	module["node_line_no"] = modFile.Module.Syntax.Start.Line
-	module["node_col_no"] = modFile.Module.Syntax.Start.LineRune
-	module["node_line_no_end"] = modFile.Module.Syntax.End.Line
-	module["node_col_no_end"] = modFile.Module.Syntax.End.LineRune
-	module["node_type"] = "mod.Module"
+	if modFile.Module != nil {
+		module["Name"] = modFile.Module.Mod.Path
+		module["node_line_no"] = modFile.Module.Syntax.Start.Line
+		module["node_col_no"] = modFile.Module.Syntax.Start.LineRune
+		module["node_line_no_end"] = modFile.Module.Syntax.End.Line
+		module["node_col_no_end"] = modFile.Module.Syntax.End.LineRune
+		module["node_type"] = "mod.Module"
+	} else {
+		module["Name"] = mod.File
+		module["node_line_no"] = 0
+		module["node_col_no"] = 0
+		module["node_line_no_end"] = 0
+		module["node_col_no_end"] = 0
+		module["node_type"] = "mod.Module"
+	}
 	objMap["Module"] = module
 	dependencies := []interface{}{}
 	for _, req := range modFile.Require {
