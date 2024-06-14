@@ -14,9 +14,16 @@ import (
 
 var Version = "dev"
 
+type InputConfig struct {
+	out          string
+	inputPath    string
+	excludeFiles string
+	includeFiles string
+}
+
 func main() {
-	out, inputPath, excludeFiles := parseArguments()
-	processRequest(out, inputPath, excludeFiles)
+	inputConfig := parseArguments()
+	processRequest(inputConfig)
 }
 
 func processFile(out string, inputPath string, path string, info os.FileInfo, resultErr chan error, sem chan int) {
@@ -53,33 +60,33 @@ func processFile(out string, inputPath string, path string, info os.FileInfo, re
 	resultErr <- err
 }
 
-func processRequest(out string, inputPath string, excludeFiles string) {
-	if strings.HasSuffix(inputPath, ".go") {
-		fileInfo, err := os.Stat(inputPath)
+func processRequest(input InputConfig) {
+	if strings.HasSuffix(input.inputPath, ".go") {
+		fileInfo, err := os.Stat(input.inputPath)
 		if err != nil {
 			log.SetPrefix("[ERROR]")
 			log.Println("Failed to get file info:", err)
-			fmt.Printf("Error accessing path '%s'\n", inputPath)
+			fmt.Printf("Error accessing path '%s'\n", input.inputPath)
 			return
 		}
-		directory := filepath.Dir(inputPath)
+		directory := filepath.Dir(input.inputPath)
 		var outFile = ""
-		if out == ".ast" {
-			outFile = filepath.Join(directory, out, fileInfo.Name()+".json")
+		if input.out == ".ast" {
+			outFile = filepath.Join(directory, input.out, fileInfo.Name()+".json")
 		} else {
-			outFile = filepath.Join(out, fileInfo.Name()+".json")
+			outFile = filepath.Join(input.out, fileInfo.Name()+".json")
 		}
-		goFile := goastgen.GoFile{File: inputPath}
+		goFile := goastgen.GoFile{File: input.inputPath}
 		jsonResult, perr := goFile.Parse()
 		if perr != nil {
-			fmt.Printf("Failed to generate AST for %s\n", inputPath)
+			fmt.Printf("Failed to generate AST for %s\n", input.inputPath)
 			return
 		} else {
 			err = writeFileContents(outFile, jsonResult)
 			if err != nil {
 				fmt.Printf("Error writing AST to output location '%s'\n", outFile)
 			} else {
-				fmt.Printf("Converted AST for %s to %s\n", inputPath, outFile)
+				fmt.Printf("Converted AST for %s to %s\n", input.inputPath, outFile)
 			}
 			return
 		}
@@ -90,7 +97,7 @@ func processRequest(out string, inputPath string, excludeFiles string) {
 		resultErrChan := make(chan error)
 		sem := make(chan int, concurrency)
 		var totalSentForProcessing = 0
-		err := filepath.Walk(inputPath, func(path string, info os.FileInfo, err error) error {
+		err := filepath.Walk(input.inputPath, func(path string, info os.FileInfo, err error) error {
 			if err != nil {
 				log.SetPrefix("[ERROR]")
 				log.Printf("Error accessing path %s: %v\n", path, err)
@@ -98,11 +105,12 @@ func processRequest(out string, inputPath string, excludeFiles string) {
 				return err
 			}
 			if !info.IsDir() && (strings.HasSuffix(info.Name(), ".go") || strings.HasSuffix(info.Name(), ".mod")) {
-				fileMatched, _ := regexp.MatchString(excludeFiles, info.Name())
-				pathMatched, _ := regexp.MatchString(excludeFiles, path)
-				if excludeFiles == "" || (fileMatched == false && pathMatched == false) {
+				fileMatched, _ := regexp.MatchString(input.excludeFiles, info.Name())
+				pathMatched, _ := regexp.MatchString(input.excludeFiles, path)
+				includePathMatched, _ := regexp.MatchString(input.includeFiles, path)
+				if (input.includeFiles == "" || includePathMatched == true) && (input.excludeFiles == "" || (fileMatched == false && pathMatched == false)) {
 					totalSentForProcessing++
-					go processFile(out, inputPath, path, info, resultErrChan, sem)
+					go processFile(input.out, input.inputPath, path, info, resultErrChan, sem)
 				}
 			}
 			return nil
@@ -116,28 +124,27 @@ func processRequest(out string, inputPath string, excludeFiles string) {
 			}
 		}
 
-		//println("\n\n\n\n Without error -> ", successCount, ", With Error -> ", failCount)
-		//println("total files sent for processing ----> ", totalSentForProcessing)
-		//println("No of CPUs --->", concurrency)
 		if err != nil {
 			log.SetPrefix("[ERROR]")
-			log.Printf("Error walking the path %s: %v\n", inputPath, err)
+			log.Printf("Error walking the path %s: %v\n", input.inputPath, err)
 		}
 	}
 }
 
-func parseArguments() (string, string, string) {
+func parseArguments() InputConfig {
 	var (
 		out          string
 		inputPath    string = ""
 		version      bool
 		help         bool
 		excludeFiles string
+		includeFiles string
 	)
 	flag.StringVar(&out, "out", ".ast", "Out put location of ast")
 	flag.BoolVar(&version, "version", false, "print the version")
 	flag.BoolVar(&help, "help", false, "print the usage")
 	flag.StringVar(&excludeFiles, "exclude", "", "regex to exclude files")
+	flag.StringVar(&includeFiles, "include", "", "regex to include files")
 	flag.Parse()
 	if version {
 		fmt.Println(Version)
@@ -156,7 +163,7 @@ func parseArguments() (string, string, string) {
 		flag.PrintDefaults()
 		os.Exit(1)
 	}
-	return out, inputPath, excludeFiles
+	return InputConfig{out: out, inputPath: inputPath, excludeFiles: excludeFiles, includeFiles: includeFiles}
 }
 
 func writeFileContents(location string, contents string) error {
