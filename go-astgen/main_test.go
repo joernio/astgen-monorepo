@@ -32,13 +32,13 @@ func TestProcessRequestWithSingleFileUseCase(t *testing.T) {
 		"fmt.Println(\"Hello World\")\n" +
 		"}"
 	file.WriteString(code)
-	processRequest(".ast", srcFile, "")
+	processRequest(InputConfig{out: ".ast", inputPath: srcFile, includeFiles: "", excludeFiles: ""})
 	expectedJsonFileLocation := filepath.Join(newFolder, ".ast", "hello.go.json")
 	_, err = os.Stat(expectedJsonFileLocation)
 	assert.Nil(t, err, "check the ast output is generated at expected location")
 
 	diffOutLocation := filepath.Join(tempDir, uuid.New().String())
-	processRequest(diffOutLocation, srcFile, "")
+	processRequest(InputConfig{out: diffOutLocation, inputPath: srcFile, includeFiles: "", excludeFiles: ""})
 	expectedJsonFileLocation = filepath.Join(diffOutLocation, "hello.go.json")
 	_, err = os.Stat(expectedJsonFileLocation)
 	assert.Nil(t, err, "check the ast output is generated at expected location")
@@ -80,7 +80,7 @@ func TestProcessRequestWithMultipleFileDiffFolderStructureUsecase(t *testing.T) 
 		return
 	}
 	file.WriteString(code)
-	processRequest(".ast", newFolder, "")
+	processRequest(InputConfig{out: ".ast", inputPath: newFolder, includeFiles: "", excludeFiles: ""})
 	expectedJsonFileLocationone := filepath.Join(newFolder, ".ast", "hello.go.json")
 	_, err = os.Stat(expectedJsonFileLocationone)
 	assert.Nil(t, err, "check the ast output is generated at expected location")
@@ -89,7 +89,7 @@ func TestProcessRequestWithMultipleFileDiffFolderStructureUsecase(t *testing.T) 
 	assert.Nil(t, err, "check the ast output is generated at expected location")
 
 	diffOutLocation := filepath.Join(tempDir, uuid.New().String())
-	processRequest(diffOutLocation, newFolder, "")
+	processRequest(InputConfig{out: diffOutLocation, inputPath: newFolder, includeFiles: "", excludeFiles: ""})
 	expectedJsonFileLocationone = filepath.Join(diffOutLocation, "hello.go.json")
 	_, err = os.Stat(expectedJsonFileLocationone)
 	assert.Nil(t, err, "check the ast output is generated at expected location")
