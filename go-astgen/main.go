@@ -15,10 +15,11 @@ import (
 var Version = "dev"
 
 type InputConfig struct {
-	out          string
-	inputPath    string
-	excludeFiles string
-	includeFiles string
+	out             string
+	inputPath       string
+	excludeFiles    string
+	includeFiles    string
+	includePackages string
 }
 
 func main() {
@@ -97,6 +98,7 @@ func processRequest(input InputConfig) {
 		resultErrChan := make(chan error)
 		sem := make(chan int, concurrency)
 		var totalSentForProcessing = 0
+		includeFolders := getIncludePackageFolders(input)
 		err := filepath.Walk(input.inputPath, func(path string, info os.FileInfo, err error) error {
 			if err != nil {
 				log.SetPrefix("[ERROR]")
@@ -108,7 +110,9 @@ func processRequest(input InputConfig) {
 				fileMatched, _ := regexp.MatchString(input.excludeFiles, info.Name())
 				pathMatched, _ := regexp.MatchString(input.excludeFiles, path)
 				includePathMatched, _ := regexp.MatchString(input.includeFiles, path)
-				if (input.includeFiles == "" || includePathMatched == true) && (input.excludeFiles == "" || (fileMatched == false && pathMatched == false)) {
+				containingFolder := filepath.Dir(path)
+				packageMatched := includeFolders.Contains(containingFolder)
+				if (input.includeFiles == "" || includePathMatched == true) && (input.excludeFiles == "" || (fileMatched == false && pathMatched == false)) && (includeFolders.Size() == 0 || packageMatched) {
 					totalSentForProcessing++
 					go processFile(input.out, input.inputPath, path, info, resultErrChan, sem)
 				}
@@ -131,20 +135,34 @@ func processRequest(input InputConfig) {
 	}
 }
 
+func getIncludePackageFolders(config InputConfig) goastgen.StringSet {
+	packages := goastgen.StringSet{}
+	if strings.TrimSpace(config.includePackages) != "" {
+		tokens := strings.Split(config.includePackages, ",")
+		normalizedPrefix := strings.TrimRight(config.inputPath, `\/`)
+		for _, token := range tokens {
+			packages.Add(filepath.Join(normalizedPrefix, strings.Trim(strings.TrimSpace(token), `/`)))
+		}
+	}
+	return packages
+}
+
 func parseArguments() InputConfig {
 	var (
-		out          string
-		inputPath    string = ""
-		version      bool
-		help         bool
-		excludeFiles string
-		includeFiles string
+		out             string
+		inputPath       string = ""
+		version         bool
+		help            bool
+		excludeFiles    string
+		includeFiles    string
+		includePackages string
 	)
 	flag.StringVar(&out, "out", ".ast", "Out put location of ast")
 	flag.BoolVar(&version, "version", false, "print the version")
 	flag.BoolVar(&help, "help", false, "print the usage")
 	flag.StringVar(&excludeFiles, "exclude", "", "regex to exclude files")
 	flag.StringVar(&includeFiles, "include", "", "regex to include files")
+	flag.StringVar(&includePackages, "include-packages", "", " ',' separated list of only package folders, e.g. \"/pkg/, /cmd/\". e.g. to include root package excluding sub packages e.g. \"/\"")
 	flag.Parse()
 	if version {
 		fmt.Println(Version)
@@ -163,7 +181,7 @@ func parseArguments() InputConfig {
 		flag.PrintDefaults()
 		os.Exit(1)
 	}
-	return InputConfig{out: out, inputPath: inputPath, excludeFiles: excludeFiles, includeFiles: includeFiles}
+	return InputConfig{out: out, inputPath: inputPath, excludeFiles: excludeFiles, includeFiles: includeFiles, includePackages: includePackages}
 }
 
 func writeFileContents(location string, contents string) error {

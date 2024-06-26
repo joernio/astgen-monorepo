@@ -97,3 +97,21 @@ func TestProcessRequestWithMultipleFileDiffFolderStructureUsecase(t *testing.T) 
 	_, err = os.Stat(expectedJsonFileLocationtwo)
 	assert.Nil(t, err, "check the ast output is generated at expected location")
 }
+
+func TestWindowsGetIncludePackageFolders(t *testing.T) {
+	// Get the temporary directory path
+	tempDir := os.TempDir()
+	// Create a new folder in the temporary directory
+	newFolder := filepath.Join(tempDir, uuid.New().String())
+	results := getIncludePackageFolders(InputConfig{out: ".ast", inputPath: newFolder, includeFiles: "", excludeFiles: "", includePackages: "/, /pkg, /cmd"})
+	assert.Equal(t, 3, results.Size(), "result size as expected")
+	assert.Equal(t, true, results.Contains(filepath.Join(newFolder, "")), "first result")
+	assert.Equal(t, true, results.Contains(filepath.Join(newFolder, "pkg")), "second result")
+	assert.Equal(t, true, results.Contains(filepath.Join(newFolder, "cmd")), "third result")
+
+	results = getIncludePackageFolders(InputConfig{out: ".ast", inputPath: newFolder, includeFiles: "", excludeFiles: "", includePackages: "/, /pkg/, /cmd/"})
+	assert.Equal(t, 3, results.Size(), "result size as expected")
+	assert.Equal(t, true, results.Contains(filepath.Join(newFolder, "")), "first result")
+	assert.Equal(t, true, results.Contains(filepath.Join(newFolder, "pkg")), "second result")
+	assert.Equal(t, true, results.Contains(filepath.Join(newFolder, "cmd")), "third result")
+}
