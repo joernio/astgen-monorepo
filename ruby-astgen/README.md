@@ -5,15 +5,6 @@ A Ruby parser than dumps the AST as JSON output. Uses the
 parsing Ruby version 1.8, 1.9, 2.0, 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7, 3.0, 3.1, and 3.2 syntax with 
 backwards-compatible AST formats.
 
-## Installation
-
-Install the gem and create a universal executable, run:
-
-```bash
-gem install ruby-packer
-rbc -o ruby_ast_gen ./exe/ruby_ast_gen
-```
-
 ## Usage
 
 ```
