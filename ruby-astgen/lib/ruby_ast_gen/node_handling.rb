@@ -12,11 +12,11 @@ module NodeHandling
   ARGUMENTS = [:arg, :restarg, :kwoptarg, :blockarg, :kwrestarg, :kwarg]
   REFS = [:nth_ref, :back_ref]
   FORWARD_ARGUMENTS = [:forward_args, :forwarded_args, :forward_arg]
-  ASSIGNMENTS = [:or_asgn, :and_asgn, :lvasgn, :ivasgn, :op_asgn, :masgn, :gvasgn, :cvasgn]
+  ASSIGNMENTS = [:or_asgn, :and_asgn, :lvasgn, :ivasgn, :op_asgn, :masgn, :gvasgn, :cvasgn, :match_with_lvasgn]
   BIN_OP = [:and, :or, :match_pattern]
   ACCESS = [:self, :ident, :lvar, :cvar, :gvar, :ivar, :splat, :kwsplat, :block_pass, :match_var]
   QUAL_ACCESS = [:casgn]
-  COLLECTIONS = [:args, :array, :hash, :mlhs, :hash_pattern, :array_pattern, :array_pattern_with_tail, :find_pattern]
+  COLLECTIONS = [:args, :array, :hash, :mlhs, :hash_pattern, :array_pattern, :array_pattern_with_tail, :find_pattern, :undef]
   SPECIAL_CMD = [:yield, :super, :defined?, :xstr]
   RANGE_OP = [:erange, :irange]
 
@@ -24,7 +24,6 @@ module NodeHandling
     loc.public_send(method) rescue -1
   end
 
-  # Convert the AST to a JSON-compatible format (Hash)
   def self.ast_to_json(node, code, current_depth = 0)
     return unless node.is_a?(Parser::AST::Node)
 
@@ -184,6 +183,9 @@ module NodeHandling
     when :const
       base_map[:base] = children[0]
       base_map[:name] = children[1]
+    when :alias
+      base_map[:alias] = children[0]
+      base_map[:name] = children[1]
     when :regexp
       base_map[:value] = children[0]
       base_map[:opt] = children[1]
@@ -199,14 +201,6 @@ module NodeHandling
     when *COLLECTIONS, *DYNAMIC_LITERALS, *REFS
       # put :children back
       base_map[:children] = children
-
-    when :match_with_lvasgn
-      RubyAstGen::logger.warn "Unhandled AST node type: #{node_type}"
-    when :alias
-      RubyAstGen::logger.warn "Unhandled AST node type: #{node_type}"
-    # when :array_pattern, :array_pattern_with_tail
-    #   base_map[:pattern] = children[0]
-    #   RubyAstGen::logger.warn "Unhandled AST node type: #{node_type}"
 
     else
       RubyAstGen::logger.warn "Unhandled AST node type: #{node_type}"

@@ -21,10 +21,8 @@ module RubyAstGen
     exclude_regex = Regexp.new(opts[:exclude])
     self.setup_logger(opts[:log])
 
-    # Ensure the output directory exists
     FileUtils.mkdir_p(output_dir)
 
-    # Check if the input is a file or directory
     if File.file?(input_path)
       process_file(input_path, output_dir, exclude_regex, input_path)
     elsif File.directory?(input_path)
@@ -64,7 +62,6 @@ module RubyAstGen
     end
   end
 
-  # Process all Ruby-related files in the directory (recursively)
   def self.process_directory(dir_path, output_dir, exclude_regex)
     Dir.glob("#{dir_path}/**/*").each do |path|
       next unless File.file?(path) && ruby_file?(path)
@@ -82,7 +79,7 @@ module RubyAstGen
       process_file(path, output_subdir, exclude_regex, dir_path)
     end
   end
-  # Parse a Ruby file into its AST
+
   def self.parse_file(file_path)
     code = File.read(file_path)
     buffer = Parser::Source::Buffer.new(file_path)
@@ -96,13 +93,11 @@ module RubyAstGen
     nil
   end
 
-  # Check if the file is a Ruby-related file
   def self.ruby_file?(file_path)
     ext = File.extname(file_path)
     ['.rb', '.gemspec', 'Rakefile'].include?(ext) || file_path.end_with?('.rb')
   end
 
-  # Define a method to set up the logger based on the provided log level
   def self.setup_logger(level)
     case level.downcase
     when 'debug'
