@@ -35,10 +35,12 @@ jobs:
         uses: ruby/setup-ruby@v1
         with:
           ruby-version: 3.3.5
-          bundler-cache: true
+          bundler-cache: false
 
       - name: Bundle and install dependencies
-        run: bundle install --path=vendor/bundle
+        run: |
+          bundle config set frozen false
+          bundle install --path=vendor/bundle
 
       - name: Build distribution
         run: gem build ruby_ast_gen.gemspec
