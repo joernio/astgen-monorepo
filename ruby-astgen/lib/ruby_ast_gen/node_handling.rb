@@ -24,7 +24,7 @@ module NodeHandling
     loc.public_send(method) rescue -1
   end
 
-  def self.ast_to_json(node, code, current_depth = 0)
+  def self.ast_to_json(node, code, current_depth: 0, file_path: nil)
     return unless node.is_a?(Parser::AST::Node)
 
     loc = node.location
@@ -45,13 +45,13 @@ module NodeHandling
       meta_data: meta_data,
       children: node.children.map do |child|
         if child.is_a?(Parser::AST::Node)
-          ast_to_json(child, code, current_depth + 1) # Recursively process child nodes
+          ast_to_json(child, code, current_depth: current_depth + 1, file_path: file_path) # Recursively process child nodes
         else
           child # If it's not a node (e.g., literal), return as-is
         end
       end
     }
-    add_node_properties(node.type, base_hash)
+    add_node_properties(node.type, base_hash, file_path)
     return base_hash
   end
 
@@ -71,7 +71,7 @@ module NodeHandling
     self.truncate_string(snippet.strip, 60)
   end
 
-  def self.add_node_properties(node_type, base_map)
+  def self.add_node_properties(node_type, base_map, file_path)
     children = base_map.delete(:children)
 
     case node_type
@@ -203,7 +203,7 @@ module NodeHandling
       base_map[:children] = children
 
     else
-      RubyAstGen::logger.warn "Unhandled AST node type: #{node_type}"
+      RubyAstGen::logger.warn "Unhandled AST node type: #{node_type} - #{file_path}"
       base_map[:children] = children
     end
   end

@@ -49,7 +49,7 @@ module RubyAstGen
     return unless ruby_file?(file_path) # Skip if it's not a Ruby-related file
 
     begin
-      ast = parse_file(file_path)
+      ast = parse_file(file_path, relative_input_path)
       return unless ast
 
       output_path = File.join(output_dir, "#{relative_path}.json")
@@ -80,14 +80,14 @@ module RubyAstGen
     end
   end
 
-  def self.parse_file(file_path)
+  def self.parse_file(file_path, relative_input_path)
     code = File.read(file_path)
     buffer = Parser::Source::Buffer.new(file_path)
     buffer.source = code
     parser = Parser::CurrentRuby.new
     ast = parser.parse(buffer)
     return unless ast
-    NodeHandling::ast_to_json(ast, code)
+    NodeHandling::ast_to_json(ast, code, file_path: relative_input_path)
   rescue Parser::SyntaxError => e
     @logger.error "Failed to parse #{file_path}: #{e.message}"
     nil

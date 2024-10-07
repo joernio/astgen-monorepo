@@ -3,7 +3,12 @@
 require 'tempfile'
 
 RSpec.describe RubyAstGen do
-  let(:temp_file) { Tempfile.new('test_ruby_code') }
+  temp_name = ""
+  let(:temp_file) {
+    file = Tempfile.new('test_ruby_code')
+    temp_name = File.basename(file.path)
+    file
+  }
 
   after(:each) do
     temp_file.close
@@ -21,7 +26,7 @@ class Foo
   CONST = 1
 end
     CODE
-    ast = RubyAstGen::parse_file(temp_file.path)
+    ast = RubyAstGen::parse_file(temp_file.path, temp_name)
     expect(ast).not_to be_nil
   end
 
@@ -33,7 +38,7 @@ You can freely write across
 multiple lines using heredoc.
 TEXT
     CODE
-    ast = RubyAstGen::parse_file(temp_file.path)
+    ast = RubyAstGen::parse_file(temp_file.path, temp_name)
     expect(ast).not_to be_nil
   end
 
@@ -48,7 +53,7 @@ This is the second HEREDOC.
 It also spans multiple lines.
 ARG2
     CODE
-    ast = RubyAstGen::parse_file(temp_file.path)
+    ast = RubyAstGen::parse_file(temp_file.path, temp_name)
     expect(ast).not_to be_nil
   end
 end
