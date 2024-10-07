@@ -6,17 +6,14 @@ on:
       - 'main'
 
 jobs:
-  build:
+  release:
+    if: github.repository_owner == 'joernio'
     runs-on: ubuntu-latest
     permissions:
       contents: write
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-        env:
-          GITHUB_REF: ${{ github.ref }}
-        with:
-          ref: $GITHUB_REF
 
       - name: Get next release version (dry run)
         id: taggerDryRun
@@ -46,8 +43,10 @@ jobs:
           bundle config set frozen false
           bundle install --path=vendor/bundle
 
-      - name: Build distribution
-        run: gem build ruby_ast_gen.gemspec
+      - name: Build distribution and set Git perms
+        run: |
+          sudo chown -R "${USER:-$(id -un)}" .
+          gem build ruby_ast_gen.gemspec
 
       - name: Add and commit updated files holding version information
         uses: stefanzweifel/git-auto-commit-action@v5
