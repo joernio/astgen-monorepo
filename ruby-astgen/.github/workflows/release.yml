@@ -40,7 +40,8 @@ jobs:
           NEW_TAG: ${{ steps.taggerDryRun.outputs.new_tag }}
         run: |
           echo "The next tag version will be: $NEW_TAG"
-          echo "The current tag is: $CURR_TAG" 
+          echo "The current tag is: $CURR_TAG"
+          ./update_version.rb $NEW_TAG
 
       - name: Add and commit updated VERSION file
         uses: stefanzweifel/git-auto-commit-action@v5
