@@ -87,7 +87,10 @@ module RubyAstGen
     parser = Parser::CurrentRuby.new
     ast = parser.parse(buffer)
     return unless ast
-    NodeHandling::ast_to_json(ast, code, file_path: relative_input_path)
+    json_ast = NodeHandling::ast_to_json(ast, code, file_path: relative_input_path)
+    json_ast[:file_path] = file_path
+    json_ast[:rel_file_path] = relative_input_path
+    json_ast
   rescue Parser::SyntaxError => e
     @logger.error "Failed to parse #{file_path}: #{e.message}"
     nil
