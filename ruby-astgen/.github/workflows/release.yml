@@ -1,4 +1,4 @@
-name: Build and Release Tebako Executable
+name: Build and Release Vendored Gemfile
 
 on:
   push:
@@ -11,21 +11,16 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
-      - name: Build with Tebako in Docker
-        uses: addnab/docker-run-action@v3
-        with:
-          image: ghcr.io/tamatebako/tebako-alpine-3.17:latest
-          options: -v ${{ github.workspace }}:/mnt/w # Mount the current directory
-          run: |
-            tebako press \
-              --root=/mnt/w/ruby_ast_gen \
-              --entry-point=ruby_ast_gen \
-              --output=/mnt/w/ruby_ast_gen_package \
-              --Ruby=3.3.5
-      - name: Zip the Output Package
-        run: zip -r ruby_ast_gen_bin.zip ruby_ast_gen_package
+      - name: Install dependencies
+        run: bundle install
+
+      - name: Bundle dependencies
+        run: bundle install --path=vendor/bundle
+
+      - name: Build distribution
+        run: gem build ruby_ast_gen.gemspec
 
       - name: Get next release version (dry run)
         id: taggerDryRun
@@ -35,7 +30,7 @@ jobs:
           WITH_V: true
           DRY_RUN: true
 
-      - name: echo new tag
+      - name: Show next version
         env:
           CURR_TAG: ${{ steps.taggerDryRun.outputs.tag }}"
           NEW_TAG: ${{ steps.taggerDryRun.outputs.new_tag }}
@@ -44,11 +39,11 @@ jobs:
           echo "The next tag version will be: NEW_TAG"
           echo "The current tag is: $CURR_TAG" 
 
-      - name: Upload Tebako Executable to GitHub Release
-        uses: softprops/action-gh-release@v1
+      - name: Upload vendored distribution to GitHub Release
+        uses: softprops/action-gh-release@v2
         with:
           tag_name: $NEW_TAG
-          files: ruby_ast_gen_bin.zip
+          files: ruby_ast_gen-*.gem
         env:
           NEW_TAG: ${{ steps.taggerDryRun.outputs.new_tag }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -2,6 +2,7 @@
 /.yardoc
 /_yardoc/
 /coverage/
+/vendor/
 /doc/
 /pkg/
 /spec/reports/
@@ -9,6 +10,7 @@
 /.ast/
 .idea
 .vscode
+*.gem
 
 # rspec failure tracking
 .rspec_status

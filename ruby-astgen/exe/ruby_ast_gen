@@ -1,26 +1,28 @@
 #!/usr/bin/env ruby
 
-require_relative "../lib/ruby_ast_gen"
 require "slop"
+require "bundler/setup"
+
+require_relative "../lib/ruby_ast_gen"
 
 begin
-    opts = Slop.parse do |o|
-        o.string '-i', '--input', 'The input file or directory', required: true
-        o.string '-o', '--output', 'The output directory', default: '.ast'
-        o.string '-e', '--exclude', 'The exclusion regex', default: '(^|\\\\)(test|tests|vendor|spec)($$|\\\\)'
-        o.string '-l', '--log', 'The logging level', default: 'warn'
-        o.on '--version', 'Print the version' do
-            puts RubyAstGen::VERSION
-            exit
-        end
-        o.on '--help', 'Print usage' do
-            puts o
-            exit
-        end
+  opts = Slop.parse do |o|
+    o.string '-i', '--input', 'The input file or directory', required: true
+    o.string '-o', '--output', 'The output directory', default: '.ast'
+    o.string '-e', '--exclude', 'The exclusion regex', default: '(^|\\\\)(test|tests|vendor|spec)($$|\\\\)'
+    o.string '-l', '--log', 'The logging level', default: 'warn'
+    o.on '--version', 'Print the version' do
+      puts RubyAstGen::VERSION
+      exit
     end
+    o.on '--help', 'Print usage' do
+      puts o
+      exit
+    end
+  end
 rescue Slop::Error => e
-    puts e.message
-    exit 1          # Exit with an error code
+  puts e.message
+  exit 1 # Exit with an error code
 end
 
 RubyAstGen::parse(opts)
