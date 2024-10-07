@@ -8,7 +8,8 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-
+    permissions:
+      contents: write
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -42,15 +43,12 @@ jobs:
           echo "The current tag is: $CURR_TAG" 
 
       - name: Add and commit updated VERSION file
+        uses: stefanzweifel/git-auto-commit-action@v5
         env:
           NEW_TAG: ${{ steps.taggerDryRun.outputs.new_tag }}
-        run: |
-          ./update_version.rb $NEW_TAG
-          git config --global user.name "GitHub Action"
-          git config --global user.email "action@github.com"
-          git add lib/ruby_ast_gen/version.rb
-          git commit -m "Update VERSION file to $NEW_TAG"
-          git push
+        with:
+          file_pattern: lib/ruby_ast_gen/version.rb
+          commit_message: Update VERSION file to $NEW_TAG
 
       - name: Upload vendored distribution to GitHub Release
         uses: softprops/action-gh-release@v2
