@@ -41,6 +41,17 @@ jobs:
           echo "The next tag version will be: $NEW_TAG"
           echo "The current tag is: $CURR_TAG" 
 
+      - name: Add and commit updated VERSION file
+        env:
+          NEW_TAG: ${{ steps.taggerDryRun.outputs.new_tag }}
+        run: |
+          ./update_version.rb $NEW_TAG
+          git config --global user.name "GitHub Action"
+          git config --global user.email "action@github.com"
+          git add lib/ruby_ast_gen/version.rb
+          git commit -m "Update VERSION file to $NEW_TAG"
+          git push
+
       - name: Upload vendored distribution to GitHub Release
         uses: softprops/action-gh-release@v2
         env:
