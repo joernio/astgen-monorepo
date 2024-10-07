@@ -13,6 +13,10 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        env:
+          GITHUB_REF: ${{ github.ref }}
+        with:
+          ref: $GITHUB_REF
 
       - name: Get next release version (dry run)
         id: taggerDryRun
