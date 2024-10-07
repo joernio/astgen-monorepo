@@ -45,11 +45,9 @@ jobs:
 
       - name: Add and commit updated VERSION file
         uses: stefanzweifel/git-auto-commit-action@v5
-        env:
-          NEW_TAG: ${{ steps.taggerDryRun.outputs.new_tag }}
         with:
           file_pattern: lib/ruby_ast_gen/version.rb
-          commit_message: Update VERSION file to $NEW_TAG
+          commit_message: Update VERSION file
 
       - name: Upload vendored distribution to GitHub Release
         uses: softprops/action-gh-release@v2
