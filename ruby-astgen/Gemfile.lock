@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    ruby_ast_gen (0.4.0)
+    ruby_ast_gen (0.5.0)
 
 GEM
   remote: https://rubygems.org/
