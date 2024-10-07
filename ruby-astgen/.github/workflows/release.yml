@@ -38,16 +38,14 @@ jobs:
           CURR_TAG: ${{ steps.taggerDryRun.outputs.tag }}"
           NEW_TAG: ${{ steps.taggerDryRun.outputs.new_tag }}
         run: |
-          export NEXT_VERSION=$NEW_TAG
-          echo "The next tag version will be: NEW_TAG"
+          echo "The next tag version will be: $NEW_TAG"
           echo "The current tag is: $CURR_TAG" 
 
       - name: Upload vendored distribution to GitHub Release
         uses: softprops/action-gh-release@v2
-        with:
-          tag_name: $NEW_TAG
-          files: ruby_ast_gen-*.gem
         env:
-          NEW_TAG: ${{ steps.taggerDryRun.outputs.new_tag }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_TOKEN_PERMISSIONS: "read:packages, write:packages"
+        with:
+          tag_name: ${{ steps.taggerDryRun.outputs.new_tag }}
+          files: ruby_ast_gen-*.gem
