@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    ruby_ast_gen (0.6.0)
+    ruby_ast_gen (0.8.0)
 
 GEM
   remote: https://rubygems.org/
@@ -44,4 +44,4 @@ DEPENDENCIES
   slop (~> 4.10)
 
 BUNDLED WITH
-   2.5.18
+   2.5.21
