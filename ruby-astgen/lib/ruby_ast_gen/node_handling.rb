@@ -8,17 +8,17 @@ module NodeHandling
   LITERALS = [:int, :float, :rational, :complex, :str, :sym]
   CALLS = [:send, :csend]
   DYNAMIC_LITERALS = [:dsym, :dstr]
-  CONTROL_KW = [:break, :next, :retry]
-  ARGUMENTS = [:arg, :restarg, :kwoptarg, :blockarg, :kwrestarg, :kwarg]
+  CONTROL_KW = [:break, :next]
+  ARGUMENTS = [:arg, :restarg, :kwoptarg, :blockarg, :kwrestarg, :kwarg, :shadowarg, :kwnilarg]
   REFS = [:nth_ref, :back_ref]
   FORWARD_ARGUMENTS = [:forward_args, :forwarded_args, :forward_arg]
-  ASSIGNMENTS = [:or_asgn, :and_asgn, :lvasgn, :ivasgn, :op_asgn, :masgn, :gvasgn, :cvasgn, :match_with_lvasgn]
-  BIN_OP = [:and, :or, :match_pattern]
+  ASSIGNMENTS = [:or_asgn, :and_asgn, :lvasgn, :ivasgn, :gvasgn, :cvasgn, :match_with_lvasgn]
+  BIN_OP = [:and, :or, :match_pattern, :match_pattern_p]
   ACCESS = [:self, :ident, :lvar, :cvar, :gvar, :ivar, :splat, :kwsplat, :block_pass, :match_var]
   QUAL_ACCESS = [:casgn]
-  COLLECTIONS = [:args, :array, :hash, :mlhs, :hash_pattern, :array_pattern, :array_pattern_with_tail, :find_pattern, :undef]
+  COLLECTIONS = [:args, :array, :hash, :mlhs, :hash_pattern, :array_pattern, :array_pattern_with_tail, :find_pattern, :undef, :procarg0]
   SPECIAL_CMD = [:yield, :super, :defined?, :xstr]
-  RANGE_OP = [:erange, :irange]
+  RANGE_OP = [:erange, :irange, :eflipflop, :iflipflop]
 
   def self.fetch_member(loc, method)
     loc.public_send(method) rescue -1
@@ -117,8 +117,8 @@ module NodeHandling
       base_map[:body] = children[0]
     when :case
       base_map[:case_expression] = children[0]
-      base_map[:when_clauses] = children[1]
-      base_map[:else_clause] = children[2] if children[2]
+      base_map[:when_clauses] = children[1..-2]
+      base_map[:else_clause] = children[-1] if children[-1]
     when :when
       base_map[:condition] = children[0]
       base_map[:then_branch] = children[1]
@@ -139,6 +139,8 @@ module NodeHandling
       base_map[:pattern] = children[0]
       base_map[:guard] = children[1]
       base_map[:body] = children[2]
+    when :if_guard, :unless_guard
+      base_map[:condition] = children[0]
     when :match_alt
       base_map[:left] = children[0]
       base_map[:right] = children[1]
@@ -151,12 +153,17 @@ module NodeHandling
       base_map[:body] = children[1]
     when :return, :regopt, *REFS, :redo
       base_map[:value] = children[0] if children[0]
-    when *CONTROL_KW, *FORWARD_ARGUMENTS, :zsuper
+    when *CONTROL_KW 
+      base_map[:arguments] = children[0] if children[0]
+    when *FORWARD_ARGUMENTS, :retry, :zsuper, :match_nil_pattern
       # refer to :type
-
     when *QUAL_ACCESS
       base_map[:base] = children[0]
       base_map[:lhs] = children[1]
+      base_map[:rhs] = children[2]
+    when :op_asgn
+      base_map[:lhs] = children[0]
+      base_map[:op] = children[1]
       base_map[:rhs] = children[2]
     when *ASSIGNMENTS
       base_map[:lhs] = children[0]
@@ -164,7 +171,9 @@ module NodeHandling
     when *BIN_OP
       base_map[:lhs] = children[0]
       base_map[:rhs] = children[1]
-    when *SINGLETONS, *LITERALS, *ARGUMENTS, *ACCESS
+    when *SINGLETONS
+      base_map[:value] = node_type 
+    when *LITERALS, *ARGUMENTS, *ACCESS, :match_rest
       base_map[:value] = children[0]
     when :cbase
       base_map[:base] = children[0]
@@ -197,6 +206,13 @@ module NodeHandling
       base_map[:call] = children[0]
       base_map[:param_idx] = children[1]
       base_map[:body] = children[2]
+    
+    when :masgn
+      base_map[:lhs] = children[0]
+      base_map[:rhs] = children[1]
+
+    when :preexe, :postexe
+      base_map[:body] = children[0]
 
     when *COLLECTIONS, *DYNAMIC_LITERALS, *REFS
       # put :children back

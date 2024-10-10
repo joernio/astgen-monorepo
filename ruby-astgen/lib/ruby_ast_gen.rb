@@ -45,7 +45,7 @@ module RubyAstGen
       @logger.info "Excluding: #{relative_input_path}"
       return
     end
-
+    
     return unless ruby_file?(file_path) # Skip if it's not a Ruby-related file
 
     begin
