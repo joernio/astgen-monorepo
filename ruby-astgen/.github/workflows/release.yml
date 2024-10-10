@@ -44,17 +44,18 @@ jobs:
           ruby-version: 3.1.4
           bundler-cache: false
 
-      - name: Set up JRuby and Bundler
+      - name: Set up JRuby and Bundler Paths
         run: |
           curl 'https://repo1.maven.org/maven2/org/jruby/jruby-complete/9.4.8.0/jruby-complete-9.4.8.0.jar' \
             --output jruby.jar
-          java -jar jruby.jar \
-            -S gem install bundler --install-dir vendor/bundle/jruby/3.1.0
+          mkdir -p ${PWD}/vendor/bundle/jruby/3.1.0
+          export GEM_HOME=${PWD}/vendor/bundle/jruby/3.1.0
+          export GEM_PATH=${PWD}/vendor/bundle/jruby/3.1.0
 
       - name: Bundle and install dependencies
         run: |
-          sudo chown -R "${USER:-$(id -un)}" .
-          java -jar jruby.jar -s vendor/bundle/jruby/3.1.0/bin/bundle install
+          java -jar jruby.jar -S gem install bundler
+          java -jar jruby.jar -S bundle install
 
       - name: Build distribution and set Git perms
         run: |
