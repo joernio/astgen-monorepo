@@ -48,17 +48,16 @@ jobs:
         run: |
           curl 'https://repo1.maven.org/maven2/org/jruby/jruby-complete/9.4.8.0/jruby-complete-9.4.8.0.jar' \
             --output jruby.jar
+
+      - name: Install dependencies and build release
+        run: |
           mkdir -p ${PWD}/vendor/bundle/jruby/3.1.0
           export GEM_HOME=${PWD}/vendor/bundle/jruby/3.1.0
           export GEM_PATH=${PWD}/vendor/bundle/jruby/3.1.0
-
-      - name: Bundle and install dependencies
-        run: |
-          java -jar jruby.jar -S gem install bundler
+          export PATH=$GEM_HOME/bin:$PATH
+          
+          java -jar jruby.jar -S gem install bundler -v 2.5.21 --install-dir ${GEM_HOME}
           java -jar jruby.jar -S bundle install
-
-      - name: Build distribution and set Git perms
-        run: |
           java -jar jruby.jar -S gem build ruby_ast_gen.gemspec
 
       - name: Add and commit updated files holding version information
