@@ -32,21 +32,33 @@ jobs:
           echo "The current tag is: $CURR_TAG"
           ./update_version.rb $NEW_TAG
 
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+
       - name: Set up Ruby
         uses: ruby/setup-ruby@v1
         with:
-          ruby-version: 3.3.5
+          ruby-version: 3.1.4
           bundler-cache: false
+
+      - name: Set up JRuby and Bundler
+        run: |
+          curl 'https://repo1.maven.org/maven2/org/jruby/jruby-complete/9.4.8.0/jruby-complete-9.4.8.0.jar' \
+            --output jruby.jar
+          java -jar jruby.jar \
+            -S gem install bundler --install-dir vendor/bundle/jruby/3.1.0
 
       - name: Bundle and install dependencies
         run: |
-          bundle config set frozen false
-          bundle install --path=vendor/bundle
+          java -jar jruby.jar -s vendor/bundle/jruby/3.1.0/bin/bundle install
 
       - name: Build distribution and set Git perms
         run: |
           sudo chown -R "${USER:-$(id -un)}" .
-          gem build ruby_ast_gen.gemspec
+          java -jar jruby.jar -S gem build ruby_ast_gen.gemspec
 
       - name: Add and commit updated files holding version information
         uses: stefanzweifel/git-auto-commit-action@v5
@@ -63,4 +75,5 @@ jobs:
           GITHUB_TOKEN_PERMISSIONS: "read:packages, write:packages"
         with:
           tag_name: ${{ steps.taggerDryRun.outputs.new_tag }}
-          files: ruby_ast_gen-*.gem
+          files: |
+            ruby_ast_gen-*.gem
