@@ -11,6 +11,7 @@
 .idea
 .vscode
 *.gem
+*.jar
 
 # rspec failure tracking
 .rspec_status
