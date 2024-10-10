@@ -44,7 +44,7 @@ jobs:
           ruby-version: 3.1.4
           bundler-cache: false
 
-      - name: Set up JRuby and Bundler Paths
+      - name: Set up JRuby
         run: |
           curl 'https://repo1.maven.org/maven2/org/jruby/jruby-complete/9.4.8.0/jruby-complete-9.4.8.0.jar' \
             --output jruby.jar
