@@ -58,7 +58,7 @@ jobs:
           
           java -jar jruby.jar -S gem install bundler -v 2.5.21 --install-dir ${GEM_HOME}
           java -jar jruby.jar -S bundle install
-          java -jar jruby.jar -S gem build ruby_ast_gen.gemspec
+          zip -r ruby_ast_gen_${{ steps.taggerDryRun.outputs.new_tag }}.zip .
 
       - name: Add and commit updated files holding version information
         uses: stefanzweifel/git-auto-commit-action@v5
@@ -76,4 +76,4 @@ jobs:
         with:
           tag_name: ${{ steps.taggerDryRun.outputs.new_tag }}
           files: |
-            ruby_ast_gen-*.gem
+            ruby_ast_gen_*.zip
