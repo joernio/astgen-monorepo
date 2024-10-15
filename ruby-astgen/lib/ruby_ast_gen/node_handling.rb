@@ -114,7 +114,7 @@ module NodeHandling
     when :begin
       base_map[:body] = children
     when :kwbegin
-      base_map[:body] = children[0]
+      base_map[:body] = children[0..-1]
     when :case
       base_map[:case_expression] = children[0]
       base_map[:when_clauses] = children[1..-2]
