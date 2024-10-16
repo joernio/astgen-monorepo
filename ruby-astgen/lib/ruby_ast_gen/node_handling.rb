@@ -151,8 +151,10 @@ module NodeHandling
     when :ensure
       base_map[:statement] = children[0]
       base_map[:body] = children[1]
-    when :return, :regopt, *REFS, :redo
+    when :regopt, *REFS, :redo
       base_map[:value] = children[0] if children[0]
+    when :return
+      base_map[:values] = children[0..-1] if children[0]
     when *CONTROL_KW 
       base_map[:arguments] = children[0] if children[0]
     when *FORWARD_ARGUMENTS, :retry, :zsuper, :match_nil_pattern
