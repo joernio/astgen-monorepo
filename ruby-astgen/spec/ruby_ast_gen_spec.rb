@@ -56,4 +56,28 @@ ARG2
     ast = RubyAstGen::parse_file(temp_file.path, temp_name)
     expect(ast).not_to be_nil
   end
+
+  it "should create a singleton object body successfully" do
+    code(<<-CODE)
+class C
+ class << self
+  def f(x)
+   x + 1
+  end
+ end
+end
+    CODE
+    ast = RubyAstGen::parse_file(temp_file.path, temp_name)
+    expect(ast).not_to be_nil
+  end
+
+  it "should create an operator assignment successfully" do
+    code(<<-CODE)
+def foo(x)
+  x += 1
+end
+    CODE
+    ast = RubyAstGen::parse_file(temp_file.path, temp_name)
+    expect(ast).not_to be_nil
+  end
 end

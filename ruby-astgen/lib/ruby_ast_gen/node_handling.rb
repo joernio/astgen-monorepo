@@ -91,6 +91,7 @@ module NodeHandling
       base_map[:body] = children[2]
     when :sclass
       base_map[:name] = children[0]
+      base_map[:def] = children[1]
       base_map[:body] = children[2]
     when :module
       base_map[:name] = children[0]
