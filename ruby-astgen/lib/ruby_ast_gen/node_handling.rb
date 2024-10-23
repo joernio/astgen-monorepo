@@ -121,8 +121,8 @@ module NodeHandling
       base_map[:when_clauses] = children[1..-2]
       base_map[:else_clause] = children[-1] if children[-1]
     when :when
-      base_map[:condition] = children[0]
-      base_map[:then_branch] = children[1]
+      base_map[:conditions] = children[0..-2]
+      base_map[:then_branch] = children[-1]
     when :unless
       base_map[:condition] = children[0]
       base_map[:then_branch] = children[1]
