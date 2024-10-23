@@ -33,6 +33,8 @@ module NodeHandling
       start_column: fetch_member(loc, :column),
       end_line: fetch_member(loc, :last_line),
       end_column: fetch_member(loc, :last_column),
+      offset_start: loc&.expression&.begin_pos,
+      offset_end: loc&.expression&.end_pos,
       code: self.extract_code_snippet(loc, code)
     }
     if current_depth >= MAX_NESTING_DEPTH
