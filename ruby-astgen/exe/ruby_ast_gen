@@ -1,6 +1,10 @@
 #!/usr/bin/env ruby
 
-require "bundler/setup"
+# require "bundler/setup"
+# We do the below instead of the above, as the above can be flaky
+libs = File.expand_path("../../vendor/bundle/ruby/*/gems/**/lib", __FILE__)
+$LOAD_PATH.unshift *Dir.glob(libs)
+
 require "slop"
 
 require_relative "../lib/ruby_ast_gen"
