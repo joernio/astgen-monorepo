@@ -80,4 +80,14 @@ end
     ast = RubyAstGen::parse_file(temp_file.path, temp_name)
     expect(ast).not_to be_nil
   end
+
+  it "should create a function with a keyword option argument sucessfully" do
+    code(<<-CODE)
+def foo(a, bar: "default")
+  puts(bar)
+end
+    CODE
+    ast = RubyAstGen::parse_file(temp_file.path, temp_name)
+    expect(ast).not_to be_nil
+  end
 end
