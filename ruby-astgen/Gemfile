@@ -8,8 +8,4 @@ gem "rspec", "~> 3.0"
 
 gem "parser", "~> 3.3"
 
-gem "slop", "~> 4.10"
-
-gem "logger", "~> 1.6"
-
 gem "ostruct", "~> 0.6.0"

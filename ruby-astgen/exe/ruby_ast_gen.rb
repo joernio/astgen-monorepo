@@ -5,28 +5,50 @@
 libs = File.expand_path("../../vendor/bundle/ruby/*/gems/**/lib", __FILE__)
 $LOAD_PATH.unshift *Dir.glob(libs)
 
-require "slop"
-
 require_relative "../lib/ruby_ast_gen"
 
-begin
-  opts = Slop.parse do |o|
-    o.string '-i', '--input', 'The input file or directory', required: true
-    o.string '-o', '--output', 'The output directory', default: '.ast'
-    o.string '-e', '--exclude', 'The exclusion regex', default: '^(tests?|vendor|spec)'
-    o.string '-l', '--log', 'The logging level', default: 'warn'
-    o.on '--version', 'Print the version' do
-      puts RubyAstGen::VERSION
-      exit
-    end
-    o.on '--help', 'Print usage' do
-      puts o
-      exit
-    end
+options = {
+  input: nil,
+  output: '.ast',
+  exclude: '^(tests?|vendor|spec)',
+}
+
+# Parse ARGV manually
+i = 0
+while i < ARGV.size
+  case ARGV[i]
+  when '-i', '--input'
+    i += 1
+    options[:input] = ARGV[i]
+  when '-o', '--output'
+    i += 1
+    options[:output] = ARGV[i]
+  when '-e', '--exclude'
+    i += 1
+    options[:exclude] = ARGV[i]
+  when '--version'
+    puts RubyAstGen::VERSION
+    exit
+  when '--help'
+    puts <<-HELP
+Usage:
+  -i, --input      The input file or directory (required)
+  -o, --output     The output directory (default: '.ast')
+  -e, --exclude    The exclusion regex (default: '^(tests?|vendor|spec)')
+      --version    Print the version
+      --help       Print usage
+    HELP
+    exit
+  else
+    puts "Unknown option: #{ARGV[i]}"
+    exit 1
   end
-rescue Slop::Error => e
-  puts e.message
-  exit 1 # Exit with an error code
+  i += 1
 end
 
-RubyAstGen::parse(opts)
+if options[:input].nil?
+  puts "Error: '-i' or '--input' is required."
+  exit 1
+end
+
+RubyAstGen::parse(options)

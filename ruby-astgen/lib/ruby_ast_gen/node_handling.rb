@@ -39,7 +39,7 @@ module NodeHandling
       code: self.extract_code_snippet(loc, code)
     }
     if current_depth >= MAX_NESTING_DEPTH
-      RubyAstGen::logger.warn "Reached max JSON depth on a #{node.type.to_s} node"
+      RubyAstGen::Logger::warn "Reached max JSON depth on a #{node.type.to_s} node"
       return { type: node.type.to_s, meta_data: meta_data, nested: true }
     end
 
@@ -228,7 +228,7 @@ module NodeHandling
       base_map[:children] = children
 
     else
-      RubyAstGen::logger.warn "Unhandled AST node type: #{node_type} - #{file_path}"
+      RubyAstGen::Logger::warn "Unhandled AST node type: #{node_type} - #{file_path}"
       base_map[:children] = children
     end
   end
