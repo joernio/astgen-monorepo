@@ -3,7 +3,7 @@
 require_relative "lib/ruby_ast_gen/version"
 
 Gem::Specification.new do |spec|
-  spec.name = "ruby_ast_gen.rb"
+  spec.name = "ruby_ast_gen"
   spec.version = RubyAstGen::VERSION
   spec.authors = ["David Baker Effendi", "Andrei Dreyer"]
   spec.email = ["dave@whirlylabs.com", "andrei@whirlylabs.com"]
@@ -20,7 +20,7 @@ Gem::Specification.new do |spec|
   # The `git ls-files -z` loads the files in the RubyGem that have been added into git.
   gemspec = File.basename(__FILE__)
   spec.files = Dir.glob("{lib,exe,sig,vendor}/**/*") +
-    %w[README.md LICENSE.txt Rakefile Gemfile ruby_ast_gen.rb.gemspec]
+    %w[README.md LICENSE.txt Rakefile Gemfile ruby_ast_gen.gemspec]
   spec.bindir = "exe"
   spec.executables = spec.files.grep(%r{\Aexe/}) { |f| File.basename(f) }
   spec.require_paths = ["lib"]
