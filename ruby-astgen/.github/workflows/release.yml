@@ -63,7 +63,7 @@ jobs:
             d ! -name "gems" ! -name "bin" ! -name "specifications" \
             -exec rm -rf {} +
           zip -r ruby_ast_gen_${{ steps.taggerDryRun.outputs.new_tag }}.zip \
-            lib exe sig vendor README.md LICENSE.txt Rakefile Gemfile ruby_ast_gen.gemspec
+            lib exe vendor Gemfile
 
       - name: Add and commit updated files holding version information
         uses: stefanzweifel/git-auto-commit-action@v5

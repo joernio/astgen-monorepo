@@ -1,9 +1,9 @@
 #!/usr/bin/env ruby
 
-# Script to update the version in `lib/ruby_ast_gen/version.rb`
+# Script to update the version in `lib/ruby_ast_gen.rb/version.rb`
 require 'fileutils'
 
-VERSION_FILE_PATH = 'lib/ruby_ast_gen/version.rb'
+VERSION_FILE_PATH = 'lib/ruby_ast_gen.rb/version.rb'
 
 
 if ARGV.empty?
