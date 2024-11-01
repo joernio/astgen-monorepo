@@ -2,6 +2,8 @@
 
 source "https://rubygems.org"
 
+gemspec
+
 gem "parser", "~> 3.3"
 
 gem "ostruct", "~> 0.6.0"
