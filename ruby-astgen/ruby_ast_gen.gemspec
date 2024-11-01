@@ -20,7 +20,7 @@ Gem::Specification.new do |spec|
   # The `git ls-files -z` loads the files in the RubyGem that have been added into git.
   gemspec = File.basename(__FILE__)
   spec.files = Dir.glob("{lib,exe,sig,vendor}/**/*") +
-    %w[README.md LICENSE.txt Rakefile Gemfile ruby_ast_gen.gemspec]
+    %w[Gemfile ruby_ast_gen.gemspec]
   spec.bindir = "exe"
   spec.executables = spec.files.grep(%r{\Aexe/}) { |f| File.basename(f) }
   spec.require_paths = ["lib"]
