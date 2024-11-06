@@ -1,6 +1,7 @@
 require 'parser/current'
 require 'fileutils'
 require 'json'
+require 'thread'
 
 require_relative 'ruby_ast_gen/version'
 require_relative 'ruby_ast_gen/node_handling'
@@ -52,7 +53,7 @@ module RubyAstGen
       RubyAstGen::Logger::info "Excluding: #{relative_input_path}"
       return
     end
-    
+
     return unless ruby_file?(file_path) # Skip if it's not a Ruby-related file
 
     begin
@@ -68,22 +69,38 @@ module RubyAstGen
     end
   end
 
-  def self.process_directory(dir_path, output_dir, exclude_regex)
+  def self.process_directory(dir_path, output_dir, exclude_regex, max_threads = 10)
+    threads = []
+    queue = Queue.new
+
     Dir.glob("#{dir_path}/**/*").each do |path|
       next unless File.file?(path) && ruby_file?(path)
-
       relative_dir = path.sub("#{dir_path}/", '')
-      if exclude_regex.match?(relative_dir)
-        RubyAstGen::Logger::info "Excluding: #{relative_dir}"
-        next
-      end
-      # Create mirrored directory structure in output
-      relative_path = path.sub(dir_path, '')
-      output_subdir = File.join(output_dir, File.dirname(relative_path))
-      FileUtils.mkdir_p(output_subdir)
+      next if exclude_regex.match?(relative_dir)
 
-      process_file(path, output_subdir, exclude_regex, dir_path)
+      queue << path
     end
+
+    max_threads.times do
+      threads << Thread.new do
+        until queue.empty?
+          begin
+            path = queue.pop(true) rescue nil # Non-blocking pop
+            next unless path
+
+            relative_path = path.sub(dir_path, '')
+            output_subdir = File.join(output_dir, File.dirname(relative_path))
+            FileUtils.mkdir_p(output_subdir)
+
+            process_file(path, output_subdir, exclude_regex, dir_path)
+          rescue => e
+            RubyAstGen::Logger::error "Error processing #{path}: #{e.message}"
+          end
+        end
+      end
+    end
+
+    threads.each(&:join)
   end
 
   def self.parse_file(file_path, relative_input_path)
