@@ -10,6 +10,10 @@ module RubyAstGen
 
   module Logger
 
+    def self.debug(message)
+      puts "[DEBUG] #{message}"
+    end
+
     def self.info(message)
       puts "[INFO] #{message}"
     end
@@ -25,9 +29,17 @@ module RubyAstGen
 
   # Main method to parse the input and generate the AST output
   def self.parse(opts)
+    if opts[:debug]
+      RubyAstGen::Logger::debug "CLI Arguments received: #{opts}" 
+    end
+
     input_path = opts[:input]
     output_dir = opts[:output]
     exclude_regex = Regexp.new(opts[:exclude])
+
+    if opts[:debug]
+      RubyAstGen::Logger::debug "Exclude Regex Received: #{exclude_regex}"
+    end
 
     FileUtils.mkdir_p(output_dir)
 

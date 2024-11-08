@@ -11,6 +11,7 @@ options = {
   input: nil,
   output: '.ast',
   exclude: '^(tests?|vendor|spec)',
+  debug: false
 }
 
 # Parse ARGV manually
@@ -26,6 +27,9 @@ while i < ARGV.size
   when '-e', '--exclude'
     i += 1
     options[:exclude] = ARGV[i]
+  when '-d', '--debug'
+    i += 1
+    options[:debug] = true 
   when '--version'
     puts RubyAstGen::VERSION
     exit
@@ -35,6 +39,7 @@ Usage:
   -i, --input      The input file or directory (required)
   -o, --output     The output directory (default: '.ast')
   -e, --exclude    The exclusion regex (default: '^(tests?|vendor|spec)')
+  -d, --debug      Enable debug logging
       --version    Print the version
       --help       Print usage
     HELP
