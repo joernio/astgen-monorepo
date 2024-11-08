@@ -82,15 +82,13 @@ namespace DotNetAstGen
             {
                 _logger?.LogInformation("Parsing directory {dirName}", inputPath);
                 var rootDirectory = new DirectoryInfo(inputPath);
-                foreach (var inputFile in new DirectoryInfo(inputPath).EnumerateFiles("*.cs",
-                             SearchOption.AllDirectories))
-                {
-                    _AstForFile(rootDirectory, rootOutputPath, inputFile, exclusionRegex);
-                }
+                rootDirectory
+                    .EnumerateFiles("*.cs", SearchOption.AllDirectories)
+                    .AsParallel()
+                    .ForAll(inputFile => _AstForFile(rootDirectory, rootOutputPath, inputFile, exclusionRegex));
             }
             else if (File.Exists(inputPath))
             {
-                _logger?.LogInformation("Parsing file {fileName}", inputPath);
                 var file = new FileInfo(inputPath);
                 Debug.Assert(file.Directory != null, "Given file has a null parent directory!");
                 _AstForFile(file.Directory, rootOutputPath, file, exclusionRegex);
@@ -185,17 +183,12 @@ namespace DotNetAstGen
             if (Directory.Exists(inputPath))
             {
                 _logger?.LogInformation("Parsing directory {dirName}", inputPath);
-
-                foreach (var inputFile in new DirectoryInfo(inputPath).EnumerateFiles("*.dll",
-                             SearchOption.AllDirectories))
-                {
-                    _logger?.LogInformation("Parsing file {fileName}", inputPath);
-                    _SummaryForDLLFile(inputFile, exclusionRegex);
-                }
+                new DirectoryInfo(inputPath).EnumerateFiles("*.dll", SearchOption.AllDirectories)
+                    .AsParallel()
+                    .ForAll(inputFile => _SummaryForDLLFile(inputFile, exclusionRegex));
             }
             else if (File.Exists(inputPath))
             {
-                _logger?.LogInformation("Parsing file {fileName}", inputPath);
                 var file = new FileInfo(inputPath);
                 Debug.Assert(file.Directory != null, "Given file has a null parent directory!");
                 _SummaryForDLLFile(file, exclusionRegex);
@@ -217,6 +210,8 @@ namespace DotNetAstGen
                 _logger?.LogInformation("Skipping file: {filePath}", fullPath);
                 return;
             }
+
+            _logger?.LogInformation("Parsing file {fileName}", fullPath);
 
             var jsonName = Path.Combine(filePath.DirectoryName ?? "./",
                 $"{Path.GetFileNameWithoutExtension(fullPath)}_Symbols.json");
