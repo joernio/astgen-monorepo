@@ -19,26 +19,17 @@
 // The above copyright notice and this permission notice shall be included in all copies or
 // substantial portions of the Software.
 
-using System;
-using System.Collections.Generic;
 using System.Collections.Immutable;
-using System.Diagnostics;
-using System.IO;
 using System.IO.Compression;
-using System.Linq;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using System.Reflection.PortableExecutable;
-using System.Runtime;
 using System.Security.Cryptography;
 using System.Text;
-using System.Threading;
-
 using ICSharpCode.Decompiler.CSharp;
 using ICSharpCode.Decompiler.CSharp.OutputVisitor;
 using ICSharpCode.Decompiler.CSharp.ProjectDecompiler;
 using ICSharpCode.Decompiler.CSharp.Syntax;
-using ICSharpCode.Decompiler.CSharp.Transforms;
 using ICSharpCode.Decompiler.IL;
 using ICSharpCode.Decompiler.Metadata;
 using ICSharpCode.Decompiler.TypeSystem;
@@ -46,9 +37,7 @@ using ICSharpCode.Decompiler.Util;
 using ICSharpCode.Decompiler;
 
 using ICSharpCode.Decompiler.DebugInfo;
-using ICSharpCode.Decompiler.Disassembler;
-using ICSharpCode.Decompiler.Solution;
-using ICSharpCode.ILSpyX.PdbProvider;
+using Microsoft.Extensions.Logging;
 
 namespace DotNetAstGen
 {
@@ -279,6 +268,8 @@ namespace DotNetAstGen
 
     public class PDBWriter
     {
+        private static readonly ILogger? Logger = Program.LoggerFactory?.CreateLogger("PDBWriter");
+
         internal static readonly HashSet<string> attributeNames = new HashSet<string>() {
             "System.Runtime.CompilerServices.IsReadOnlyAttribute",
             "System.Runtime.CompilerServices.IsByRefLikeAttribute",
@@ -402,7 +393,7 @@ namespace DotNetAstGen
                         var method = function.MoveNextMethod ?? function.Method;
                         var methodHandle = (MethodDefinitionHandle)method!.MetadataToken;
                         sequencePoints.TryGetValue(function, out var points);
-                        ProcessMethod(methodHandle, document, points, syntaxTree);
+                        ProcessMethod(methodHandle, document, points, file.FileName);
                         if (function.MoveNextMethod != null)
                         {
                             stateMachineMethods.Add((
@@ -495,14 +486,13 @@ namespace DotNetAstGen
             blobBuilder.WriteContentTo(targetStream);
 
             void ProcessMethod(MethodDefinitionHandle method, DocumentHandle document,
-                List<ICSharpCode.Decompiler.DebugInfo.SequencePoint>? sequencePoints, SyntaxTree syntaxTree)
+                List<ICSharpCode.Decompiler.DebugInfo.SequencePoint>? sequencePoints, string sourceFile)
             {
                 var methodDef = reader.GetMethodDefinition(method);
                 int localSignatureRowId;
-                MethodBodyBlock methodBody;
                 if (methodDef.RelativeVirtualAddress != 0)
                 {
-                    methodBody = file.Reader.GetMethodBody(methodDef.RelativeVirtualAddress);
+                    var methodBody = file.Reader.GetMethodBody(methodDef.RelativeVirtualAddress);
                     localSignatureRowId = methodBody.LocalSignature.IsNil ? 0 : MetadataTokens.GetRowNumber(methodBody.LocalSignature);
                 }
                 else
@@ -522,7 +512,7 @@ namespace DotNetAstGen
                 }
                 else
                 {
-                    Debug.Assert(false, "Duplicate sequence point definition detected: " + MetadataTokens.GetToken(method).ToString("X8"));
+                    Logger.LogError($"Duplicate sequence point definition detected: ${MetadataTokens.GetToken(method):X8} when processing ${sourceFile}");
                 }
             }
         }
