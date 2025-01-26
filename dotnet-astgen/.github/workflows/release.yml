@@ -18,9 +18,9 @@ jobs:
         with:
           fetch-depth: '0'
       - name: Setup .NET
-        uses: actions/setup-dotnet@v3
+        uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '7.x'
+          dotnet-version: '8.x'
       - name: Get next release version (dry run)
         id: taggerDryRun
         uses: anothrNick/github-tag-action@1.61.0
