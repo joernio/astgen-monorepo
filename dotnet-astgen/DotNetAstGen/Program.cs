@@ -1,13 +1,13 @@
-﻿using System.Diagnostics;
-using System.Text;
-using System.Text.RegularExpressions;
-using CommandLine;
+﻿using CommandLine;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.Extensions.Logging;
-using Newtonsoft.Json;
 using Mono.Cecil;
 using Mono.Cecil.Rocks;
+using Newtonsoft.Json;
+using System.Diagnostics;
+using System.Text;
+using System.Text.RegularExpressions;
 
 namespace DotNetAstGen
 {

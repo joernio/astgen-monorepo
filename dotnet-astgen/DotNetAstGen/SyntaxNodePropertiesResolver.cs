@@ -1,9 +1,9 @@
-using System.Reflection;
-using System.Text.RegularExpressions;
 using Microsoft.CodeAnalysis;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
+using System.Reflection;
+using System.Text.RegularExpressions;
 
 namespace DotNetAstGen
 {

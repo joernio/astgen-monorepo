@@ -1,7 +1,7 @@
-using Newtonsoft.Json.Serialization;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Serialization;
 
 namespace DotNetAstGen
 {

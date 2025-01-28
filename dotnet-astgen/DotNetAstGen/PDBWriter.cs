@@ -19,6 +19,17 @@
 // The above copyright notice and this permission notice shall be included in all copies or
 // substantial portions of the Software.
 
+using ICSharpCode.Decompiler;
+using ICSharpCode.Decompiler.CSharp;
+using ICSharpCode.Decompiler.CSharp.OutputVisitor;
+using ICSharpCode.Decompiler.CSharp.ProjectDecompiler;
+using ICSharpCode.Decompiler.CSharp.Syntax;
+using ICSharpCode.Decompiler.DebugInfo;
+using ICSharpCode.Decompiler.IL;
+using ICSharpCode.Decompiler.Metadata;
+using ICSharpCode.Decompiler.TypeSystem;
+using ICSharpCode.Decompiler.Util;
+using Microsoft.Extensions.Logging;
 using System.Collections.Immutable;
 using System.IO.Compression;
 using System.Reflection.Metadata;
@@ -26,18 +37,6 @@ using System.Reflection.Metadata.Ecma335;
 using System.Reflection.PortableExecutable;
 using System.Security.Cryptography;
 using System.Text;
-using ICSharpCode.Decompiler.CSharp;
-using ICSharpCode.Decompiler.CSharp.OutputVisitor;
-using ICSharpCode.Decompiler.CSharp.ProjectDecompiler;
-using ICSharpCode.Decompiler.CSharp.Syntax;
-using ICSharpCode.Decompiler.IL;
-using ICSharpCode.Decompiler.Metadata;
-using ICSharpCode.Decompiler.TypeSystem;
-using ICSharpCode.Decompiler.Util;
-using ICSharpCode.Decompiler;
-
-using ICSharpCode.Decompiler.DebugInfo;
-using Microsoft.Extensions.Logging;
 
 namespace DotNetAstGen
 {
