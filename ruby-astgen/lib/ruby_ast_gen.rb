@@ -5,6 +5,7 @@ require 'thread'
 
 require_relative 'ruby_ast_gen/version'
 require_relative 'ruby_ast_gen/node_handling'
+require_relative 'ruby_ast_gen/erb_to_ruby_transformer'
 
 module RubyAstGen
 
@@ -30,7 +31,7 @@ module RubyAstGen
   # Main method to parse the input and generate the AST output
   def self.parse(opts)
     if opts[:debug]
-      RubyAstGen::Logger::debug "CLI Arguments received: #{opts}" 
+      RubyAstGen::Logger::debug "CLI Arguments received: #{opts}"
     end
 
     input_path = opts[:input]
@@ -66,7 +67,7 @@ module RubyAstGen
       return
     end
 
-    return unless ruby_file?(file_path) # Skip if it's not a Ruby-related file
+    return unless ruby_file?(file_path) || erb_file?(file_path) # Skip if it's not a Ruby-related file
 
     begin
       ast = parse_file(file_path, relative_input_path)
@@ -116,7 +117,16 @@ module RubyAstGen
   end
 
   def self.parse_file(file_path, relative_input_path)
-    code = File.read(file_path)
+    code =
+      if ruby_file?(file_path)
+        File.read(file_path)
+      else
+        file_content = File.read(file_path)
+        get_erb_content(file_content)
+      end
+
+    puts code
+
     buffer = Parser::Source::Buffer.new(file_path)
     buffer.source = code
     parser = Parser::CurrentRuby.new
@@ -136,4 +146,23 @@ module RubyAstGen
     ['.rb', '.gemspec', 'Rakefile'].include?(ext) || file_path.end_with?('.rb')
   end
 
+  def self.erb_file?(file_path)
+    ext = File.extname(file_path)
+    ['.erb'].include?(ext) || file_path.end_with?('.erb')
+  end
+
+  def self.get_erb_content(file_content)
+    begin
+      transformer = ErbToRubyTransformer.new
+      transformer.transform(file_content)
+    rescue StandardError => e 
+      # Wrap the file_content in HEREDOC so the AST parser gives a String output of the ERB file
+      # in case the transformation fell over
+      <<~RUBY
+        <<~HEREDOC
+          #{file_content}
+        HEREDOC
+      RUBY
+    end
+  end
 end

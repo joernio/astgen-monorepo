@@ -10,6 +10,12 @@ RSpec.describe RubyAstGen do
     file
   }
 
+  let(:temp_erb_file) {
+    file = Tempfile.new('test_erb.erb')
+    temp_name = File.basename(file.path)
+    file
+  }
+
   after(:each) do
     temp_file.close
     temp_file.unlink
@@ -18,6 +24,11 @@ RSpec.describe RubyAstGen do
   def code(s)
     temp_file.write(s)
     temp_file.rewind
+  end
+
+  def erb_code(s)
+    temp_erb_file.write(s)
+    temp_erb_file.rewind
   end
 
   it "should parse a class successfully" do
@@ -88,6 +99,56 @@ def foo(a, bar: "default")
 end
     CODE
     ast = RubyAstGen::parse_file(temp_file.path, temp_name)
+    expect(ast).not_to be_nil
+  end
+
+  it "should parse ERB structure with no ruby expressions" do
+    code(<<-CODE)
+app_name: <%= ENV['APP_NAME'] %>
+version: <%= ENV['APP_VERSION'] %>
+
+database:
+  host: <%= ENV['DB_HOST'] %>
+  port: <%= ENV['DB_PORT'] %>
+    CODE
+    ast = RubyAstGen::parse_file(temp_erb_file.path, temp_name)
+    expect(ast).not_to be_nil
+  end
+
+  it "should parse ERB structure with expressions" do
+    code(<<-CODE)
+app_name: <%= ENV['APP_NAME'] %>
+version: <%= ENV['APP_VERSION'] %>
+
+database:
+  host: <%= ENV['DB_HOST'] %>
+  port: <%= ENV['DB_PORT'] %>
+
+<% if ENV['USE_REDIS'] == 'true' %>
+redis:
+  host: <%= ENV['REDIS_HOST'] %>
+  port: <%= ENV['REDIS_PORT'] %>
+<% end %>
+    CODE
+    ast = RubyAstGen::parse_file(temp_erb_file.path, temp_name)
+    expect(ast).not_to be_nil
+  end
+
+  it "should still return some AST even if the ERB is invalid" do
+    code(<<-CODE)
+app_name: <%= ENV['APP_NAME'] %>
+version: <%= ENV['APP_VERSION'] %>
+
+database:
+  host: <%= ENV['DB_HOST'] %>
+  port: <%= ENV['DB_PORT'] %>
+
+<% if ENV['USE_REDIS'] == 'true' %>
+redis:
+  host: <%= ENV['REDIS_HOST'] %>
+  port: <%= ENV['REDIS_PORT'] %>
+    CODE
+    ast = RubyAstGen::parse_file(temp_erb_file.path, temp_name)
     expect(ast).not_to be_nil
   end
 end

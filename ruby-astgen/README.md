@@ -41,6 +41,8 @@ also run `bin/console` for an interactive prompt that will allow you to experime
 
 To install this gem onto your local machine, run `bundle exec rake install`. To package, run `rake build`.
 
+If you are switching between native `ruby` and `jruby` or vice versa, make sure to delete the `vendor` folder before running `jruby -S bundle install` otherwise there will be a clash
+
 ## License
 
 The gem is available as open source under the terms of the [MIT License](https://opensource.org/licenses/MIT).
