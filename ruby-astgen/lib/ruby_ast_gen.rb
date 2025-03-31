@@ -87,7 +87,7 @@ module RubyAstGen
     queue = Queue.new
 
     Dir.glob("#{dir_path}/**/*").each do |path|
-      next unless File.file?(path) && ruby_file?(path)
+      next unless File.file?(path) && (ruby_file?(path) || erb_file?(path))
       relative_dir = path.sub("#{dir_path}/", '')
       next if exclude_regex.match?(relative_dir)
 
