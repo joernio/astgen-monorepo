@@ -23,7 +23,7 @@ namespace DotNetAstGen
                 span.EndLinePosition.Line,
                 span.StartLinePosition.Character,
                 span.EndLinePosition.Character,
-                node.GetText().ToString().Trim()
+                node.WithoutTrivia().ToFullString().Trim()
             );
         }
 

@@ -26,7 +26,7 @@ namespace DotNetAstGen
         public List<object>? fields { get; set; }
     }
 
-    internal class Program
+    public class Program
     {
         public static ILoggerFactory? LoggerFactory;
         private static ILogger<Program>? _logger;
@@ -69,7 +69,8 @@ namespace DotNetAstGen
                 });
         }
 
-        private static void _ParseSourceCode(DirectoryInfo inputDirPath, DirectoryInfo rootOutputPath, string? exclusionRegex)
+        private static void _ParseSourceCode(DirectoryInfo inputDirPath, DirectoryInfo rootOutputPath,
+            string? exclusionRegex)
         {
             if (!rootOutputPath.Exists)
             {
@@ -102,6 +103,44 @@ namespace DotNetAstGen
             _logger?.LogInformation("AST generation for `.cs` files is complete");
         }
 
+        /// <summary>
+        /// Attempts to build and JSON-serialize a <see cref="AstGenWrapper"/>.
+        /// </summary>
+        /// <param name="fullPath">The file path to use. Only informative.</param>
+        /// <param name="programText">The C# code to parse.</param>
+        /// <param name="jsonString">The result of JSON-serializing the corresponding <see cref="AstGenWrapper"/></param>
+        /// <returns>true if no errors were emitted during parsing.</returns>
+        public static bool TryAstForString(string fullPath, string programText, out string jsonString)
+        {
+            var tree = CSharpSyntaxTree.ParseText(programText);
+            var diagnostics = new List<Diagnostic>(tree.GetDiagnostics());
+            var errorWhileParsing = false;
+            foreach (Diagnostic diagnostic in diagnostics)
+            {
+                switch (diagnostic.Severity)
+                {
+                    case DiagnosticSeverity.Warning:
+                        _logger?.LogWarning(diagnostic.ToString());
+                        break;
+                    case DiagnosticSeverity.Error:
+                        _logger?.LogError(diagnostic.ToString());
+                        errorWhileParsing = true;
+                        break;
+                }
+            }
+
+            var astGenResult = new AstGenWrapper(fullPath, tree);
+            jsonString = JsonConvert.SerializeObject(astGenResult, Formatting.Indented,
+                new JsonSerializerSettings
+                {
+                    ReferenceLoopHandling = ReferenceLoopHandling.Ignore,
+                    ContractResolver =
+                        new SyntaxNodePropertiesResolver() // Comment this to see the unfiltered parser output
+                });
+
+            return !errorWhileParsing;
+        }
+
         private static void _AstForFile(
             FileSystemInfo rootInputPath,
             FileSystemInfo rootOutputPath,
@@ -121,23 +160,7 @@ namespace DotNetAstGen
             {
                 using var streamReader = new StreamReader(fullPath, Encoding.UTF8);
                 var programText = streamReader.ReadToEnd();
-                var tree = CSharpSyntaxTree.ParseText(programText);
-                var diagnostics = new List<Diagnostic>(tree.GetDiagnostics());
-                var errorWhileParsing = false;
-                foreach (var diagnostic in diagnostics)
-                {
-                    switch (diagnostic.Severity)
-                    {
-                        case DiagnosticSeverity.Warning:
-                            _logger?.LogWarning(diagnostic.ToString());
-                            break;
-                        case DiagnosticSeverity.Error:
-                            _logger?.LogError(diagnostic.ToString());
-                            errorWhileParsing = true;
-                            break;
-                    }
-                }
-
+                var errorWhileParsing = !TryAstForString(fullPath, programText, out var jsonString);
                 if (errorWhileParsing)
                 {
                     _logger?.LogError("Error(s) encountered while parsing: {filePath}", fullPath);
@@ -145,14 +168,6 @@ namespace DotNetAstGen
                 else
                 {
                     _logger?.LogInformation("Successfully parsed: {filePath}", fullPath);
-                    var astGenResult = new AstGenWrapper(fullPath, tree);
-                    var jsonString = JsonConvert.SerializeObject(astGenResult, Formatting.Indented,
-                        new JsonSerializerSettings
-                        {
-                            ReferenceLoopHandling = ReferenceLoopHandling.Ignore,
-                            ContractResolver =
-                                new SyntaxNodePropertiesResolver() // Comment this to see the unfiltered parser output
-                        });
                     var outputName = Path.Combine(filePath.DirectoryName ?? "./",
                             $"{Path.GetFileNameWithoutExtension(fullPath)}.json")
                         .Replace(rootInputPath.FullName, rootOutputPath.FullName);
@@ -243,10 +258,7 @@ namespace DotNetAstGen
                 }
                 else
                 {
-                    var p = new ReaderParameters
-                    {
-                        ReadSymbols = true
-                    };
+                    var p = new ReaderParameters { ReadSymbols = true };
 
                     var classInfoList = new List<ClassInfo>();
 
@@ -255,13 +267,15 @@ namespace DotNetAstGen
                         RegexOptions.IgnoreCase);
                     var methodFilter = new Regex("^.*\\.(ctor|cctor)", RegexOptions.IgnoreCase);
 
-                    foreach (var typ in x.MainModule.GetAllTypes().DistinctBy(t => t.FullName).Where(t => t.Name != null)
+                    foreach (var typ in x.MainModule.GetAllTypes().DistinctBy(t => t.FullName)
+                                 .Where(t => t.Name != null)
                                  .Where(t => !typeFilter.IsMatch(t.FullName)))
                     {
                         var classInfo = new ClassInfo();
                         var methodInfoList = new List<MethodInfo>();
 
-                        foreach (var method in typ.Methods.Where(m => !methodFilter.IsMatch(m.Name)).Where(m => m.IsPublic))
+                        foreach (var method in typ.Methods.Where(m => !methodFilter.IsMatch(m.Name))
+                                     .Where(m => m.IsPublic))
                         {
                             var methodInfo = new MethodInfo
                             {
