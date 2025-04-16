@@ -47,7 +47,7 @@ class ErbToRubyTransformer
       return "" if text.strip.empty?
       if @in_control_block
         # In control blocks, we need to escape newlines and maintain indentation
-        escaped_text = text.strip.gsub("\n", "\\n")
+        escaped_text = text.gsub("\n", "\\n")
         @control_block_content << "#{escaped_text}"
         ""  # Return empty string as we're collecting content
       else
