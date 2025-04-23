@@ -18,7 +18,7 @@ class ErbToRubyTransformer
     end
     # Wrap everything in a HEREDOC
     <<~RUBY
-      <<~HEREDOC
+      return <<~HEREDOC
       #{content}
       HEREDOC
     RUBY
