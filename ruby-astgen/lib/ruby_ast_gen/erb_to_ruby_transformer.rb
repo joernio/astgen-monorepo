@@ -27,7 +27,6 @@ class ErbToRubyTransformer
   private
   def visit(node)
     return "" unless node.is_a?(Array)
-
     case node.first
     when :multi
       # Usually the start of an ERB program
@@ -55,17 +54,18 @@ class ErbToRubyTransformer
       end
     when :dynamic
       # Handles <%= %> tags
-      code = node[1].to_s.strip
-      if @in_control_block
-        @control_block_content << "\#{#{code}}"
-        ""
-      else
-        "\#{#{code}}"
-      end
+      node[1].to_s.strip
     when :escape
       escape_enabled = node[1]
       inner_node = node[2]
-      visit(inner_node)
+      code = inner_node[1].to_s.strip
+      template_call = if escape_enabled then "joern__template_out_raw" else "joern__template_out_escape" end
+      if @in_control_block
+        @control_block_content << "\#{#{template_call}(#{code})}"
+        ""
+      else
+        "\#{#{template_call}(#{code})}"
+      end
     when :code
       # Handles <% %> tags
       code = node[1].to_s.strip
