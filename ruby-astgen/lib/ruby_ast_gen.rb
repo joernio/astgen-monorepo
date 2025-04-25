@@ -124,9 +124,6 @@ module RubyAstGen
         file_content = File.read(file_path)
         get_erb_content(file_content)
       end
-
-    puts code
-
     buffer = Parser::Source::Buffer.new(file_path)
     buffer.source = code
     parser = Parser::CurrentRuby.new
@@ -155,7 +152,7 @@ module RubyAstGen
     begin
       transformer = ErbToRubyTransformer.new
       transformer.transform(file_content)
-    rescue StandardError => e 
+    rescue StandardError => e
       # Wrap the file_content in HEREDOC so the AST parser gives a String output of the ERB file
       # in case the transformation fell over
       <<~RUBY

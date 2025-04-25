@@ -5,13 +5,13 @@ require 'tempfile'
 RSpec.describe RubyAstGen do
   temp_name = ""
   let(:temp_file) {
-    file = Tempfile.new('test_ruby_code')
+    file = Tempfile.new(['test_ruby_code', '.rb'])
     temp_name = File.basename(file.path)
     file
   }
 
   let(:temp_erb_file) {
-    file = Tempfile.new('test_erb.erb')
+    file = Tempfile.new(['test_erb', '.erb'])
     temp_name = File.basename(file.path)
     file
   }

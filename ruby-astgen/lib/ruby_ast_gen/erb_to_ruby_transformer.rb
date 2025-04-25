@@ -7,20 +7,21 @@ class ErbToRubyTransformer
     @indent_level = 0
     @current_line = []
     @in_control_block = false
-    @control_block_content = []
+    @output_tmp_var = "tmp0"
+    @is_first_output = true
+    @output = []
+    @no_control_struct = true
   end
 
   def transform(input)
     ast = @parser.call(input)
-    content = visit(ast)
+    content = "#{@output_tmp_var} = \"\" \n#{visit(ast)}"
     if @in_control_block
       raise ::StandardError, "Invalid ERB Syntax"
     end
-    # Wrap everything in a HEREDOC
     <<~RUBY
-      return <<~HEREDOC
       #{content}
-      HEREDOC
+      return #{@output_tmp_var}
     RUBY
   end
 
@@ -29,78 +30,45 @@ class ErbToRubyTransformer
     return "" unless node.is_a?(Array)
     case node.first
     when :multi
-      # Usually the start of an ERB program
-      output = []
       node[1..-1].each do |child|
         transformed = visit(child)
-        if transformed.strip.empty?
-          flush_current_line(output) unless @current_line.empty?
-        else
+        unless transformed.strip.empty?
+          @current_line << "#{@output_tmp_var} += <<-HEREDOC\n" if @is_first_output
+          @is_first_output = false
           @current_line << transformed
         end
       end
-      flush_current_line(output) unless @current_line.empty?
-      output.join("\n")
+      @current_line << "\nHEREDOC\n" if @no_control_struct
+      flush_current_line(@output) unless @current_line.empty?
+      @output.join("\n")
     when :static
-      text = node[1].to_s
-      return "" if text.strip.empty?
-      if @in_control_block
-        # In control blocks, we need to escape newlines and maintain indentation
-        escaped_text = text.gsub("\n", "\\n")
-        @control_block_content << "#{escaped_text}"
-        ""  # Return empty string as we're collecting content
-      else
-        "#{indent}#{text}"
-      end
+      "#{node[1].to_s}"
     when :dynamic
-      # Handles <%= %> tags
-      node[1].to_s.strip
+      "#{node[1].to_s}"
     when :escape
       escape_enabled = node[1]
       inner_node = node[2]
       code = inner_node[1].to_s.strip
       template_call = if escape_enabled then "joern__template_out_raw" else "joern__template_out_escape" end
-      if @in_control_block
-        @control_block_content << "\#{#{template_call}(#{code})}"
-        ""
-      else
-        "\#{#{template_call}(#{code})}"
-      end
+      "\#{#{template_call}(#{code})}"
     when :code
-      # Handles <% %> tags
       code = node[1].to_s.strip
-      if code.start_with?('if', 'unless', 'else', 'elsif', 'end')
-        if code.start_with?('if', 'unless')
-          @in_control_block = true
-          @control_block_content = []
-          flush_current_line(@current_line) unless @current_line.empty?
-          "\#{#{code}"
-        elsif code == 'end'
-          @in_control_block = false
-          # Join all collected content and wrap in quotes
-          content = @control_block_content.join
-          @control_block_content = []
-          "\"#{content}\"#{code}}"
-        else
-          # else, elsif
-          content = @control_block_content.join
-          @control_block_content = []
-          "\"#{content}\"#{code}"
-        end
-      else
-        if @in_control_block
-          @control_block_content << "#{code}"
-          ""
-        else
-          "\#{#{code}}"
-        end
+      # Using this to determine if we should throw a StandardError for "invalid" ERB
+      if is_control_struct_start(code)
+        @in_control_block = true
+      elsif code.start_with?("end")
+        @in_control_block = false
       end
+      @no_control_struct = false
+      @current_line << "\nHEREDOC" unless @is_first_output
+      @current_line << "\n#{node[1].to_s.strip}\n"
+      @is_first_output = true
+      ""
+    when :newline
+      ""
     else
-      if node.is_a?(Array) && node.length > 1
-        node[1..-1].map { |child| visit(child) }.join
-      else
-        ""
-      end
+      RubyAstGen::Logger::debug("Invalid node type: #{node}")
+      ""
     end
   end
 
@@ -115,4 +83,16 @@ class ErbToRubyTransformer
       @current_line.clear
     end
   end
+
+  def is_control_struct_start(line)
+    line.start_with?('if', 'unless', 'elsif', 'else', /@?\w+\.each\sdo/)
+  end
+
+  def is_control_struct(line)
+    is_control_struct_start(line) || line.start_with?('end')
+  end
 end
+
+
+
+
