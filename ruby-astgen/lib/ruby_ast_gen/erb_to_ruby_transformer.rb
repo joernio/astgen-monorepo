@@ -11,6 +11,7 @@ class ErbToRubyTransformer
     @is_first_output = true
     @output = []
     @no_control_struct = true
+    @open_heredoc = false
   end
 
   def transform(input)
@@ -33,12 +34,20 @@ class ErbToRubyTransformer
       node[1..-1].each do |child|
         transformed = visit(child)
         unless transformed.strip.empty?
-          @current_line << "#{@output_tmp_var} += <<-HEREDOC\n" if @is_first_output
-          @is_first_output = false
+          if @is_first_output
+            @open_heredoc = true
+            @current_line << "#{@output_tmp_var} += <<-HEREDOC\n"
+            @is_first_output = false
+          end
           @current_line << transformed
         end
       end
-      @current_line << "\nHEREDOC\n" if @no_control_struct
+
+      if @open_heredoc
+        @current_line << "\nHEREDOC\n"
+        @open_heredoc = false
+      end
+
       flush_current_line(@output) unless @current_line.empty?
       @output.join("\n")
     when :static
@@ -59,8 +68,12 @@ class ErbToRubyTransformer
       elsif code.start_with?("end")
         @in_control_block = false
       end
-      @no_control_struct = false
-      @current_line << "\nHEREDOC" unless @is_first_output
+
+      if @open_heredoc
+        @open_heredoc = false
+        @current_line << "\nHEREDOC"
+      end
+
       @current_line << "\n#{node[1].to_s.strip}\n"
       @is_first_output = true
       ""
