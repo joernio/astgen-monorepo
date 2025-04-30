@@ -50,6 +50,11 @@ extension SyntaxProtocol {
 
 struct SyntaxParser {
 
+	static func encode(_ s: String) -> String {
+    	let data = s.data(using: .ascii, allowLossyConversion: true)!
+    	return String(data: data, encoding: .utf8)!
+	}
+
 	static func parse(
 		srcDir: URL,
 		fileUrl: URL,
@@ -57,8 +62,9 @@ struct SyntaxParser {
 		prettyPrint: Bool
 	) throws -> String {
 		let code = try String(contentsOf: fileUrl)
+		let content = encode(code)
 		let opPrecedence = OperatorTable.standardOperators
-		let ast = Parser.parse(source: code)
+		let ast = Parser.parse(source: content)
 		let folded = try opPrecedence.foldAll(ast)
 
 		let locationConverter = SourceLocationConverter(fileName: fileUrl.path, tree: folded)
@@ -67,6 +73,7 @@ struct SyntaxParser {
 		treeNode.projectFullPath = srcDir.standardized.resolvingSymlinksInPath().path
 		treeNode.fullFilePath = fileUrl.standardized.resolvingSymlinksInPath().path
 		treeNode.relativeFilePath = relativeFilePath
+		treeNode.content = content
 
 		let encoder = JSONEncoder()
 		if prettyPrint { encoder.outputFormatting = .prettyPrinted }
