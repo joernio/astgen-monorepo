@@ -26,13 +26,17 @@ jobs:
         with:
           check-latest: true
           development: true
-          swift-version: "5.10"
+          swift-version: "6.1"
       - name: Run Linux Build
         if: matrix.os == 'ubuntu-latest'
         run: |
-          swift build -c release --arch arm64 --arch x86_64 --static-swift-stdlib
+          swift sdk install https://download.swift.org/swift-6.1-branch/static-sdk/swift-6.1-DEVELOPMENT-SNAPSHOT-2025-03-25-a/swift-6.1-DEVELOPMENT-SNAPSHOT-2025-03-25-a_static-linux-0.0.1.artifactbundle.tar.gz --checksum 2b73c30ec402f443857e6cd2ac06b8525f186e889a7a727af05601629148fe6a
+          swift build --swift-sdk x86_64-swift-linux-musl -c release --static-swift-stdlib
           mv ./.build/release/SwiftAstGen SwiftAstGen-linux
           gzexe SwiftAstGen-linux
+          swift build --swift-sdk aarch64-swift-linux-musl -c release --static-swift-stdlib
+          mv ./.build/release/SwiftAstGen SwiftAstGen-linux-arm64
+          gzexe SwiftAstGen-linux-arm64
           ./SwiftAstGen-linux -s
       - name: Run Mac Build
         if: matrix.os == 'macos-latest'
@@ -59,6 +63,7 @@ jobs:
           tag_name: ${{ github.ref_name }}
           files: |
             SwiftAstGen-linux
+            SwiftAstGen-linux-arm64
             SwiftAstGen-mac
             SwiftAstGen-win.exe
             SwiftNodeSyntax.scala

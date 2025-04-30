@@ -42,7 +42,7 @@ public class ScalaAstGenerator {
 		if FileManager.default.fileExists(atPath: defaultScalaOutFileUrl.path) {
 			try FileManager.default.removeItem(at: defaultScalaOutFileUrl)
 		}
-		FileManager.default.createFile(
+		_ = FileManager.default.createFile(
 			atPath: defaultScalaOutFileUrl.path,
 			contents: nil,
 			attributes: nil

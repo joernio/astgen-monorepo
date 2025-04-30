@@ -40,7 +40,7 @@ extension TestUtils {
 			withIntermediateDirectories: true,
 			attributes: nil
 		)
-		FileManager.default.createFile(
+		_ = FileManager.default.createFile(
 			atPath: srcFile.path,
 			contents: nil,
 			attributes: nil
