@@ -52,7 +52,7 @@ struct SyntaxParser {
 
 	static func encode(_ s: String) -> String {
     	let data = s.data(using: .ascii, allowLossyConversion: true)!
-    	return String(data: data, encoding: .utf8)!
+    	return String(decoding: data, as: UTF8.self).replacingOccurrences(of: "\u{FFFD}", with: "?")
 	}
 
 	static func parse(
