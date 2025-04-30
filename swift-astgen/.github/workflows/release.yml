@@ -37,7 +37,7 @@ jobs:
       - name: Run Mac Build
         if: matrix.os == 'macos-latest'
         run: |
-          swift build -c release --arch arm64 --arch x86_64
+          xcrun --toolchain ${{ env.TOOLCHAINS }} swift build -c release --arch arm64 --arch x86_64
           mv ./.build/apple/Products/Release/SwiftAstGen SwiftAstGen-mac
           gzexe SwiftAstGen-mac
       - name: Run Windows Build
