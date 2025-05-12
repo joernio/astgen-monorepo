@@ -103,7 +103,7 @@ end
   end
 
   it "should parse ERB structure with no ruby expressions" do
-    code(<<-CODE)
+    erb_code(<<-CODE)
 app_name: <%= ENV['APP_NAME'] %>
 version: <%= ENV['APP_VERSION'] %>
 
@@ -116,7 +116,7 @@ database:
   end
 
   it "should parse ERB structure with expressions" do
-    code(<<-CODE)
+    erb_code(<<-CODE)
 app_name: <%= ENV['APP_NAME'] %>
 version: <%= ENV['APP_VERSION'] %>
 
@@ -135,7 +135,7 @@ redis:
   end
 
   it "should still return some AST even if the ERB is invalid" do
-    code(<<-CODE)
+    erb_code(<<-CODE)
 app_name: <%= ENV['APP_NAME'] %>
 version: <%= ENV['APP_VERSION'] %>
 
@@ -150,5 +150,28 @@ redis:
     CODE
     ast = RubyAstGen::parse_file(temp_erb_file.path, temp_name)
     expect(ast).not_to be_nil
+  end
+
+  it "should lower ERB code" do
+    erb_code(<<-CODE)
+      <%= form_with url: some_url do |form| %>
+        <%= form.text_field :name %>
+      <% end %>
+    CODE
+
+    file_content = File.read(temp_erb_file.path)
+    code = RubyAstGen::get_erb_content(file_content)
+    expected = <<-HEREDOC
+joern__buffer = ""
+joern__buffer << form_with(url: some_url)
+rails_lambda_0 = lambda do |form|
+joern__inner_buffer = ""
+joern__inner_buffer << joern__template_out_escape(form.text_field :name) 
+joern_inner_buffer
+end
+joern__buffer << rails_lambda_0.call(form)
+return joern__buffer
+    HEREDOC
+    expect(code).equal?(expected)
   end
 end

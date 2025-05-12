@@ -124,7 +124,6 @@ module RubyAstGen
         file_content = File.read(file_path)
         get_erb_content(file_content)
       end
-    puts code
     buffer = Parser::Source::Buffer.new(file_path)
     buffer.source = code
     parser = Parser::CurrentRuby.new
