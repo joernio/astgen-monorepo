@@ -97,9 +97,8 @@ class ErbToRubyTransformer
     end
   end
 
-
   def is_control_struct_start(line)
-    line.start_with?('if', 'unless', 'elsif', 'else', /@?\w+\.each\sdo/)
+    line.start_with?('if', 'unless', 'elsif', 'else', /@?.+\.(each|each_with_index)\sdo/)
   end
 
   def lambda_incrementor()
@@ -113,7 +112,7 @@ class ErbToRubyTransformer
   end
 
   def lower_do_block(code)
-    if (code_match = code.match(/do\s*(?:\|([^|]*)\|)?/))
+    if (code_match = code.match(/do\s+(?:\|([^|]*)\|)?/))
       @current_lambda_vars = code_match[1]
       before_do, _ = code.split(/\bdo\b/)
       unless before_do.nil?
