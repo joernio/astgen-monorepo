@@ -71,11 +71,13 @@ class ErbToRubyTransformer
         @output << "#{buffer_to_use} << \"#{@static_buff.join('\n').gsub(/(?<!\\)"/, '')}\""
         @static_buff = [] # clear static buffer
       end
-      code = node[1].to_s.strip
+
+      stripped_code = node[1].to_s.strip
+      code = node[1].to_s
       # Using this to determine if we should throw a StandardError for "invalid" ERB
-      if is_control_struct_start(code)
+      if is_control_struct_start(stripped_code)
         @in_control_block = true
-        @output << code
+        @output << stripped_code
       elsif code.start_with?("end")
         if @in_do_block
           @in_do_block = false
