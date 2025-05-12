@@ -53,7 +53,7 @@ class ErbToRubyTransformer
 
       escape_enabled = node[1]
       inner_node = node[2]
-      code = inner_node[1].to_s.strip
+      code = inner_node[1].to_s
 
       # Do block with variable found, lower
       if is_do_block(code)
