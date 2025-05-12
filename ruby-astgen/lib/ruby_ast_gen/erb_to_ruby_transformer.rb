@@ -78,7 +78,7 @@ class ErbToRubyTransformer
       if is_control_struct_start(stripped_code)
         @in_control_block = true
         @output << stripped_code
-      elsif code.start_with?("end")
+      elsif stripped_code.start_with?("end")
         if @in_do_block
           @in_do_block = false
           @output << "#{@inner_buffer}"
@@ -114,7 +114,7 @@ class ErbToRubyTransformer
   end
 
   def lower_do_block(code)
-    if (code_match = code.match(/do\s+(?:\|([^|]*)\|)?/))
+    if (code_match = code.match(/do\s+(?:\|([^|]*)\|)?/) || code.end_with?('do'))
       @current_lambda_vars = code_match[1]
       before_do, _ = code.split(/\bdo\b/)
       unless before_do.nil?

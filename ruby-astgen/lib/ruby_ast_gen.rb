@@ -154,6 +154,7 @@ module RubyAstGen
       transformer = ErbToRubyTransformer.new
       transformer.transform(file_content)
     rescue StandardError => e
+      RubyAstGen::Logger::debug "Failed to lower ERB: #{e}"
       # Wrap the file_content in HEREDOC so the AST parser gives a String output of the ERB file
       # in case the transformation fell over
       <<~RUBY
