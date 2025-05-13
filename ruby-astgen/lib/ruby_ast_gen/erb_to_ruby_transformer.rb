@@ -124,7 +124,7 @@ class ErbToRubyTransformer
 
   def flush_static_block()
     unless @static_buff.empty?
-      buffer_to_use = if @in_do_block then "#{@inner_buffer}" else "buffer" end
+      buffer_to_use = if @in_do_block then @inner_buffer else @output_tmp_var end
       @output << "#{buffer_to_use} << \"#{@static_buff.join('\n').gsub(/(?<!\\)"/, '')}\""
       @static_buff = [] # clear static buffer
     end
