@@ -53,10 +53,7 @@ class ErbToRubyTransformer
       code = inner_node[1].to_s
 
       if code.include?(" if ") || code.include?(" unless ")
-        parser_buffer = Parser::Source::Buffer.new("internal_tmp_#{Time.now.nsec}")
-        parser_buffer.source = code
-        ruby_parser = Parser::CurrentRuby.new
-        ast = ruby_parser.parse(parser_buffer)
+        ast = extract_ast(code)
         if ast.is_a?(::Parser::AST::Node)
           case ast.type
           when :if
@@ -120,8 +117,8 @@ class ErbToRubyTransformer
       end
     when :code
       flush_static_block
-      stripped_code = node[1].to_s.strip
-      code = node[1].to_s
+      stripped_code = node[1].to_s.gsub("-", "").strip
+      code = node[1].to_s.gsub("-", "")
       # Using this to determine if we should throw a StandardError for "invalid" ERB
       if is_control_struct_start(stripped_code)
         @in_control_block = true
@@ -177,6 +174,23 @@ class ErbToRubyTransformer
     if (code_match = code.match(/do\s+(?:\|([^|]*)\|)?/) || code.end_with?('do'))
       if code.include?("=")
         @output << code
+      elsif code.include?("end")
+        ast = extract_ast(code)
+        if ast.is_a?(::Parser::AST::Node)
+          case ast.type
+          when :block
+            call = extract_code_snippet(ast.children[0].location, code) if ast.children[0]
+            args = extract_code_snippet(ast.children[1].location, code) if ast.children[1]
+            body = extract_code_snippet(ast.children[2].location, code) if ast.children[2]
+            @output << "#{@output_tmp_var} << #{call}"
+            @output << "#{lambda_incrementor} = lambda do |#{args if args}|"
+            @output << "#{@inner_buffer} = \"\""
+            @output << "#{@inner_buffer} << #{body}"
+            @output << "end"
+          else
+            code
+          end
+        end
       else
         @current_lambda_vars = code_match[1]
         before_do, _ = code.split(/\bdo\b/)
@@ -207,6 +221,13 @@ class ErbToRubyTransformer
     return nil unless range.is_a?(Parser::Source::Range)
     snippet = source_code[range.begin_pos...range.end_pos]
     snippet.strip
+  end
+
+  def extract_ast(code)
+    parser_buffer = Parser::Source::Buffer.new("internal_tmp_#{Time.now.nsec}")
+    parser_buffer.source = code
+    ruby_parser = Parser::CurrentRuby.new
+    ruby_parser.parse(parser_buffer)
   end
 end
 
