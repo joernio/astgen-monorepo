@@ -118,26 +118,32 @@ class ErbToRubyTransformer
     when :code
       flush_static_block
       stripped_code = node[1].to_s.gsub("-", "").strip
-      code = if node[1].strip.start_with?("-") then node[1].to_s.gsub("-", "") else node[1].to_s end
-      # Using this to determine if we should throw a StandardError for "invalid" ERB
-      if is_control_struct_start(stripped_code)
-        @in_control_block = true
-        @output << stripped_code
-      elsif stripped_code == "end"
-        if @in_do_block
-          @in_do_block = false
-          @output << "#{@inner_buffer}"
-          @output << "end"
-          @output << "#{@output_tmp_var} << #{current_lambda}.call(#{@current_lambda_vars})"
+      code = if node[1].strip.start_with?("-") then
+               node[1].to_s.gsub("-", "")
+             else
+               node[1].to_s
+             end
+      unless stripped_code.empty?
+        if is_control_struct_start(stripped_code)
+          @in_control_block = true
+          @output << stripped_code
+        elsif stripped_code == "end"
+          if @in_do_block
+            @in_do_block = false
+            @output << "#{@inner_buffer}"
+            @output << "end"
+            @output << "#{@output_tmp_var} << #{current_lambda}.call(#{@current_lambda_vars})"
+          else
+            @in_control_block = false
+            @output << "end"
+          end
+        elsif is_do_block(code)
+          lower_do_block(code)
         else
-          @in_control_block = false
-          @output << "end"
+          @output << code
         end
-      elsif is_do_block(code)
-        lower_do_block(code)
-      else
-        @output << code
       end
+      # Using this to determine if we should throw a StandardError for "invalid" ERB
     when :newline
     else
       RubyAstGen::Logger::debug("Invalid node type: #{node}")
