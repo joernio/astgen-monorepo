@@ -51,7 +51,7 @@ class ErbToRubyTransformer
       inner_node = node[2]
       code = inner_node[1].to_s
 
-      if code.include?(" if ") || code.include?("unless")
+      if code.include?(" if ") || code.include?(" unless ")
         parser_buffer = Parser::Source::Buffer.new("internal_tmp_#{Time.now.nsec}")
         parser_buffer.source = code
         ruby_parser = Parser::CurrentRuby.new
@@ -137,19 +137,25 @@ class ErbToRubyTransformer
 
   def lower_do_block(code)
     if (code_match = code.match(/do\s+(?:\|([^|]*)\|)?/) || code.end_with?('do'))
-      @current_lambda_vars = code_match[1]
-      before_do, _ = code.split(/\bdo\b/)
-      unless before_do.nil?
-        method_call = before_do.strip
-        call_name, rest = method_call.split(' ', 2)
-        if rest != nil && !rest.start_with?('(') && !rest.end_with?(')')
-          method_call = "#{call_name}(#{rest})"
+      if code.include?("=")
+        @output << code
+      else
+        @current_lambda_vars = code_match[1]
+        before_do, _ = code.split(/\bdo\b/)
+        unless before_do.nil?
+          method_call = before_do.strip
+          call_name, rest = method_call.split(' ', 2)
+          if method_call.start_with?('[')
+            method_call = method_call
+          elsif rest != nil && !rest.start_with?('(') && !rest.end_with?(')')
+            method_call = "#{call_name}(#{rest})"
+          end
+          @output << "#{@output_tmp_var} << #{method_call}"
         end
-        @output << "#{@output_tmp_var} << #{method_call}"
+        @in_do_block = true
+        @output << "#{lambda_incrementor} = lambda do |#{@current_lambda_vars}|"
+        @output << "#{@inner_buffer} = \"\""
       end
-      @in_do_block = true
-      @output << "#{lambda_incrementor} = lambda do |#{@current_lambda_vars}|"
-      @output << "#{@inner_buffer} = \"\""
     end
   end
 
