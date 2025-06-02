@@ -4,8 +4,6 @@ require 'erb'
 class ErbToRubyTransformer
   def initialize
     @parser = Temple::ERB::Parser.new
-    @ruby_parser_buffer = Parser::Source::Buffer.new("internal_tmp")
-    @ruby_parser = Parser::CurrentRuby.new
     @in_control_block = false
     @output_tmp_var = "joern__buffer"
     @in_do_block = false
@@ -53,14 +51,21 @@ class ErbToRubyTransformer
       inner_node = node[2]
       code = inner_node[1].to_s
 
-      if code.include?(" if ")
-        @ruby_parser_buffer.source = code
-        ast = @ruby_parser.parse(@ruby_parser_buffer)
+      if code.include?(" if ") || code.include?("unless")
+        parser_buffer = Parser::Source::Buffer.new("internal_tmp_#{Time.now.nsec}")
+        parser_buffer.source = code
+        ruby_parser = Parser::CurrentRuby.new
+        ast = ruby_parser.parse(parser_buffer)
         if ast.is_a?(::Parser::AST::Node)
           case ast.type
           when :if
-            call, if_cond = code.split(" if ")
-            @output << "if #{if_cond}"
+            if code.include?(" if ")
+              call, if_cond = code.split(" if ")
+              @output << "if #{if_cond}"
+            else
+              call, if_cond = code.split(" unless ")
+              @output << "unless #{if_cond}"
+            end
             template_call = if escape_enabled then "joern__template_out_raw" else "joern__template_out_escape" end
             @output << "#{@output_tmp_var} << #{template_call}(#{call})"
             @output << "end"
