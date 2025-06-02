@@ -118,7 +118,7 @@ class ErbToRubyTransformer
     when :code
       flush_static_block
       stripped_code = node[1].to_s.gsub("-", "").strip
-      code = node[1].to_s.gsub("-", "")
+      code = if node[1].strip.start_with?("-") then node[1].to_s.gsub("-", "") else node[1].to_s end
       # Using this to determine if we should throw a StandardError for "invalid" ERB
       if is_control_struct_start(stripped_code)
         @in_control_block = true
@@ -174,7 +174,7 @@ class ErbToRubyTransformer
     if (code_match = code.match(/do\s+(?:\|([^|]*)\|)?/) || code.end_with?('do'))
       if code.include?("=")
         @output << code
-      elsif code.include?("end")
+      elsif code.strip.end_with?("end")
         ast = extract_ast(code)
         if ast.is_a?(::Parser::AST::Node)
           case ast.type
