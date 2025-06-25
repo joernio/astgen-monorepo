@@ -55,6 +55,16 @@ struct SyntaxParser {
     	return String(decoding: data, as: UTF8.self).replacingOccurrences(of: "\u{FFFD}", with: "?")
 	}
 
+	/// Counts the number of lines in a given string, handling all common line endings (\n, \r\n, \r) in a platform-independent way.
+	/// - Parameter text: The input string to count lines in.
+	/// - Returns: The number of lines in the string.
+	static func countLines(in text: String) -> Int {
+	    // Use CharacterSet.newlines which matches \n, \r, \r\n, Unicode line/paragraph separators, etc.
+	    // Split omitting empty subsequences to correctly handle trailing newlines.
+	    let lines = text.split(omittingEmptySubsequences: false, whereSeparator: { $0.isNewline })
+	    return lines.count
+	}
+
 	static func parse(
 		srcDir: URL,
 		fileUrl: URL,
@@ -63,6 +73,7 @@ struct SyntaxParser {
 	) throws -> String {
 		let code = try String(contentsOf: fileUrl)
 		let content = encode(code)
+		let loc = countLines(in: content)
 		let opPrecedence = OperatorTable.standardOperators
 		let ast = Parser.parse(source: content)
 		let folded = try opPrecedence.foldAll(ast)
@@ -74,6 +85,7 @@ struct SyntaxParser {
 		treeNode.fullFilePath = fileUrl.standardized.resolvingSymlinksInPath().path
 		treeNode.relativeFilePath = relativeFilePath
 		treeNode.content = content
+		treeNode.loc = loc
 
 		let encoder = JSONEncoder()
 		if prettyPrint { encoder.outputFormatting = .prettyPrinted }

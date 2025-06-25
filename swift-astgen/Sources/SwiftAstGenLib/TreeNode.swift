@@ -4,6 +4,7 @@ final class TreeNode: Codable {
 	var relativeFilePath: String?
 	var fullFilePath: String?
 	var content: String?
+	var loc: Int?
 
 	var index: Int
 	var name: String
