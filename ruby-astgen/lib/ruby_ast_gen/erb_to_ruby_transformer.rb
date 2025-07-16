@@ -5,7 +5,7 @@ class ErbToRubyTransformer
   def initialize
     @parser = Temple::ERB::Parser.new
     @in_control_block = false
-    @output_tmp_var = "joern__buffer"
+    @output_tmp_var = "self.joern__buffer"
     @in_do_block = false
     @inner_buffer = "joern__inner_buffer"
     @current_counter = 0
@@ -19,7 +19,6 @@ class ErbToRubyTransformer
     @output << "#{@output_tmp_var} = \"\""
     visit(ast)
     flush_static_block
-    @output << "return #{@output_tmp_var}"
 
     if @in_control_block || @in_do_block
       raise ::StandardError, "Invalid ERB Syntax"
