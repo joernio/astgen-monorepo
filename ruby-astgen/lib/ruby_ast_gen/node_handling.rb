@@ -25,15 +25,15 @@ module NodeHandling
     loc.public_send(method) rescue -1
   end
 
-  def self.ast_to_json(node, code, current_depth: 0, file_path: nil)
+  def self.ast_to_json(node, code, current_depth: 0, file_path: nil, is_erb: false)
     return unless node.is_a?(Parser::AST::Node)
 
     loc = node.location
     meta_data = {
-      start_line: fetch_member(loc, :line),
-      start_column: fetch_member(loc, :column),
-      end_line: fetch_member(loc, :last_line),
-      end_column: fetch_member(loc, :last_column),
+      start_line: is_erb ? -1 : fetch_member(loc, :line),
+      start_column: is_erb ? -1 : fetch_member(loc, :column),
+      end_line: is_erb ? -1 : fetch_member(loc, :last_line),
+      end_column: is_erb ? -1 : fetch_member(loc, :last_column),
       offset_start: loc&.expression&.begin_pos,
       offset_end: loc&.expression&.end_pos,
       code: self.extract_code_snippet(loc, code)
@@ -48,7 +48,7 @@ module NodeHandling
       meta_data: meta_data,
       children: node.children.map do |child|
         if child.is_a?(Parser::AST::Node)
-          ast_to_json(child, code, current_depth: current_depth + 1, file_path: file_path) # Recursively process child nodes
+          ast_to_json(child, code, current_depth: current_depth + 1, file_path: file_path, is_erb: is_erb) # Recursively process child nodes
         else
           child # If it's not a node (e.g., literal), return as-is
         end

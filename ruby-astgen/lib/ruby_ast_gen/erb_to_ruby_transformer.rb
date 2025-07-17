@@ -142,7 +142,6 @@ class ErbToRubyTransformer
           @output << code
         end
       end
-      # Using this to determine if we should throw a StandardError for "invalid" ERB
     when :newline
     else
       RubyAstGen::Logger::debug("Invalid node type: #{node}")
