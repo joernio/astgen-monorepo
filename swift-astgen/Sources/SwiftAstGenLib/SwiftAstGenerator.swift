@@ -7,6 +7,9 @@ public class SwiftAstGenerator {
 	private var prettyPrint: Bool
 	private let availableProcessors = ProcessInfo.processInfo.activeProcessorCount
 
+	// Private serial queue for directory creation operations
+    private let fileQueue = DispatchQueue(label: "io.joern.swiftastgen")
+
 	public init(srcDir: URL, outputDir: URL, prettyPrint: Bool) throws {
 		self.srcDir = srcDir
 		self.outputDir = outputDir
@@ -45,11 +48,13 @@ public class SwiftAstGenerator {
 			let outfileDirUrl = outFileUrl.deletingLastPathComponent()
 
 			do {
-				try FileManager.default.createDirectory(
-					atPath: outfileDirUrl.path,
-					withIntermediateDirectories: true,
-					attributes: nil
-				)
+				try fileQueue.sync {
+					try FileManager.default.createDirectory(
+						atPath: outfileDirUrl.path,
+						withIntermediateDirectories: true,
+						attributes: nil
+					)
+				}
 			} catch {}
 
 			try astJsonString.write(
