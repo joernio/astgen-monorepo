@@ -5,10 +5,6 @@ public class SwiftAstGenerator {
 	private var srcDir: URL
 	private var outputDir: URL
 	private var prettyPrint: Bool
-	private let availableProcessors = ProcessInfo.processInfo.activeProcessorCount
-
-	// Private serial queue for directory creation operations
-    private let fileQueue = DispatchQueue(label: "io.joern.swiftastgen")
 
 	public init(srcDir: URL, outputDir: URL, prettyPrint: Bool) throws {
 		self.srcDir = srcDir
@@ -47,34 +43,26 @@ public class SwiftAstGenerator {
 				.appendingPathExtension("json")
 			let outfileDirUrl = outFileUrl.deletingLastPathComponent()
 
-			do {
-				try fileQueue.sync {
-					try FileManager.default.createDirectory(
-						atPath: outfileDirUrl.path,
-						withIntermediateDirectories: true,
-						attributes: nil
-					)
-				}
-			} catch {}
+			if !FileManager.default.fileExists(atPath: outfileDirUrl.path) {
+				try FileManager.default.createDirectory(
+					atPath: outfileDirUrl.path,
+					withIntermediateDirectories: true,
+					attributes: nil
+				)
+			}
 
 			try astJsonString.write(
 				to: outFileUrl,
 				atomically: true,
 				encoding: String.Encoding.utf8
 			)
-
-			print("Generated AST for file: `\(fileUrl.path)`")
+	        print("Generated AST for file: `\(fileUrl.path)`")
 		} catch {
 			print("Parsing failed for file: `\(fileUrl.path)` (\(error))")
 		}
 	}
 
 	private func iterateSwiftFiles(at url: URL) {
-		let queue = OperationQueue()
-		queue.name = "SwiftAstGen"
-		queue.qualityOfService = .userInitiated
-		queue.maxConcurrentOperationCount = availableProcessors
-
 		if let enumerator = FileManager.default.enumerator(
 			at: url,
 			includingPropertiesForKeys: [.isRegularFileKey],
@@ -84,15 +72,11 @@ public class SwiftAstGenerator {
 	            if fileAttributes.isRegularFile! && fileURL.pathExtension == "swift" {
 	            	let relativeFilePath = fileURL.relativePath(from: srcDir)!
 	            	if !ignoreDirectory(name: "/\(relativeFilePath)") {
-	            		queue.addOperation {
-	            			self.parseFile(fileUrl: fileURL)
-	            		}
+            			self.parseFile(fileUrl: fileURL)
 	            	}
 	            }
 		    }
 		}
-
-		queue.waitUntilAllOperationsAreFinished()
 	} 
 
 	public func generate() throws {
