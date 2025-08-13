@@ -5,6 +5,7 @@ public class SwiftAstGenerator {
 	private var srcDir: URL
 	private var outputDir: URL
 	private var prettyPrint: Bool
+	private let availableProcessors = ProcessInfo.processInfo.activeProcessorCount
 
 	public init(srcDir: URL, outputDir: URL, prettyPrint: Bool) throws {
 		self.srcDir = srcDir
@@ -63,6 +64,11 @@ public class SwiftAstGenerator {
 	}
 
 	private func iterateSwiftFiles(at url: URL) {
+		let queue = OperationQueue()
+		queue.name = "io.joern.swiftastgen.iteratequeue"
+		queue.qualityOfService = .userInitiated
+		queue.maxConcurrentOperationCount = availableProcessors
+
 		if let enumerator = FileManager.default.enumerator(
 			at: url,
 			includingPropertiesForKeys: [.isRegularFileKey],
@@ -72,11 +78,14 @@ public class SwiftAstGenerator {
 	            if fileAttributes.isRegularFile! && fileURL.pathExtension == "swift" {
 	            	let relativeFilePath = fileURL.relativePath(from: srcDir)!
 	            	if !ignoreDirectory(name: "/\(relativeFilePath)") {
-            			self.parseFile(fileUrl: fileURL)
+            			queue.addOperation {
+	            			self.parseFile(fileUrl: fileURL)
+	            		}
 	            	}
 	            }
 		    }
 		}
+		queue.waitUntilAllOperationsAreFinished()
 	} 
 
 	public func generate() throws {
