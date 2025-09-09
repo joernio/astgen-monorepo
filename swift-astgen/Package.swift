@@ -42,7 +42,12 @@ let package = Package(
       ],
       swiftSettings: [
         .unsafeFlags(["-cross-module-optimization"], .when(configuration: .release))
-      ]
+      ],
+      linkerSettings: [
+        // 2M stack size, as swift-linux-musl provides a default thread stack size of only 128k.
+        // This prevents segmentation faults for larger Swift projects being scanned.
+        .unsafeFlags(["-Xlinker", "-z", "-Xlinker", "stack-size=2097152"], .when(platforms: [.linux], configuration: .release))
+      ],
     ),
     .testTarget(
       name: "SwiftAstGenTests",
