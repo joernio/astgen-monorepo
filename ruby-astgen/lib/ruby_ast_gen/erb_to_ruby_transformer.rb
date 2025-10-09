@@ -6,6 +6,7 @@ class ErbToRubyTransformer
     @parser = Temple::ERB::Parser.new
     @in_control_block = false
     @output_tmp_var = "self.joern__buffer"
+    @output_tmp_append_func = "self.joern__buffer_append"
     @in_do_block = false
     @inner_buffer = "joern__inner_buffer"
     @current_counter = 0
@@ -70,7 +71,7 @@ class ErbToRubyTransformer
               @output << "if #{if_cond}"
               @output << "#{template_call}(#{if_body})" if if_body
               @output << "else" if else_body
-              @output << "#{@output_tmp_var} << #{template_call}(#{else_body})" if else_body
+              @output << "#{@output_tmp_append_func}(#{@output_tmp_var}, #{template_call}(#{else_body}))" if else_body
             else
               if code.include?(" if ")
                 call, if_cond = code.split(" if ")
@@ -84,7 +85,7 @@ class ErbToRubyTransformer
                               else
                                 "joern__template_out_escape"
                               end
-              @output << "#{@output_tmp_var} << #{template_call}(#{call})"
+              @output << "#{@output_tmp_append_func}(#{@output_tmp_var}, #{template_call}(#{call}))"
             end
             @output << "end"
           else
@@ -93,7 +94,7 @@ class ErbToRubyTransformer
                             else
                               "joern__template_out_escape"
                             end
-            @output << "#{@inner_buffer} << #{template_call}(#{code})"
+            @output << "#{@output_tmp_append_func}(#{@inner_buffer}, #{template_call}(#{code}))"
           end
         end
       elsif is_do_block(code)
@@ -105,14 +106,14 @@ class ErbToRubyTransformer
                         else
                           "joern__template_out_escape"
                         end
-        @output << "#{@inner_buffer} << #{template_call}(#{code})"
+        @output << "#{@output_tmp_append_func}(#{@inner_buffer}, #{template_call}(#{code}))"
       else
         template_call = if escape_enabled then
                           "joern__template_out_raw"
                         else
                           "joern__template_out_escape"
                         end
-        @output << "#{@output_tmp_var} << #{template_call}(#{code})"
+        @output << "#{@output_tmp_append_func}(#{@output_tmp_var}, #{template_call}(#{code}))"
       end
     when :code
       flush_static_block
@@ -131,7 +132,7 @@ class ErbToRubyTransformer
             @in_do_block = false
             @output << "#{@inner_buffer}"
             @output << "end"
-            @output << "#{@output_tmp_var} << #{current_lambda}.call(#{@current_lambda_vars})"
+            @output << "#{@output_tmp_append_func}(#{@output_tmp_var}, #{current_lambda}.call(#{@current_lambda_vars}))"
           else
             @in_control_block = false
             @output << "end"
@@ -169,7 +170,7 @@ class ErbToRubyTransformer
                       else
                         @output_tmp_var
                       end
-      @output << "#{buffer_to_use} << \"#{@static_buff.join('\n').gsub(/(?<!\\)"/, '')}\""
+      @output << "#{@output_tmp_append_func}(#{buffer_to_use}, \"#{@static_buff.join('\n').gsub(/(?<!\\)"/, '')}\")"
       @static_buff = [] # clear static buffer
     end
   end
@@ -186,10 +187,10 @@ class ErbToRubyTransformer
             call = extract_code_snippet(ast.children[0].location, code) if ast.children[0]
             args = extract_code_snippet(ast.children[1].location, code) if ast.children[1]
             body = extract_code_snippet(ast.children[2].location, code) if ast.children[2]
-            @output << "#{@output_tmp_var} << #{call}"
+            @output << "#{@output_tmp_append_func}(#{@output_tmp_var}, #{call})"
             @output << "#{lambda_incrementor} = lambda do |#{args if args}|"
             @output << "#{@inner_buffer} = \"\""
-            @output << "#{@inner_buffer} << #{body}"
+            @output << "#{@output_tmp_append_func}(#{@inner_buffer}, #{body})"
             @output << "end"
           else
             code
@@ -206,7 +207,7 @@ class ErbToRubyTransformer
           elsif rest != nil && !rest.start_with?('(') && !rest.end_with?(')')
             method_call = "#{call_name}(#{rest})"
           end
-          @output << "#{@output_tmp_var} << #{method_call}"
+          @output << "#{@output_tmp_append_func}(#{@output_tmp_var}, #{method_call})"
         end
         @in_do_block = true
         @output << "#{lambda_incrementor} = lambda do |#{@current_lambda_vars}|"
@@ -234,7 +235,3 @@ class ErbToRubyTransformer
     ruby_parser.parse(parser_buffer)
   end
 end
-
-
-
-

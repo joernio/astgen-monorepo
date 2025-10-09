@@ -92,7 +92,7 @@ end
     expect(ast).not_to be_nil
   end
 
-  it "should create a function with a keyword option argument sucessfully" do
+  it "should create a function with a keyword option argument successfully" do
     code(<<-CODE)
 def foo(a, bar: "default")
   puts(bar)
@@ -162,16 +162,15 @@ redis:
     file_content = File.read(temp_erb_file.path)
     code = RubyAstGen::get_erb_content(file_content)
     expected = <<-HEREDOC
-joern__buffer = ""
-joern__buffer << form_with(url: some_url)
+self.joern__buffer = ""
+self.joern__buffer_append(self.joern__buffer, form_with(url: some_url))
 rails_lambda_0 = lambda do |form|
 joern__inner_buffer = ""
-joern__inner_buffer << joern__template_out_escape(form.text_field :name) 
-joern_inner_buffer
+self.joern__buffer_append(joern__inner_buffer, joern__template_out_escape( form.text_field :name ))
+joern__inner_buffer
 end
-joern__buffer << rails_lambda_0.call(form)
-return joern__buffer
+self.joern__buffer_append(self.joern__buffer, rails_lambda_0.call(form))
     HEREDOC
-    expect(code).equal?(expected)
+    expect(code).to eq(expected)
   end
 end
