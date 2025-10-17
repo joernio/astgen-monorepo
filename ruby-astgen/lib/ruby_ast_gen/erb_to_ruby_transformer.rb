@@ -5,10 +5,12 @@ class ErbToRubyTransformer
   def initialize
     @parser = Temple::ERB::Parser.new
     @in_control_block = false
-    @output_tmp_var = "self.joern__buffer"
-    @output_tmp_append_func = "self.joern__buffer_append"
+    @output_tmp_var = "self.joernBuffer"
+    @output_tmp_append_func = "self.joernBufferAppend"
+    @joern_template_out_raw = "joernTemplateOutRaw"
+    @joern_template_out_escape = "joernTemplateOutEscape"
     @in_do_block = false
-    @inner_buffer = "joern__inner_buffer"
+    @inner_buffer = "joernInnerBuffer"
     @current_counter = 0
     @current_lambda_vars = ""
     @output = []
@@ -59,9 +61,9 @@ class ErbToRubyTransformer
           when :if
             if code.strip.start_with?("if") || code.strip.start_with?("unless")
               template_call = if escape_enabled
-                                "joern__template_out_raw"
+                                @joern_template_out_raw
                               else
-                                "joern__template_out_escape"
+                                @joern_template_out_escape
                               end
 
               if_cond = extract_code_snippet(ast.children[0].location, code)
@@ -81,18 +83,18 @@ class ErbToRubyTransformer
                 @output << "unless #{if_cond}"
               end
               template_call = if escape_enabled
-                                "joern__template_out_raw"
+                                @joern_template_out_raw
                               else
-                                "joern__template_out_escape"
+                                @joern_template_out_escape
                               end
               @output << "#{@output_tmp_append_func}(#{@output_tmp_var}, #{template_call}(#{call}))"
             end
             @output << "end"
           else
             template_call = if escape_enabled then
-                              "joern__template_out_raw"
+                              @joern_template_out_raw
                             else
-                              "joern__template_out_escape"
+                              @joern_template_out_escape
                             end
             @output << "#{@output_tmp_append_func}(#{@inner_buffer}, #{template_call}(#{code}))"
           end
@@ -102,16 +104,16 @@ class ErbToRubyTransformer
         lower_do_block(code)
       elsif @in_do_block
         template_call = if escape_enabled then
-                          "joern__template_out_raw"
+                          @joern_template_out_raw
                         else
-                          "joern__template_out_escape"
+                          @joern_template_out_escape
                         end
         @output << "#{@output_tmp_append_func}(#{@inner_buffer}, #{template_call}(#{code}))"
       else
         template_call = if escape_enabled then
-                          "joern__template_out_raw"
+                          @joern_template_out_raw
                         else
-                          "joern__template_out_escape"
+                          @joern_template_out_escape
                         end
         @output << "#{@output_tmp_append_func}(#{@output_tmp_var}, #{template_call}(#{code}))"
       end

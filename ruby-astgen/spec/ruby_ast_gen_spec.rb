@@ -162,14 +162,14 @@ redis:
     file_content = File.read(temp_erb_file.path)
     code = RubyAstGen::get_erb_content(file_content)
     expected = <<-HEREDOC
-self.joern__buffer = ""
-self.joern__buffer_append(self.joern__buffer, form_with(url: some_url))
+self.joernBuffer = ""
+self.joernBufferAppend(self.joernBuffer, form_with(url: some_url))
 rails_lambda_0 = lambda do |form|
-joern__inner_buffer = ""
-self.joern__buffer_append(joern__inner_buffer, joern__template_out_escape( form.text_field :name ))
-joern__inner_buffer
+joernInnerBuffer = ""
+self.joernBufferAppend(joernInnerBuffer, joernTemplateOutEscape( form.text_field :name ))
+joernInnerBuffer
 end
-self.joern__buffer_append(self.joern__buffer, rails_lambda_0.call(form))
+self.joernBufferAppend(self.joernBuffer, rails_lambda_0.call(form))
     HEREDOC
     expect(code).to eq(expected)
   end
