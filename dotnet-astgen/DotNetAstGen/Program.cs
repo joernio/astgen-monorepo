@@ -202,13 +202,13 @@ namespace DotNetAstGen
                     .AsParallel()
                     .ForAll(inputFile => _SummaryForDLLFile(inputFile, exclusionRegex));
             }
-            else if (File.Exists(inputPath))
+            else if (File.Exists(inputPath) && Path.GetExtension(inputPath).ToLower() == ".dll")
             {
                 var file = new FileInfo(inputPath);
                 Debug.Assert(file.Directory != null, "Given file has a null parent directory!");
                 _SummaryForDLLFile(file, exclusionRegex);
             }
-            else
+            else if (!File.Exists(inputPath))
             {
                 _logger?.LogError("The path {inputPath} does not exist!", inputPath);
                 Environment.Exit(1);
