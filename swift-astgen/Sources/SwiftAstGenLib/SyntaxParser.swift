@@ -55,7 +55,7 @@ struct SyntaxParser {
 
     static func encode(_ s: String) -> String {
         return s.unicodeScalars.map { scalar in
-            scalar.isASCII ? String(scalar) : "???"
+            scalar.isASCII ? String(scalar) : String(repeating: "?", count: scalar.utf8.count)
         }.joined()
     }
 
