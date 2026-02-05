@@ -54,8 +54,9 @@ extension SyntaxProtocol {
 struct SyntaxParser {
 
     static func encode(_ s: String) -> String {
-        let data = s.data(using: .ascii, allowLossyConversion: true)!
-        return String(decoding: data, as: UTF8.self).replacingOccurrences(of: "\u{FFFD}", with: "?")
+        return s.unicodeScalars.map { scalar in
+            scalar.isASCII ? String(scalar) : "???"
+        }.joined()
     }
 
     /// Counts the number of lines in a given string, handling all common line endings (\n, \r\n, \r) in a platform-independent way.
