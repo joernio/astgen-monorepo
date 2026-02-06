@@ -53,12 +53,6 @@ extension SyntaxProtocol {
 }
 struct SyntaxParser {
 
-    static func encode(_ s: String) -> String {
-        return s.unicodeScalars.map { scalar in
-            scalar.isASCII ? String(scalar) : String(repeating: "?", count: scalar.utf8.count)
-        }.joined()
-    }
-
     /// Counts the number of lines in a given string, handling all common line endings (\n, \r\n, \r) in a platform-independent way.
     /// - Parameter text: The input string to count lines in.
     /// - Returns: The number of lines in the string.
@@ -76,10 +70,9 @@ struct SyntaxParser {
         prettyPrint: Bool
     ) throws -> String {
         let code = try String(contentsOf: fileUrl)
-        let content = encode(code)
-        let loc = countLines(in: content)
+        let loc = countLines(in: code)
         let opPrecedence = OperatorTable.standardOperators
-        let ast = Parser.parse(source: content)
+        let ast = Parser.parse(source: code)
         let folded = try opPrecedence.foldAll(ast)
 
         let locationConverter = SourceLocationConverter(fileName: fileUrl.path, tree: folded)
@@ -88,7 +81,7 @@ struct SyntaxParser {
         treeNode.projectFullPath = srcDir.standardized.resolvingSymlinksInPath().path
         treeNode.fullFilePath = fileUrl.standardized.resolvingSymlinksInPath().path
         treeNode.relativeFilePath = relativeFilePath
-        treeNode.content = content
+        treeNode.content = code
         treeNode.loc = loc
 
         let encoder = JSONEncoder()
