@@ -7,7 +7,7 @@ struct TypeGenerator {
         let cast: String
     }
 
-    private static func type(for child: Child) -> String {
+    static func type(for child: Child) -> String {
         switch child.kind {
         case .node(let kind):
             return "\(kind.syntaxType)"
@@ -30,14 +30,16 @@ struct TypeGenerator {
         return ReturnTypeAndCast(returnType: returnType, cast: cast)
     }
 
-    static func returnTypeAndCast(for collection: CollectionNode) -> ReturnTypeAndCast {
-        let collectionType: String
+    static func collectionElementType(for collection: CollectionNode) -> String {
         if let onlyElement = collection.elementChoices.only {
-            collectionType = "\(onlyElement.syntaxType)"
+            return "\(onlyElement.syntaxType)"
         } else {
-            collectionType =
-                "\(collection.elementChoices.map { "\($0.syntaxType)" }.joined(separator: " | "))"
+            return "\(collection.elementChoices.map { "\($0.syntaxType)" }.joined(separator: " | "))"
         }
+    }
+
+    static func returnTypeAndCast(for collection: CollectionNode) -> ReturnTypeAndCast {
+        let collectionType = collectionElementType(for: collection)
         let returnType = "Seq[\(collectionType)]"
         let cast = ".map(_.asInstanceOf[\(collectionType)])"
         return ReturnTypeAndCast(returnType: returnType, cast: cast)

@@ -33,7 +33,6 @@ public class ScalaAstGenerator {
 		// Do not edit directly!
 		// Generated: \(dateString())
 
-		import scala.util.Try
 		import ujson.Value
 		"""
 	}
@@ -87,15 +86,18 @@ public class ScalaAstGenerator {
 					.filter { !$0.isUnexpectedNodes }
 					.map { child in
 						let name = backtickedIfNeeded(name: "\(child.varOrCaseName)")
-						let returnTypeAndCast = TypeGenerator.returnTypeAndCast(for: child)
-						return
-							"\tdef \(name): \(returnTypeAndCast.returnType) = json(\"children\").arr.toList.find(_(\"name\").str == \"\(child.varOrCaseName)\").map(createSwiftNode)\(returnTypeAndCast.cast)"
+						let childType = TypeGenerator.type(for: child)
+						if child.isOptional {
+							return "\tdef \(name): Option[\(childType)] = _childrenMap.get(\"\(child.varOrCaseName)\").map(c => createSwiftNode(c).asInstanceOf[\(childType)])"
+						} else {
+							return "\tdef \(name): \(childType) = createSwiftNode(_childrenMap(\"\(child.varOrCaseName)\")).asInstanceOf[\(childType)]"
+						}
 					}.joined(separator: "\n\t")
 			} else {
 				let collection = node.collectionNode!
-				let returnTypeAndCast = TypeGenerator.returnTypeAndCast(for: collection)
+				let elementType = TypeGenerator.collectionElementType(for: collection)
 				childrenString =
-					"\tdef children: \(returnTypeAndCast.returnType) = json(\"children\").arr.toList.map(createSwiftNode)\(returnTypeAndCast.cast)"
+					"\tdef children: Seq[\(elementType)] = json(\"children\").arr.iterator.map(c => createSwiftNode(c).asInstanceOf[\(elementType)]).toSeq"
 			}
 
 			var documentation = String(describing: node.documentation)
@@ -142,6 +144,15 @@ public class ScalaAstGenerator {
 			"""
 		}
 
+		let nodeTypeMapEntries = NON_BASE_SYNTAX_NODES.map { node in
+			let syntaxType = node.kind.syntaxType
+			return "\"\(syntaxType)\" -> (json => \(syntaxType)(json))"
+		}
+		let nodeTypeMapEntriesString = (nodeTypeMapEntries + ["\"TokenSyntax\" -> (json => TokenSyntax(json))"]).joined(separator: ",\n\t\t\t")
+
+		let tokenKindMapEntries = Token.allCases.map { "\"\($0)\" -> (json => \($0)(json))" }
+		let tokenKindMapEntriesString = tokenKindMapEntries.joined(separator: ",\n\t\t\t")
+
 		let out = """
 			\(header())
 
@@ -152,31 +163,43 @@ public class ScalaAstGenerator {
 					val tokenKind = json("tokenKind").str
 
 					if (nodeType.nonEmpty) {
-						\(NON_BASE_SYNTAX_NODES.map { node in
-							let syntaxType = node.kind.syntaxType
-							return "if (nodeType == \"\(syntaxType)\") { return \(syntaxType)(json) }"
-						}.joined(separator: "\n\t\t\t"))
-						if (nodeType == \"TokenSyntax\") { return TokenSyntax(json) }
-						throw new UnsupportedOperationException(s"NodeType '$nodeType' is not a known Swift NodeType!")
+						_nodeTypeMap.getOrElse(nodeType, throw new UnsupportedOperationException(s"NodeType '$nodeType' is not a known Swift NodeType!"))(json)
+					} else if (tokenKind.nonEmpty) {
+						val prefix = { val i = tokenKind.indexOf('('); if (i >= 0) tokenKind.substring(0, i) else tokenKind }
+						_tokenKindMap.getOrElse(prefix, throw new UnsupportedOperationException(s"TokenKind '$tokenKind' is not a known Swift TokenKind!"))(json)
+					} else {
+						throw new UnsupportedOperationException("Invalid SwiftSyntax json element. 'nodeType' and 'tokenKind' cannot be empty at the same time!")
 					}
-
-					if (tokenKind.nonEmpty) {
-						\(Token.allCases.map { "if (tokenKind.startsWith(\"\($0)\")) return { \($0)(json) }" }.joined(separator: "\n\t\t\t"))
-						throw new UnsupportedOperationException(s"TokenKind '$tokenKind' is not a known Swift TokenKind!")
-					}
-
-					throw new UnsupportedOperationException("Invalid SwiftSyntax json element. 'nodeType' and 'tokenKind' cannot be empty at the same time!")
 				}
+
+				private val _nodeTypeMap: Map[String, Value => SwiftNode] = Map(
+					\(nodeTypeMapEntriesString)
+				)
+
+				private val _tokenKindMap: Map[String, Value => SwiftNode] = Map(
+					\(tokenKindMapEntriesString)
+				)
 
 				sealed trait SwiftNode {
 					def json: Value
-					def startOffset: Option[Int] = Try(json("range")("startOffset").num.toInt).toOption
-					def endOffset: Option[Int] = Try(json("range")("endOffset").num.toInt).toOption
-					def startLine: Option[Int] = Try(json("range")("startLine").num.toInt).toOption
-					def startColumn: Option[Int] = Try(json("range")("startColumn").num.toInt).toOption
-					def endLine: Option[Int] = Try(json("range")("endLine").num.toInt).toOption
-					def endColumn: Option[Int] = Try(json("range")("endColumn").num.toInt).toOption
-					override def toString: String = this.getClass.getSimpleName.stripSuffix("$")
+
+					protected lazy val _childrenMap: Map[String, Value] = {
+						json.obj.get("children") match {
+							case Some(ch) => ch.arr.iterator.flatMap(c => c.obj.get("name").map(_.str -> c)).toMap
+							case None => Map.empty
+						}
+					}
+
+					private lazy val _rangeObj = json.obj.get("range").map(_.obj)
+					private def _rangeField(name: String): Option[Int] = _rangeObj.flatMap(_.get(name)).map(_.num.toInt)
+					def startOffset: Option[Int] = _rangeField("startOffset")
+					def endOffset: Option[Int] = _rangeField("endOffset")
+					def startLine: Option[Int] = _rangeField("startLine")
+					def startColumn: Option[Int] = _rangeField("startColumn")
+					def endLine: Option[Int] = _rangeField("endLine")
+					def endColumn: Option[Int] = _rangeField("endColumn")
+
+					override lazy val toString: String = this.getClass.getSimpleName.stripSuffix("$")
 				}
 
 				sealed trait SwiftToken extends SwiftNode
