@@ -11,6 +11,7 @@ final class SwiftAstGenTests: XCTestCase, TestUtils {
         ("testIgnoresTestTargetPathsFromPackageSwift", testIgnoresTestTargetPathsFromPackageSwift),
         ("testIgnoresMultipleTestTargetPaths", testIgnoresMultipleTestTargetPaths),
         ("testIgnoresCustomTestTargetPath", testIgnoresCustomTestTargetPath),
+        ("testCustomOperatorDoesNotFailParsing", testCustomOperatorDoesNotFailParsing),
     ]
 
     func testJsonSourceFileSyntax() throws {
@@ -191,6 +192,30 @@ final class SwiftAstGenTests: XCTestCase, TestUtils {
         )
     }
     
+    func testCustomOperatorDoesNotFailParsing() throws {
+        try withCode(
+            code: """
+                infix operator <<<: AdditionPrecedence
+                func <<< (lhs: Int, rhs: Int) -> Int { lhs + rhs }
+                let result = 1 <<< 2
+                """
+        ) { srcDir, outputDir, jsonFile in
+
+            try SwiftAstGenerator(
+                srcDir: srcDir,
+                outputDir: outputDir,
+                prettyPrint: false
+            ).generate()
+
+            XCTAssertTrue(FileManager.default.fileExists(atPath: jsonFile.path))
+            if let treeNode = loadJson(file: jsonFile) {
+                XCTAssertEqual(treeNode.nodeType, "SourceFileSyntax")
+            } else {
+                XCTFail("Could not create the JSON containing the Swift AST.")
+            }
+        }
+    }
+
     func testIgnoresCustomTestTargetPath() throws {
         let tempDir = createTemporaryDirectory()
         defer { cleanup(directory: tempDir) }

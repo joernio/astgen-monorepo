@@ -73,7 +73,7 @@ struct SyntaxParser {
         let loc = countLines(in: code)
         let opPrecedence = OperatorTable.standardOperators
         let ast = Parser.parse(source: code)
-        let folded = try opPrecedence.foldAll(ast)
+        let folded = opPrecedence.foldAll(ast) { _ in }
 
         let locationConverter = SourceLocationConverter(fileName: fileUrl.path, tree: folded)
         let treeNode = folded.toJson(converter: locationConverter)
