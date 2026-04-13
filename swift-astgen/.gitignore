@@ -12,3 +12,6 @@ SwiftNodeSyntax.scala
 target/
 .bsp/
 .idea/
+/.worktrees
+/regression-diffs
+__pycache__
