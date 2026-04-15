@@ -26,6 +26,16 @@ jobs:
       - name: Run tests
         run: cargo test --locked
 
+      - name: Check if there are changes
+        shell: bash
+        run: |
+          if [[ -n "$(git status --porcelain --untracked-files=no)" ]]; then
+            echo "::error title=Repository modified by CI::Did you forget to commit rust.ungram?"
+            echo "Changes:"
+            git status --short
+            exit 1
+          fi
+
   format:
     runs-on: ubuntu-latest
     steps:
