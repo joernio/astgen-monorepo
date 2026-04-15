@@ -1,0 +1,2 @@
+# Keep copied ungrammar file on LF so build.rs byte comparisons stay stable across OSes.
+rust.ungram text eol=lf
