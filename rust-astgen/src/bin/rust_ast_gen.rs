@@ -1,6 +1,7 @@
 use anyhow::{Context, Result, bail};
 use clap::Parser;
 use rust_ast_gen::config::RustAstGenConfig;
+use rust_ast_gen::json_gen;
 use std::num::NonZero;
 use std::path::PathBuf;
 use std::thread::available_parallelism;
@@ -15,7 +16,7 @@ fn main() -> Result<()> {
 
     let config = RustAstGenConfig::try_from(cli_args)?;
 
-    rust_ast_gen::run(&config)
+    json_gen::run(&config)
 }
 
 #[derive(Parser)]

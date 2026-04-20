@@ -1904,6 +1904,7 @@ dependencies = [
  "serde",
  "serde_json",
  "toml 1.1.2+spec-1.1.0",
+ "ungrammar",
 ]
 
 [[package]]
@@ -2381,6 +2382,12 @@ name = "typed-arena"
 version = "2.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6af6ae20167a9ece4bcb41af5b80f8a1f1df981f6391189ce00fd257af04126a"
+
+[[package]]
+name = "ungrammar"
+version = "1.16.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a3e5df347f0bf3ec1d670aad6ca5c6a1859cd9ea61d2113125794654ccced68f"
 
 [[package]]
 name = "unicase"
