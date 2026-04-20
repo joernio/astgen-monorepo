@@ -1,49 +1,105 @@
-use crate::{cargo, config, json_gen};
+use crate::{cargo, config};
 use anyhow::Context;
 use log::{error, info};
 use ra_ap_hir::{Semantics, attach_db};
 use ra_ap_ide::{Analysis, AnalysisHost, LineIndex, RootDatabase};
-use ra_ap_syntax::{AstNode, SyntaxNode};
+use ra_ap_syntax::{AstNode, NodeOrToken, SyntaxNode, SyntaxToken};
 use ra_ap_vfs::{FileId, VfsPath};
 use serde::Serialize;
 use std::path::Path;
 
+/// Per-file envelope wrapping the AST.
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct RustAstGenJsonFile {
+    pub(crate) relative_file_path: String,
+    pub(crate) full_file_path: String,
+    pub(crate) content: String,
+    pub(crate) loc: u32,
+    pub(crate) children: Vec<RustAstGenJsonNode>,
+}
+
+/// A single node or token in the AST.
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct RustAstGenJsonNode {
     pub(crate) node_kind: String,
+    pub(crate) range: RustAstGenJsonNodeRange,
+    pub(crate) children: Vec<RustAstGenJsonNode>,
+}
+
+/// Source location range for a node/token.
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct RustAstGenJsonNodeRange {
     pub(crate) start_offset: u32,
     pub(crate) end_offset: u32,
     pub(crate) start_line: u32,
     pub(crate) start_column: u32,
-    pub(crate) children: Vec<RustAstGenJsonNode>,
 }
 
-pub(crate) fn make_json_node(node: &SyntaxNode, line_index: &LineIndex) -> RustAstGenJsonNode {
-    let node_kind = format!("{:?}", node.kind());
+impl RustAstGenJsonNodeRange {
+    pub(crate) fn from_node(node: &SyntaxNode, line_index: &LineIndex) -> Self {
+        let text_range = node.text_range();
+        let start = text_range.start();
+        let end = text_range.end();
+        let start_line_col = line_index.line_col(start);
 
-    // Note, LineIndex is 0-based (in both line and column)
-    let text_range = node.text_range();
-    let start = text_range.start();
-    let end = text_range.end();
-    let start_line_col = line_index.line_col(start);
-    let start_line = start_line_col.line;
-    let start_column = start_line_col.col;
-    let start_offset = u32::from(start);
-    let end_offset = u32::from(end);
+        Self {
+            start_offset: u32::from(start),
+            end_offset: u32::from(end),
+            start_line: start_line_col.line,
+            start_column: start_line_col.col,
+        }
+    }
 
-    let children = node
-        .children()
-        .map(|child| make_json_node(&child, &line_index))
-        .collect::<Vec<RustAstGenJsonNode>>();
+    pub(crate) fn from_token(token: &SyntaxToken, line_index: &LineIndex) -> Self {
+        let text_range = token.text_range();
+        let start = text_range.start();
+        let end = text_range.end();
+        let start_line_col = line_index.line_col(start);
 
-    RustAstGenJsonNode {
-        node_kind,
-        start_offset,
-        end_offset,
-        start_line,
-        start_column,
-        children,
+        Self {
+            start_offset: u32::from(start),
+            end_offset: u32::from(end),
+            start_line: start_line_col.line,
+            start_column: start_line_col.col,
+        }
+    }
+}
+
+impl RustAstGenJsonNode {
+    pub(crate) fn from_node(node: &SyntaxNode, line_index: &LineIndex) -> Self {
+        let node_kind = format!("{:?}", node.kind());
+        let range = RustAstGenJsonNodeRange::from_node(node, line_index);
+        let children = node
+            .children_with_tokens()
+            .filter(|child| !child.kind().is_trivia())
+            .map(|node_or_token| match node_or_token {
+                NodeOrToken::Node(child_node) => Self::from_node(&child_node, line_index),
+                NodeOrToken::Token(child_token) => {
+                    RustAstGenJsonNode::from_token(&child_token, line_index)
+                }
+            })
+            .collect();
+
+        Self {
+            node_kind,
+            range,
+            children,
+        }
+    }
+
+    pub(crate) fn from_token(token: &SyntaxToken, line_index: &LineIndex) -> Self {
+        let node_kind = format!("{:?}", token.kind());
+        let range = RustAstGenJsonNodeRange::from_token(token, line_index);
+        let children = vec![];
+
+        Self {
+            node_kind,
+            range,
+            children,
+        }
     }
 }
 
@@ -111,13 +167,30 @@ fn process_file(
 
     info!("building the JSON tree: {}", input_file_path.display());
 
-    let rust_ast_gen_json_node = json_gen::make_json_node(&syntax_tree, &file_line_index);
+    let json_root = RustAstGenJsonNode::from_node(&syntax_tree, &file_line_index);
+    let contents = syntax_tree.text().to_string();
+    let loc = file_line_index
+        .line_col(syntax_tree.text_range().end())
+        .line;
+    // TODO: we already have similar in config. Refactor
+    let relative_path = input_file_path
+        .strip_prefix(&config.input_dir_full_path)
+        .with_context(|| format!("failed to strip prefix: {:?}", input_file_path))?;
+
+    let envelope = RustAstGenJsonFile {
+        relative_file_path: relative_path.to_string_lossy().to_string(),
+        full_file_path: input_file_path.to_string_lossy().to_string(),
+        content: contents,
+        loc,
+        children: vec![json_root],
+    };
+
     let output_file = config.make_output_path_for_input_file(&input_file_path.to_path_buf())?;
 
     info!("writing to: {}", output_file.display());
 
-    let json_tree = serde_json::to_string_pretty(&rust_ast_gen_json_node)?;
-    json_gen::write_json_to_file(&json_tree, &output_file)?;
+    let json_tree = serde_json::to_string_pretty(&envelope)?;
+    write_json_to_file(&json_tree, &output_file)?;
 
     Ok(())
 }
