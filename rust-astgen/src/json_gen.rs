@@ -77,9 +77,7 @@ impl RustAstGenJsonNode {
             .filter(|child| !child.kind().is_trivia())
             .map(|node_or_token| match node_or_token {
                 NodeOrToken::Node(child_node) => Self::from_node(&child_node, line_index),
-                NodeOrToken::Token(child_token) => {
-                    RustAstGenJsonNode::from_token(&child_token, line_index)
-                }
+                NodeOrToken::Token(child_token) => Self::from_token(&child_token, line_index),
             })
             .collect();
 

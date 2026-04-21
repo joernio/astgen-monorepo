@@ -67,6 +67,48 @@ impl Model {
             tokens,
         })
     }
+
+    fn contains_node(&self, name: &str) -> bool {
+        self.node_names.iter().any(|node| node == name)
+    }
+
+    /// Only immediate child nodes (not tokens).
+    fn immediate_child_nodes_of(&self, name: &str) -> HashSet<&str> {
+        self.node_elements
+            .get(name)
+            .into_iter()
+            .flatten()
+            .map(|element| element.node_or_token_name.as_str())
+            .filter(|child| self.contains_node(child))
+            .collect()
+    }
+
+    /// Recursively collects child nodes (not tokens) starting from `name`.
+    /// We can skip recurring into certain nodes with `should_recurse_on`.
+    pub(crate) fn collect_descendant_nodes<F>(
+        &self,
+        name: &str,
+        should_recurse_into: &F,
+    ) -> HashSet<String>
+    where
+        F: Fn(&str) -> bool,
+    {
+        if !self.contains_node(name) {
+            return HashSet::new();
+        }
+
+        if !should_recurse_into(name) {
+            return HashSet::from([name.to_string()]);
+        }
+
+        let descendants = self
+            .immediate_child_nodes_of(name)
+            .into_iter()
+            .flat_map(|child| self.collect_descendant_nodes(child, should_recurse_into))
+            .collect();
+
+        descendants
+    }
 }
 
 /// Recursively collects the elements used by a rule.
@@ -232,6 +274,36 @@ mod tests {
             elements
                 .iter()
                 .any(|e| e.node_or_token_name == "self" && e.cardinality == Cardinality::Optional)
+        );
+    }
+
+    #[test]
+    fn test_collect_descendant_nodes_1() {
+        let grammar = Grammar::from_str(
+            r#"
+            Stmt = Expr | Item | Let
+            Expr = Literal
+            Item = Fn | Struct
+            Let = 'let'
+            Literal = 'literal'
+            Fn = 'fn'
+            Struct = 'struct'
+            "#,
+        )
+        .unwrap();
+        let model = Model::from_ungrammar(&grammar).unwrap();
+
+        assert_eq!(
+            model
+                .collect_descendant_nodes("Stmt", &|name| matches!(name, "Stmt" | "Expr" | "Item")),
+            vec![
+                "Fn".to_string(),
+                "Let".to_string(),
+                "Literal".to_string(),
+                "Struct".to_string(),
+            ]
+            .into_iter()
+            .collect()
         );
     }
 

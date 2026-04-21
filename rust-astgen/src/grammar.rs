@@ -1,2 +1,2 @@
-mod model;
+pub(crate) mod model;
 mod ungrammar;
