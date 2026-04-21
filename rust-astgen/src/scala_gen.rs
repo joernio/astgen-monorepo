@@ -1,2 +1,2 @@
-mod config;
-mod emitter;
+pub mod config;
+pub mod emitter;

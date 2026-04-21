@@ -6,7 +6,7 @@ use std::collections::{HashMap, HashSet};
 use ungrammar::Grammar;
 use ungrammar::{Error, Rule};
 
-pub(crate) struct Model {
+pub struct Model {
     /// All node names in grammar order.
     pub(crate) node_names: Vec<String>,
 
@@ -47,7 +47,7 @@ pub(crate) enum Cardinality {
 }
 
 impl Model {
-    pub(crate) fn from_ungrammar(grammar: &Grammar) -> Result<Self, Error> {
+    pub fn from_ungrammar(grammar: &Grammar) -> Result<Self, Error> {
         let node_names = collect_rule_names(grammar);
         let tokens = collect_token_names(grammar).into_iter().collect();
         let node_elements = grammar

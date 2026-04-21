@@ -1,10 +1,11 @@
 use crate::grammar::model::{Cardinality, Element, Model};
 use crate::scala_gen::config::ScalaAstGenConfig;
+use heck::ToLowerCamelCase;
 use std::collections::HashMap;
 use std::fmt::Error;
 use std::fmt::Write;
 
-pub(crate) fn generate_scala(model: &Model, config: &ScalaAstGenConfig) -> Result<String, Error> {
+pub fn generate_scala(model: &Model, config: &ScalaAstGenConfig) -> Result<String, Error> {
     let mut out = String::new();
 
     // Sorted for deterministic output.
@@ -200,12 +201,10 @@ fn emit_trait_kind_sets(
     trait_descendants: &HashMap<String, Vec<String>>,
 ) -> Result<(), Error> {
     for trait_node in trait_nodes {
-        let scala_name = (config.node_name_to_scala_name)(trait_node);
-        let mut chars = scala_name.chars();
-        let set_name = match chars.next() {
-            None => "_kinds".to_string(),
-            Some(ch) => format!("_{}{}Kinds", ch.to_lowercase(), chars.as_str()),
-        };
+        let set_name = format!(
+            "_{}Kinds",
+            (config.node_name_to_scala_name)(trait_node).to_lower_camel_case()
+        );
         let kinds = trait_descendants
             .get(trait_node)
             .into_iter()
@@ -283,7 +282,7 @@ fn emit_accessor(
     config: &ScalaAstGenConfig,
     element: &Element,
 ) -> Result<(), Error> {
-    let accessor = scala_accessor_name(element, model, config);
+    let accessor = scala_safe_identifier(&scala_accessor_name(element, model, config));
     let scala_type = scala_type_name(element, model, config);
     let rhs = scala_json_lookup_code(element, model, config);
 
@@ -313,18 +312,9 @@ fn emit_token_case_classes(
 
 fn scala_accessor_name(element: &Element, model: &Model, config: &ScalaAstGenConfig) -> String {
     if model.tokens.contains(&element.node_or_token_name) {
-        let scala_name = (config.token_name_to_scala_name)(&element.node_or_token_name);
-        let mut chars = scala_name.chars();
-        match chars.next() {
-            None => String::new(),
-            Some(ch) => ch.to_lowercase().collect::<String>() + chars.as_str(),
-        }
+        (config.token_name_to_scala_name)(&element.node_or_token_name).to_lower_camel_case()
     } else {
-        let mut chars = element.node_or_token_name.chars();
-        match chars.next() {
-            None => String::new(),
-            Some(ch) => ch.to_lowercase().collect::<String>() + chars.as_str(),
-        }
+        element.node_or_token_name.to_lower_camel_case()
     }
 }
 
@@ -355,12 +345,10 @@ fn scala_json_lookup_code_for_token(element: &Element, config: &ScalaAstGenConfi
 
 fn scala_json_lookup_code_for_trait_node(element: &Element, config: &ScalaAstGenConfig) -> String {
     let create_fn = format!("create{}", config.base_node_trait);
-    let scala_name = (config.node_name_to_scala_name)(&element.node_or_token_name);
-    let mut chars = scala_name.chars();
-    let kinds_name = match chars.next() {
-        None => "_kinds".to_string(),
-        Some(ch) => format!("_{}{}Kinds", ch.to_lowercase(), chars.as_str()),
-    };
+    let kinds_name = format!(
+        "_{}Kinds",
+        (config.node_name_to_scala_name)(&element.node_or_token_name).to_lower_camel_case()
+    );
     let scala_type = (config.node_name_to_scala_name)(&element.node_or_token_name);
     match element.cardinality {
         Cardinality::One => format!(
@@ -409,6 +397,63 @@ fn scala_json_lookup_code(element: &Element, model: &Model, config: &ScalaAstGen
 fn sorted(mut values: Vec<String>) -> Vec<String> {
     values.sort();
     values
+}
+
+fn scala_safe_identifier(name: &str) -> String {
+    if !is_scala_keyword(name) {
+        name.to_string()
+    } else {
+        format!("`{name}`")
+    }
+}
+
+fn is_scala_keyword(name: &str) -> bool {
+    matches!(
+        name,
+        "abstract"
+            | "case"
+            | "catch"
+            | "class"
+            | "def"
+            | "do"
+            | "else"
+            | "enum"
+            | "export"
+            | "extends"
+            | "false"
+            | "final"
+            | "finally"
+            | "for"
+            | "forSome"
+            | "given"
+            | "if"
+            | "implicit"
+            | "import"
+            | "lazy"
+            | "match"
+            | "new"
+            | "null"
+            | "object"
+            | "override"
+            | "package"
+            | "private"
+            | "protected"
+            | "return"
+            | "sealed"
+            | "super"
+            | "then"
+            | "this"
+            | "throw"
+            | "trait"
+            | "true"
+            | "try"
+            | "type"
+            | "val"
+            | "var"
+            | "while"
+            | "with"
+            | "yield"
+    )
 }
 
 #[cfg(test)]
@@ -623,5 +668,21 @@ object ExampleAst {
 
 }"#
         );
+    }
+
+    #[test]
+    fn test_reserved_scala_accessor_name() {
+        let grammar = Grammar::from_str(
+            r"
+            Wrapper = Type
+            Type = 'type'",
+        )
+        .unwrap();
+
+        let model = Model::from_ungrammar(&grammar).unwrap();
+        let config = example_config();
+        let scala = generate_scala(&model, &config).unwrap();
+
+        assert!(scala.contains("def `type`: TypeNode"));
     }
 }
