@@ -11,10 +11,10 @@ struct TypeGenerator {
         switch child.kind {
         case .node(let kind):
             return "\(kind.syntaxType)"
-        case .nodeChoices(let choices):
+        case .nodeChoices(let choices, _):
             let choicesDescriptions = choices.map { type(for: $0) }
             return "\(choicesDescriptions.joined(separator: " | "))"
-        case .collection(let kind, _, _, _):
+        case .collection(let kind, _, _, _, _):
             return "\(kind.syntaxType)"
         case .token(_, _, _):
             return "SwiftToken"

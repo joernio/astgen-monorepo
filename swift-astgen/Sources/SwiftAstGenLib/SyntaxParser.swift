@@ -17,7 +17,7 @@ extension SyntaxProtocol {
         }
 
         let sourceRange = sourceRange(converter: converter)
-        let rangeNode = Range(
+        let rangeNode = SourceRange(
             startOffset: sourceRange.start.offset,
             endOffset: sourceRange.end.offset,
             startLine: sourceRange.start.line,
@@ -57,8 +57,8 @@ struct SyntaxParser {
     /// - Parameter text: The input string to count lines in.
     /// - Returns: The number of lines in the string.
     static func countLines(in text: String) -> Int {
-        // Use CharacterSet.newlines which matches \n, \r, \r\n, Unicode line/paragraph separators, etc.
-        // Split omitting empty subsequences to correctly handle trailing newlines.
+        // `Character.isNewline` matches \n, \r, \r\n, and Unicode line/paragraph separators.
+        // Keep empty subsequences so trailing newlines are counted correctly.
         let lines = text.split(omittingEmptySubsequences: false, whereSeparator: { $0.isNewline })
         return lines.count
     }
@@ -68,7 +68,7 @@ struct SyntaxParser {
         fileUrl: URL,
         relativeFilePath: String,
         prettyPrint: Bool
-    ) throws -> String {
+    ) throws -> Data {
         let code = try String(contentsOf: fileUrl)
         let loc = countLines(in: code)
         let opPrecedence = OperatorTable.standardOperators
@@ -86,7 +86,8 @@ struct SyntaxParser {
 
         let encoder = JSONEncoder()
         if prettyPrint { encoder.outputFormatting = .prettyPrinted }
-        return String(decoding: try encoder.encode(treeNode), as: UTF8.self)
+        // JSONEncoder output is always UTF-8; return Data so callers can write directly without a round-trip through String.
+        return try encoder.encode(treeNode)
     }
 
 }

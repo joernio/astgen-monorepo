@@ -2,7 +2,6 @@ import Foundation
 
 import SwiftParser
 
-/// Visitor that extracts test target information from Package.swift
 import SwiftSyntax
 
 private class TestTargetVisitor: SyntaxVisitor {

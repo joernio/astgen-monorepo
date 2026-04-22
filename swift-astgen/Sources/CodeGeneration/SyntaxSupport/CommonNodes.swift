@@ -177,7 +177,7 @@ public let COMMON_NODES: [Node] = [
     kind: .decl,
     base: .syntax,
     nameForDiagnostics: "declaration",
-    parserFunction: "parseDeclaration"
+    parserFunction: "parseDeclarationOrIfConfig"
   ),
 
   Node(
@@ -191,7 +191,8 @@ public let COMMON_NODES: [Node] = [
     kind: .missingDecl,
     base: .decl,
     nameForDiagnostics: "declaration",
-    documentation: "In case the source code is missing a declaration, this node stands in place of the missing declaration.",
+    documentation:
+      "In case the source code is missing a declaration, this node stands in place of the missing declaration.",
     traits: [
       "MissingNode",
       "WithAttributes",
@@ -201,12 +202,14 @@ public let COMMON_NODES: [Node] = [
       Child(
         name: "attributes",
         kind: .collection(kind: .attributeList, collectionElementName: "Attribute", defaultsToEmpty: true),
-        documentation: "If there were standalone attributes without a declaration to attach them to, the ``MissingDeclSyntax`` will contain these."
+        documentation:
+          "If there were standalone attributes without a declaration to attach them to, the ``MissingDeclSyntax`` will contain these."
       ),
       Child(
         name: "modifiers",
         kind: .collection(kind: .declModifierList, collectionElementName: "Modifier", defaultsToEmpty: true),
-        documentation: "If there were standalone modifiers without a declaration to attach them to, the ``MissingDeclSyntax`` will contain these."
+        documentation:
+          "If there were standalone modifiers without a declaration to attach them to, the ``MissingDeclSyntax`` will contain these."
       ),
       Child(
         name: "placeholder",
@@ -224,7 +227,8 @@ public let COMMON_NODES: [Node] = [
     kind: .missingExpr,
     base: .expr,
     nameForDiagnostics: "expression",
-    documentation: "In case the source code is missing an expression, this node stands in place of the missing expression.",
+    documentation:
+      "In case the source code is missing an expression, this node stands in place of the missing expression.",
     traits: [
       "MissingNode"
     ],
@@ -266,7 +270,8 @@ public let COMMON_NODES: [Node] = [
     kind: .missingStmt,
     base: .stmt,
     nameForDiagnostics: "statement",
-    documentation: "In case the source code is missing a statement, this node stands in place of the missing statement.",
+    documentation:
+      "In case the source code is missing a statement, this node stands in place of the missing statement.",
     traits: [
       "MissingNode"
     ],
@@ -326,6 +331,24 @@ public let COMMON_NODES: [Node] = [
   ),
 
   Node(
+    kind: .moduleSelector,
+    base: .syntax,
+    nameForDiagnostics: "module selector",
+    children: [
+      Child(
+        name: "moduleName",
+        kind: .token(choices: [.token(.identifier)]),
+        nameForDiagnostics: "module name"
+      ),
+      Child(
+        name: "colonColon",
+        kind: .token(choices: [.token(.colonColon)]),
+        nameForDiagnostics: "'::' operator"
+      ),
+    ]
+  ),
+
+  Node(
     kind: .pattern,
     base: .syntax,
     nameForDiagnostics: "pattern",
@@ -372,8 +395,23 @@ public let COMMON_NODES: [Node] = [
     kind: .unexpectedNodes,
     base: .syntaxCollection,
     nameForDiagnostics: nil,
-    documentation: "A collection of syntax nodes that occurred in the source code but could not be used to form a valid syntax tree.",
+    documentation:
+      "A collection of syntax nodes that occurred in the source code but could not be used to form a valid syntax tree.",
     elementChoices: [.syntax]
   ),
 
+  Node(
+    kind: .unexpectedCodeDecl,
+    base: .decl,
+    nameForDiagnostics: nil,
+    documentation: "Unexpected code at declaration position",
+    children: [
+      Child(
+        name: "unexpectedCode",
+        // NOTE: This is not .collection() on purpose. We don't need collection related functions for this.
+        kind: .node(kind: .unexpectedNodes)
+      )
+    ],
+    noInterleaveUnexpected: true
+  ),
 ]

@@ -22,14 +22,22 @@ public class Trait {
   public let protocolName: TokenSyntax
   public let documentation: SwiftSyntax.Trivia
   public let children: [Child]
+  public let childHistory: Child.History
 
-  init(traitName: String, baseKind: SyntaxNodeKind? = nil, documentation: String? = nil, children: [Child]) {
+  init(
+    traitName: String,
+    baseKind: SyntaxNodeKind? = nil,
+    documentation: String? = nil,
+    children: [Child],
+    childHistory: Child.History = []
+  ) {
     precondition(baseKind?.isBase != false, "`baseKind` must be a base syntax node kind")
     self.traitName = traitName
     self.baseKind = baseKind
     self.protocolName = .identifier("\(traitName)Syntax")
     self.documentation = SwiftSyntax.Trivia.docCommentTrivia(from: documentation)
     self.children = children
+    self.childHistory = childHistory
   }
 }
 
@@ -49,14 +57,18 @@ public let TRAITS: [Trait] = [
       Child(name: "modifiers", kind: .node(kind: .declModifierList)),
       Child(
         name: "introducer",
-        kind: .token(choices: [.keyword(.actor), .keyword(.class), .keyword(.enum), .keyword(.extension), .keyword(.protocol), .keyword(.struct)]),
+        kind: .token(choices: [
+          .keyword(.actor), .keyword(.class), .keyword(.enum), .keyword(.extension), .keyword(.protocol),
+          .keyword(.struct),
+        ]),
         documentation: "The token that introduces this declaration, eg. `class` for a class declaration."
       ),
       Child(name: "inheritanceClause", kind: .node(kind: .inheritanceClause), isOptional: true),
       Child(
         name: "genericWhereClause",
         kind: .node(kind: .genericWhereClause),
-        documentation: "A `where` clause that places additional constraints on generic parameters like `where Element: Hashable`.",
+        documentation:
+          "A `where` clause that places additional constraints on generic parameters like `where Element: Hashable`.",
         isOptional: true
       ),
       Child(name: "memberBlock", kind: .node(kind: .memberBlock)),
@@ -67,7 +79,11 @@ public let TRAITS: [Trait] = [
     children: [
       Child(name: "unexpectedBeforeAsyncSpecifier", kind: .node(kind: .unexpectedNodes), isOptional: true),
       Child(name: "asyncSpecifier", kind: .token(choices: [.keyword(.async), .keyword(.reasync)]), isOptional: true),
-      Child(name: "unexpectedBetweenAsyncSpecifierAndThrowsClause", kind: .node(kind: .unexpectedNodes), isOptional: true),
+      Child(
+        name: "unexpectedBetweenAsyncSpecifierAndThrowsClause",
+        kind: .node(kind: .unexpectedNodes),
+        isOptional: true
+      ),
       Child(name: "throwsClause", kind: .node(kind: .throwsClause), isOptional: true),
       Child(name: "unexpectedAfterThrowsClause", kind: .node(kind: .unexpectedNodes), isOptional: true),
     ]
@@ -75,14 +91,30 @@ public let TRAITS: [Trait] = [
   Trait(
     traitName: "FreestandingMacroExpansion",
     children: [
-      Child(name: "pound", deprecatedName: "poundToken", kind: .token(choices: [.token(.pound)])),
-      Child(name: "macroName", deprecatedName: "macro", kind: .token(choices: [.token(.identifier)])),
+      Child(name: "pound", kind: .token(choices: [.token(.pound)])),
+      Child(
+        name: "moduleSelector",
+        kind: .node(kind: .moduleSelector),
+        isOptional: true
+      ),
+      Child(name: "macroName", kind: .token(choices: [.token(.identifier)])),
       Child(name: "genericArgumentClause", kind: .node(kind: .genericArgumentClause), isOptional: true),
       Child(name: "leftParen", kind: .token(choices: [.token(.leftParen)]), isOptional: true),
-      Child(name: "arguments", deprecatedName: "argumentList", kind: .node(kind: .labeledExprList)),
+      Child(name: "arguments", kind: .node(kind: .labeledExprList)),
       Child(name: "rightParen", kind: .token(choices: [.token(.rightParen)]), isOptional: true),
       Child(name: "trailingClosure", kind: .node(kind: .closureExpr), isOptional: true),
       Child(name: "additionalTrailingClosures", kind: .node(kind: .multipleTrailingClosureElementList)),
+    ],
+    childHistory: [
+      [
+        "moduleSelector": .introduced
+      ],
+      [
+        "pound": .renamed(from: "poundToken"),
+        "macroName": .renamed(from: "macro"),
+        "arguments": .renamed(from: "argumentList"),
+        "genericArgumentClause": .renamed(from: "genericArguments"),
+      ],
     ]
   ),
   Trait(
@@ -145,7 +177,8 @@ public let TRAITS: [Trait] = [
       Child(
         name: "genericWhereClause",
         kind: .node(kind: .genericWhereClause),
-        documentation: "A `where` clause that places additional constraints on generic parameters like `where Element: Hashable`.",
+        documentation:
+          "A `where` clause that places additional constraints on generic parameters like `where Element: Hashable`.",
         isOptional: true
       ),
     ]

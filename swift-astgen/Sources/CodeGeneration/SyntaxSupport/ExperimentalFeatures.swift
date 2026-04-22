@@ -17,11 +17,41 @@ public enum ExperimentalFeature: String, CaseIterable {
   case thenStatements
   case doExpressions
   case nonescapableTypes
-  case transferringArgsAndResults
-  case borrowingSwitch
+  case trailingComma
+  case coroutineAccessors
+  case keypathWithMethodMembers
+  case oldOwnershipOperatorSpellings
+  case defaultIsolationPerFile
+  case borrowAndMutateAccessors
 
-  /// The name of the feature, which is used in the doc comment.
+  /// The name of the feature as it is written in the compiler's `Features.def` file.
   public var featureName: String {
+    switch self {
+    case .referenceBindings:
+      return "ReferenceBindings"
+    case .thenStatements:
+      return "ThenStatements"
+    case .doExpressions:
+      return "DoExpressions"
+    case .nonescapableTypes:
+      return "NonescapableTypes"
+    case .trailingComma:
+      return "TrailingComma"
+    case .coroutineAccessors:
+      return "CoroutineAccessors"
+    case .keypathWithMethodMembers:
+      return "KeypathWithMethodMembers"
+    case .oldOwnershipOperatorSpellings:
+      return "OldOwnershipOperatorSpellings"
+    case .defaultIsolationPerFile:
+      return "DefaultIsolationPerFile"
+    case .borrowAndMutateAccessors:
+      return "BorrowAndMutateAccessors"
+    }
+  }
+
+  /// A brief description of the feature that is used in the doc comment.
+  public var documentationDescription: String {
     switch self {
     case .referenceBindings:
       return "reference bindings"
@@ -30,11 +60,19 @@ public enum ExperimentalFeature: String, CaseIterable {
     case .doExpressions:
       return "'do' expressions"
     case .nonescapableTypes:
-      return "NonEscableTypes"
-    case .transferringArgsAndResults:
-      return "TransferringArgsAndResults"
-    case .borrowingSwitch:
-      return "borrowing pattern matching"
+      return "non-escapable types"
+    case .trailingComma:
+      return "trailing commas"
+    case .coroutineAccessors:
+      return "coroutine accessors"
+    case .keypathWithMethodMembers:
+      return "keypaths with method members"
+    case .oldOwnershipOperatorSpellings:
+      return "`_move` and `_borrow` as ownership operators"
+    case .defaultIsolationPerFile:
+      return "set default actor isolation for a file"
+    case .borrowAndMutateAccessors:
+      return "borrow and mutate accessors"
     }
   }
 

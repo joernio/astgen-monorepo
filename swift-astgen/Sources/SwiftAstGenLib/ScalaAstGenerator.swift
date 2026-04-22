@@ -1,6 +1,12 @@
 import CodeGeneration
 import Foundation
 
+private func indented(_ value: Any) -> String {
+	String(describing: value)
+		.trimmingCharacters(in: .whitespacesAndNewlines)
+		.replacingOccurrences(of: "\n", with: "\n\t")
+}
+
 public class ScalaAstGenerator {
 
 	private let defaultScalaOutFileUrl = URL(fileURLWithPath: "./SwiftNodeSyntax.scala")
@@ -16,11 +22,11 @@ public class ScalaAstGenerator {
 	}
 
 	private func dateString() -> String {
-		let currentDateTime = Date()
 		let formatter = DateFormatter()
-		formatter.timeStyle = .long
-		formatter.dateStyle = .long
-		return formatter.string(from: currentDateTime)
+		formatter.locale = Locale(identifier: "en_US_POSIX")
+		// Explicit format avoids locale-inserted narrow no-break spaces around AM/PM on recent OSes.
+		formatter.dateFormat = "MMMM d, yyyy 'at' h:mm:ss a zzz"
+		return formatter.string(from: Date())
 	}
 
 	private func backtickedIfNeeded(name: String) -> String {
@@ -37,19 +43,10 @@ public class ScalaAstGenerator {
 		"""
 	}
 
-	public init() throws {
-		if FileManager.default.fileExists(atPath: defaultScalaOutFileUrl.path) {
-			try FileManager.default.removeItem(at: defaultScalaOutFileUrl)
-		}
-		_ = FileManager.default.createFile(
-			atPath: defaultScalaOutFileUrl.path,
-			contents: nil,
-			attributes: nil
-		)
-	}
+	public init() {}
 
 	public func generate() throws {
-		let allBaseNodeNames = Set(SYNTAX_NODES.map(baseNode)).map { "\($0)" }
+		let allBaseNodeNames = Set(SYNTAX_NODES.map(baseNode)).sorted()
 
 		let baseNodes = allBaseNodeNames.map {
 			"""
@@ -62,7 +59,7 @@ public class ScalaAstGenerator {
 				"sealed trait \($0.traitName)"
 			} else {
 				"""
-				\n\t\(String(describing: $0.documentation).replacingOccurrences(of: "\n", with: "\n\t"))
+				\n\t\(indented($0.documentation))
 				\tsealed trait \($0.traitName)
 				"""
 			}
@@ -70,13 +67,7 @@ public class ScalaAstGenerator {
 
 		let allNodes = NON_BASE_SYNTAX_NODES.map { node in
 			let syntaxType = node.kind.syntaxType
-			let inherits = inheritsFrom(node: node)
-			let inheritsString =
-				if inherits.count == 1 {
-					"extends \(inherits[0])"
-				} else {
-					"extends \(inherits[0]) with \(inherits[1...inherits.count-1].joined(separator: " with "))"
-				}
+			let inheritsString = "extends \(inheritsFrom(node: node).joined(separator: " with "))"
 
 			let allChildren = node.layoutNode?.children ?? []
 			var childrenString = ""
@@ -85,12 +76,13 @@ public class ScalaAstGenerator {
 					allChildren
 					.filter { !$0.isUnexpectedNodes }
 					.map { child in
-						let name = backtickedIfNeeded(name: "\(child.varOrCaseName)")
+						let varName = lowercaseFirstWord(name: child.name)
+						let name = backtickedIfNeeded(name: varName)
 						let childType = TypeGenerator.type(for: child)
 						if child.isOptional {
-							return "\tdef \(name): Option[\(childType)] = _childrenMap.get(\"\(child.varOrCaseName)\").map(c => createSwiftNode(c).asInstanceOf[\(childType)])"
+							return "\tdef \(name): Option[\(childType)] = _childrenMap.get(\"\(varName)\").map(c => createSwiftNode(c).asInstanceOf[\(childType)])"
 						} else {
-							return "\tdef \(name): \(childType) = createSwiftNode(_childrenMap(\"\(child.varOrCaseName)\")).asInstanceOf[\(childType)]"
+							return "\tdef \(name): \(childType) = createSwiftNode(_childrenMap(\"\(varName)\")).asInstanceOf[\(childType)]"
 						}
 					}.joined(separator: "\n\t")
 			} else {
@@ -100,20 +92,14 @@ public class ScalaAstGenerator {
 					"\tdef children: Seq[\(elementType)] = json(\"children\").arr.iterator.map(c => createSwiftNode(c).asInstanceOf[\(elementType)]).toSeq"
 			}
 
-			var documentation = String(describing: node.documentation)
-			if documentation.isEmpty {
-				documentation = "/// No documentation available."
-			} else {
-				documentation = documentation.replacingOccurrences(of: "\n", with: "\n\t")
-			}
+			let indentedDoc = indented(node.documentation)
+			let documentation = indentedDoc.isEmpty ? "/// No documentation available." : indentedDoc
 
 			let childrenDoc =
 				node.layoutNode?.grammar ?? node.collectionNode?.grammar ?? "/// no children available"
-			let childrenDocString = String(describing: childrenDoc).replacingOccurrences(
-				of: "\n", with: "\n\t")
+			let childrenDocString = indented(childrenDoc)
 
-			var containedInDocString = String(describing: node.containedIn)
-			containedInDocString = containedInDocString.replacingOccurrences(of: "\n", with: "\n\t")
+			let containedInDocString = indented(node.containedIn)
 
 			let docString = """
 				\n\t/**

@@ -12,14 +12,13 @@
 
 import SwiftSyntax
 
-public struct KeywordSpec {
+public struct KeywordSpec: IdentifierConvertible {
   /// The name of the keyword.
   public let name: String
 
   /// The experimental feature the keyword is part of, or `nil` if this isn't
   /// for an experimental feature.
   public let experimentalFeature: ExperimentalFeature?
-  public let experimentalFeature2: ExperimentalFeature?
 
   /// Indicates if the token kind is switched from being an identifier to a keyword in the lexer.
   public let isLexerClassified: Bool
@@ -30,21 +29,21 @@ public struct KeywordSpec {
   /// API generated should be marked as SPI
   public var isExperimental: Bool { experimentalFeature != nil }
 
-  /// The name of this keyword that's suitable to be used for variable or enum case names.
-  public var varOrCaseName: TokenSyntax {
-    if name == "init" {
-      return "`init`"
-    } else {
-      return TokenSyntax.identifier(name)
-    }
+  /// The name of this keyword as an identifier.
+  public var identifier: TokenSyntax {
+    TokenSyntax.identifier(name)
   }
 
   /// The attributes that should be printed on any API for the generated keyword.
   ///
   /// This is typically used to mark APIs as SPI when the keyword is part of an experimental language feature.
   public var apiAttributes: AttributeListSyntax {
-    guard isExperimental else { return "" }
-    return AttributeListSyntax("@_spi(ExperimentalLanguageFeatures)").with(\.trailingTrivia, .newline)
+    AttributeListSyntax {
+      if isExperimental {
+        AttributeSyntax("@_spi(ExperimentalLanguageFeatures)")
+          .with(\.trailingTrivia, .newline)
+      }
+    }
   }
 
   /// Initializes a new `KeywordSpec` instance.
@@ -60,26 +59,6 @@ public struct KeywordSpec {
   ) {
     self.name = name
     self.experimentalFeature = experimentalFeature
-    self.experimentalFeature2 = nil
-    self.isLexerClassified = isLexerClassified
-  }
-
-  /// Initializes a new `KeywordSpec` instance.
-  ///
-  /// - Parameters:
-  ///   - name: A name of the keyword.
-  ///   - experimentalFeature: The experimental feature the keyword is part of, or `nil` if this isn't for an experimental feature.
-  ///   - or: A second experimental feature the keyword is also part of, or `nil` if this isn't for an experimental feature.
-  ///   - isLexerClassified: Indicates if the token kind is switched from being an identifier to a keyword in the lexer.
-  init(
-    _ name: String,
-    experimentalFeature: ExperimentalFeature,
-    or experimentalFeature2: ExperimentalFeature,
-    isLexerClassified: Bool = false
-  ) {
-    self.name = name
-    self.experimentalFeature = experimentalFeature
-    self.experimentalFeature2 = experimentalFeature2
     self.isLexerClassified = isLexerClassified
   }
 }
@@ -99,57 +78,42 @@ public enum Keyword: CaseIterable {
   case __owned
   case __setter_access
   case __shared
-  case _alignment
   case _backDeploy
   case _borrow
   case _borrowing
   case _BridgeObject
-  case _cdecl
   case _Class
   case _compilerInitialized
   case _const
-  case _consume
   case _consuming
-  case _copy
   case _documentation
   case _dynamicReplacement
   case _effects
-  case _expose
   case _forward
   case _implements
   case _linear
   case _local
   case _modify
   case _move
-  case _mutate
   case _mutating
   case _NativeClass
   case _NativeRefCountedObject
   case _noMetadata
-  case _nonSendable
-  case _objcImplementation
-  case _objcRuntimeName
   case _opaqueReturnTypeOf
-  case _optimize
   case _originallyDefinedIn
   case _PackageDescription
-  case _private
-  case _projectedValueProperty
   case _read
   case _RefCountedObject
-  case _semantics
+  case specialized
   case _specialize
-  case _spi
   case _spi_available
-  case _swift_native_objc_runtime_base
   case _Trivial
   case _TrivialAtMost
   case _TrivialStride
-  case _typeEraser
-  case _unavailableFromAsync
   case _underlyingVersion
   case _UnknownLayout
   case _version
+  case abi
   case accesses
   case actor
   case addressWithNativeOwner
@@ -169,6 +133,7 @@ public enum Keyword: CaseIterable {
   case backDeployed
   case before
   case block
+  case borrow
   case borrowing
   case `break`
   case canImport
@@ -182,10 +147,10 @@ public enum Keyword: CaseIterable {
   case `continue`
   case convenience
   case convention
-  case cType
   case `default`
   case `defer`
   case `deinit`
+  case dependsOn
   case deprecated
   case derivative
   case didSet
@@ -197,7 +162,6 @@ public enum Keyword: CaseIterable {
   case `else`
   case `enum`
   case escaping
-  case exclusivity
   case exported
   case `extension`
   case `fallthrough`
@@ -220,7 +184,6 @@ public enum Keyword: CaseIterable {
   case infix
   case `init`
   case initializes
-  case inline
   case `inout`
   case `internal`
   case introduced
@@ -236,7 +199,9 @@ public enum Keyword: CaseIterable {
   case macro
   case message
   case metadata
+  case modify
   case module
+  case mutate
   case mutableAddressWithNativeOwner
   case mutableAddressWithOwner
   case mutating
@@ -247,6 +212,7 @@ public enum Keyword: CaseIterable {
   case none
   case nonisolated
   case nonmutating
+  case nonsending
   case objc
   case obsoleted
   case of
@@ -263,24 +229,24 @@ public enum Keyword: CaseIterable {
   case `Protocol`
   case `protocol`
   case `public`
+  case read
   case reasync
   case renamed
   case `repeat`
   case required
-  case _resultDependsOn
-  case _resultDependsOnSelf
   case `rethrows`
   case retroactive
   case `return`
   case reverse
   case right
   case safe
+  case scoped
   case `self`
+  case sending
   case `Self`
   case Sendable
   case set
   case some
-  case sourceFile
   case spi
   case spiModule
   case `static`
@@ -293,7 +259,6 @@ public enum Keyword: CaseIterable {
   case then
   case `throw`
   case `throws`
-  case transferring
   case transpose
   case `true`
   case `try`
@@ -305,13 +270,13 @@ public enum Keyword: CaseIterable {
   case unsafe
   case unsafeAddress
   case unsafeMutableAddress
+  case using
   case `var`
   case visibility
   case weak
   case `where`
   case `while`
   case willSet
-  case witness_method
   case wrt
   case yield
 
@@ -325,38 +290,28 @@ public enum Keyword: CaseIterable {
       return KeywordSpec("__setter_access")
     case .__shared:
       return KeywordSpec("__shared")
-    case ._alignment:
-      return KeywordSpec("_alignment")
     case ._backDeploy:
       return KeywordSpec("_backDeploy")
     case ._borrow:
       return KeywordSpec("_borrow")
     case ._borrowing:
-      return KeywordSpec("_borrowing", experimentalFeature: .referenceBindings, or: .borrowingSwitch)
+      return KeywordSpec("_borrowing")
     case ._BridgeObject:
       return KeywordSpec("_BridgeObject")
-    case ._cdecl:
-      return KeywordSpec("_cdecl")
     case ._Class:
       return KeywordSpec("_Class")
     case ._compilerInitialized:
       return KeywordSpec("_compilerInitialized")
     case ._const:
       return KeywordSpec("_const")
-    case ._consume:
-      return KeywordSpec("_consume", experimentalFeature: .nonescapableTypes)
     case ._consuming:
       return KeywordSpec("_consuming", experimentalFeature: .referenceBindings)
-    case ._copy:
-      return KeywordSpec("_copy", experimentalFeature: .nonescapableTypes)
     case ._documentation:
       return KeywordSpec("_documentation")
     case ._dynamicReplacement:
       return KeywordSpec("_dynamicReplacement")
     case ._effects:
       return KeywordSpec("_effects")
-    case ._expose:
-      return KeywordSpec("_expose")
     case ._forward:
       return KeywordSpec("_forward")
     case ._implements:
@@ -369,8 +324,6 @@ public enum Keyword: CaseIterable {
       return KeywordSpec("_modify")
     case ._move:
       return KeywordSpec("_move")
-    case ._mutate:
-      return KeywordSpec("_mutate", experimentalFeature: .nonescapableTypes)
     case ._mutating:
       return KeywordSpec("_mutating", experimentalFeature: .referenceBindings)
     case ._NativeClass:
@@ -379,54 +332,36 @@ public enum Keyword: CaseIterable {
       return KeywordSpec("_NativeRefCountedObject")
     case ._noMetadata:
       return KeywordSpec("_noMetadata")
-    case ._nonSendable:
-      return KeywordSpec("_nonSendable")
-    case ._objcImplementation:
-      return KeywordSpec("_objcImplementation")
-    case ._objcRuntimeName:
-      return KeywordSpec("_objcRuntimeName")
     case ._opaqueReturnTypeOf:
       return KeywordSpec("_opaqueReturnTypeOf")
-    case ._optimize:
-      return KeywordSpec("_optimize")
     case ._originallyDefinedIn:
       return KeywordSpec("_originallyDefinedIn")
     case ._PackageDescription:
       return KeywordSpec("_PackageDescription")
-    case ._private:
-      return KeywordSpec("_private")
-    case ._projectedValueProperty:
-      return KeywordSpec("_projectedValueProperty")
     case ._read:
       return KeywordSpec("_read")
     case ._RefCountedObject:
       return KeywordSpec("_RefCountedObject")
-    case ._semantics:
-      return KeywordSpec("_semantics")
+    case .specialized:
+      return KeywordSpec("specialized")
     case ._specialize:
       return KeywordSpec("_specialize")
-    case ._spi:
-      return KeywordSpec("_spi")
     case ._spi_available:
       return KeywordSpec("_spi_available")
-    case ._swift_native_objc_runtime_base:
-      return KeywordSpec("_swift_native_objc_runtime_base")
     case ._Trivial:
       return KeywordSpec("_Trivial")
     case ._TrivialAtMost:
       return KeywordSpec("_TrivialAtMost")
     case ._TrivialStride:
       return KeywordSpec("_TrivialStride")
-    case ._typeEraser:
-      return KeywordSpec("_typeEraser")
-    case ._unavailableFromAsync:
-      return KeywordSpec("_unavailableFromAsync")
     case ._underlyingVersion:
       return KeywordSpec("_underlyingVersion")
     case ._UnknownLayout:
       return KeywordSpec("_UnknownLayout")
     case ._version:
       return KeywordSpec("_version")
+    case .abi:
+      return KeywordSpec("abi")
     case .accesses:
       return KeywordSpec("accesses")
     case .actor:
@@ -465,6 +400,8 @@ public enum Keyword: CaseIterable {
       return KeywordSpec("before")
     case .block:
       return KeywordSpec("block")
+    case .borrow:
+      return KeywordSpec("borrow")
     case .borrowing:
       return KeywordSpec("borrowing")
     case .break:
@@ -491,14 +428,14 @@ public enum Keyword: CaseIterable {
       return KeywordSpec("convenience")
     case .convention:
       return KeywordSpec("convention")
-    case .cType:
-      return KeywordSpec("cType")
     case .default:
       return KeywordSpec("default", isLexerClassified: true)
     case .defer:
       return KeywordSpec("defer", isLexerClassified: true)
     case .deinit:
       return KeywordSpec("deinit", isLexerClassified: true)
+    case .dependsOn:
+      return KeywordSpec("dependsOn", experimentalFeature: .nonescapableTypes)
     case .deprecated:
       return KeywordSpec("deprecated")
     case .derivative:
@@ -521,8 +458,6 @@ public enum Keyword: CaseIterable {
       return KeywordSpec("enum", isLexerClassified: true)
     case .escaping:
       return KeywordSpec("escaping")
-    case .exclusivity:
-      return KeywordSpec("exclusivity")
     case .exported:
       return KeywordSpec("exported")
     case .extension:
@@ -567,8 +502,6 @@ public enum Keyword: CaseIterable {
       return KeywordSpec("init", isLexerClassified: true)
     case .initializes:
       return KeywordSpec("initializes")
-    case .inline:
-      return KeywordSpec("inline")
     case .inout:
       return KeywordSpec("inout", isLexerClassified: true)
     case .internal:
@@ -599,8 +532,12 @@ public enum Keyword: CaseIterable {
       return KeywordSpec("message")
     case .metadata:
       return KeywordSpec("metadata")
+    case .modify:
+      return KeywordSpec("modify", experimentalFeature: .coroutineAccessors)
     case .module:
       return KeywordSpec("module")
+    case .mutate:
+      return KeywordSpec("mutate", experimentalFeature: .borrowAndMutateAccessors)
     case .mutableAddressWithNativeOwner:
       return KeywordSpec("mutableAddressWithNativeOwner")
     case .mutableAddressWithOwner:
@@ -621,6 +558,8 @@ public enum Keyword: CaseIterable {
       return KeywordSpec("nonisolated")
     case .nonmutating:
       return KeywordSpec("nonmutating")
+    case .nonsending:
+      return KeywordSpec("nonsending")
     case .objc:
       return KeywordSpec("objc")
     case .obsoleted:
@@ -651,6 +590,8 @@ public enum Keyword: CaseIterable {
       return KeywordSpec("protocol", isLexerClassified: true)
     case .public:
       return KeywordSpec("public", isLexerClassified: true)
+    case .read:
+      return KeywordSpec("read", experimentalFeature: .coroutineAccessors)
     case .reasync:
       return KeywordSpec("reasync")
     case .renamed:
@@ -659,10 +600,6 @@ public enum Keyword: CaseIterable {
       return KeywordSpec("repeat", isLexerClassified: true)
     case .required:
       return KeywordSpec("required")
-    case ._resultDependsOn:
-      return KeywordSpec("_resultDependsOn", experimentalFeature: .nonescapableTypes)
-    case ._resultDependsOnSelf:
-      return KeywordSpec("_resultDependsOnSelf", experimentalFeature: .nonescapableTypes)
     case .rethrows:
       return KeywordSpec("rethrows", isLexerClassified: true)
     case .retroactive:
@@ -675,6 +612,8 @@ public enum Keyword: CaseIterable {
       return KeywordSpec("right")
     case .safe:
       return KeywordSpec("safe")
+    case .scoped:
+      return KeywordSpec("scoped", experimentalFeature: .nonescapableTypes)
     case .self:
       return KeywordSpec("self", isLexerClassified: true)
     case .Self:
@@ -685,8 +624,6 @@ public enum Keyword: CaseIterable {
       return KeywordSpec("set")
     case .some:
       return KeywordSpec("some")
-    case .sourceFile:
-      return KeywordSpec("sourceFile")
     case .spi:
       return KeywordSpec("spi")
     case .spiModule:
@@ -711,11 +648,8 @@ public enum Keyword: CaseIterable {
       return KeywordSpec("throw", isLexerClassified: true)
     case .throws:
       return KeywordSpec("throws", isLexerClassified: true)
-    case .transferring:
-      return KeywordSpec(
-        "transferring",
-        experimentalFeature: .transferringArgsAndResults
-      )
+    case .sending:
+      return KeywordSpec("sending")
     case .transpose:
       return KeywordSpec("transpose")
     case .true:
@@ -740,6 +674,8 @@ public enum Keyword: CaseIterable {
       return KeywordSpec("unsafeAddress")
     case .unsafeMutableAddress:
       return KeywordSpec("unsafeMutableAddress")
+    case .using:
+      return KeywordSpec("using")
     case .var:
       return KeywordSpec("var", isLexerClassified: true)
     case .visibility:
@@ -752,8 +688,6 @@ public enum Keyword: CaseIterable {
       return KeywordSpec("while", isLexerClassified: true)
     case .willSet:
       return KeywordSpec("willSet")
-    case .witness_method:
-      return KeywordSpec("witness_method")
     case .wrt:
       return KeywordSpec("wrt")
     case .yield:

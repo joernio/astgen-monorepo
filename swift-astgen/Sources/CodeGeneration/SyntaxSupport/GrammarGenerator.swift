@@ -28,7 +28,7 @@ struct GrammarGenerator {
       if let tokenText = tokenSpec.text {
         return "`\(tokenText)`"
       } else {
-        return "`<\(tokenSpec.varOrCaseName)>`"
+        return "`<\(tokenSpec.identifier)>`"
       }
     }
   }
@@ -38,10 +38,10 @@ struct GrammarGenerator {
     switch child.kind {
     case .node(let kind):
       return "\(kind.doccLink)\(optionality)"
-    case .nodeChoices(let choices):
+    case .nodeChoices(let choices, _):
       let choicesDescriptions = choices.map { grammar(for: $0) }
       return "(\(choicesDescriptions.joined(separator: " | ")))\(optionality)"
-    case .collection(kind: let kind, _, _, _):
+    case .collection(let kind, _, _, _, _):
       return "\(kind.doccLink)\(optionality)"
     case .token(let choices, _, _):
       if choices.count == 1 {
@@ -62,7 +62,7 @@ struct GrammarGenerator {
     return
       children
       .filter { !$0.isUnexpectedNodes }
-      .map { " - `\($0.varOrCaseName)`: \(generator.grammar(for: $0))" }
+      .map { " - `\($0.identifier)`: \(generator.grammar(for: $0))" }
       .joined(separator: "\n")
   }
 

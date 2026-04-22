@@ -2,42 +2,42 @@ import Foundation
 
 public class SwiftAstGenerator {
 
-    private var srcDir: URL
-    private var outputDir: URL
-    private var prettyPrint: Bool
-    private var ignorePathsFromPackageSwift: [String] = []
+    private static let ignoredPathSubstrings: [String] = [
+        "/.", "/__", "/tests/", "/specs/", "/test/", "/spec/",
+    ]
+
+    private let srcDir: URL
+    private let outputDir: URL
+    private let prettyPrint: Bool
+    private let ignorePathsFromPackageSwift: [String]
     private let availableProcessors: Int = ProcessInfo.processInfo.activeProcessorCount
 
     public init(srcDir: URL, outputDir: URL, prettyPrint: Bool) throws {
         self.srcDir = srcDir
         self.outputDir = outputDir
         self.prettyPrint = prettyPrint
-        self.ignorePathsFromPackageSwift = PackageTestTargetParser(srcDir: srcDir).getTestTargetPaths()
+        self.ignorePathsFromPackageSwift = PackageTestTargetParser(srcDir: srcDir)
+            .getTestTargetPaths()
+            .map { $0.lowercased() }
 
-        if !FileManager.default.fileExists(atPath: outputDir.path) {
-            try FileManager.default.createDirectory(
-                atPath: outputDir.path,
-                withIntermediateDirectories: true,
-                attributes: nil
-            )
+        try FileManager.default.createDirectory(
+            atPath: outputDir.path,
+            withIntermediateDirectories: true,
+            attributes: nil
+        )
+    }
+
+    private func shouldIgnore(path: String) -> Bool {
+        let pathLowercased = path.lowercased()
+        for substring in Self.ignoredPathSubstrings where pathLowercased.contains(substring) {
+            return true
         }
+        return ignorePathsFromPackageSwift.contains { pathLowercased.contains($0) }
     }
 
-    private func ignoreDirectory(name: String) -> Bool {
-        let nameLowercased: String = name.lowercased()
-        return nameLowercased.contains("/.")
-            || nameLowercased.contains("/__")
-            || nameLowercased.contains("/tests/")
-            || nameLowercased.contains("/specs/")
-            || nameLowercased.contains("/test/")
-            || nameLowercased.contains("/spec/")
-            || ignorePathsFromPackageSwift.contains { nameLowercased.contains($0.lowercased()) }
-    }
-
-    private func parseFile(fileUrl: URL) {
+    private func parseFile(fileUrl: URL, relativeFilePath: String) {
         do {
-            let relativeFilePath = fileUrl.relativePath(from: srcDir)!
-            let astJsonString = try SyntaxParser.parse(
+            let astJsonData = try SyntaxParser.parse(
                 srcDir: srcDir,
                 fileUrl: fileUrl,
                 relativeFilePath: relativeFilePath,
@@ -49,19 +49,13 @@ public class SwiftAstGenerator {
                 .appendingPathExtension("json")
             let outfileDirUrl = outFileUrl.deletingLastPathComponent()
 
-            if !FileManager.default.fileExists(atPath: outfileDirUrl.path) {
-                try FileManager.default.createDirectory(
-                    atPath: outfileDirUrl.path,
-                    withIntermediateDirectories: true,
-                    attributes: nil
-                )
-            }
-
-            try astJsonString.write(
-                to: outFileUrl,
-                atomically: true,
-                encoding: String.Encoding.utf8
+            try FileManager.default.createDirectory(
+                atPath: outfileDirUrl.path,
+                withIntermediateDirectories: true,
+                attributes: nil
             )
+
+            try astJsonData.write(to: outFileUrl, options: .atomic)
             print("Generated AST for file: `\(fileUrl.path)`")
         } catch {
             print("Parsing failed for file: `\(fileUrl.path)` (\(error))")
@@ -83,9 +77,9 @@ public class SwiftAstGenerator {
                 let fileAttributes = try! fileURL.resourceValues(forKeys: [.isRegularFileKey])
                 if fileAttributes.isRegularFile! && fileURL.pathExtension == "swift" {
                     let relativeFilePath = fileURL.relativePath(from: srcDir)!
-                    if !ignoreDirectory(name: "/\(relativeFilePath)") {
+                    if !shouldIgnore(path: "/\(relativeFilePath)") {
                         queue.addOperation {
-                            self.parseFile(fileUrl: fileURL)
+                            self.parseFile(fileUrl: fileURL, relativeFilePath: relativeFilePath)
                         }
                     }
                 }

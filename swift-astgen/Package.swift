@@ -11,8 +11,8 @@ let package = Package(
     .library(name: "SwiftAstGenLib", targets: ["SwiftAstGenLib"])
   ],
   dependencies: [
-    .package(url: "https://github.com/apple/swift-argument-parser", from: "1.2.0"),
-    .package(url: "https://github.com/apple/swift-syntax", from: "510.0.1"),
+    .package(url: "https://github.com/apple/swift-argument-parser", from: "1.7.1"),
+    .package(url: "https://github.com/swiftlang/swift-syntax", from: "603.0.1"),
   ],
   targets: [
     .target(

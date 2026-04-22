@@ -10,13 +10,13 @@ final class TreeNode: Codable {
     var name: String
     var tokenKind: String
     var nodeType: String
-    var range: Range
+    var range: SourceRange
     var children: [TreeNode]
 
     init(
         tokenKind: String,
         nodeType: String,
-        range: Range,
+        range: SourceRange,
         children: [TreeNode]
     ) {
         self.index = -1
@@ -27,7 +27,7 @@ final class TreeNode: Codable {
         self.children = children
     }
 }
-struct Range: Codable {
+struct SourceRange: Codable {
     let startOffset: Int
     let endOffset: Int
     let startLine: Int

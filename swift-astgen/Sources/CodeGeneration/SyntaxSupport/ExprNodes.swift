@@ -48,7 +48,6 @@ public let EXPR_NODES: [Node] = [
     children: [
       Child(
         name: "leftSquare",
-        deprecatedName: "leftSquareBracket",
         kind: .token(choices: [.token(.leftSquare)])
       ),
       Child(
@@ -57,9 +56,14 @@ public let EXPR_NODES: [Node] = [
       ),
       Child(
         name: "rightSquare",
-        deprecatedName: "rightSquareBracket",
         kind: .token(choices: [.token(.rightSquare)])
       ),
+    ],
+    childHistory: [
+      [
+        "leftSquare": .renamed(from: "leftSquareBracket"),
+        "rightSquare": .renamed(from: "rightSquareBracket"),
+      ]
     ]
   ),
 
@@ -86,9 +90,13 @@ public let EXPR_NODES: [Node] = [
       ),
       Child(
         name: "arrow",
-        deprecatedName: "arrowToken",
         kind: .token(choices: [.token(.arrow)])
       ),
+    ],
+    childHistory: [
+      [
+        "arrow": .renamed(from: "arrowToken")
+      ]
     ]
   ),
 
@@ -97,7 +105,7 @@ public let EXPR_NODES: [Node] = [
     base: .expr,
     nameForDiagnostics: "'as'",
     documentation: """
-      The cast of an expressison to a different type.
+      The cast of an expression to a different type.
 
       ### Examples
 
@@ -119,7 +127,6 @@ public let EXPR_NODES: [Node] = [
       ),
       Child(
         name: "asKeyword",
-        deprecatedName: "asTok",
         kind: .token(choices: [.keyword(.as)])
       ),
       Child(
@@ -129,9 +136,14 @@ public let EXPR_NODES: [Node] = [
       ),
       Child(
         name: "type",
-        deprecatedName: "typeName",
         kind: .node(kind: .type)
       ),
+    ],
+    childHistory: [
+      [
+        "asKeyword": .renamed(from: "asTok"),
+        "type": .renamed(from: "typeName"),
+      ]
     ]
   ),
 
@@ -142,9 +154,13 @@ public let EXPR_NODES: [Node] = [
     children: [
       Child(
         name: "equal",
-        deprecatedName: "assignToken",
         kind: .token(choices: [.token(.equal)])
       )
+    ],
+    childHistory: [
+      [
+        "equal": .renamed(from: "assignToken")
+      ]
     ]
   ),
 
@@ -156,6 +172,22 @@ public let EXPR_NODES: [Node] = [
       Child(
         name: "awaitKeyword",
         kind: .token(choices: [.keyword(.await)])
+      ),
+      Child(
+        name: "expression",
+        kind: .node(kind: .expr)
+      ),
+    ]
+  ),
+
+  Node(
+    kind: .unsafeExpr,
+    base: .expr,
+    nameForDiagnostics: "'unsafe' expression",
+    children: [
+      Child(
+        name: "unsafeKeyword",
+        kind: .token(choices: [.keyword(.unsafe)])
       ),
       Child(
         name: "expression",
@@ -178,9 +210,13 @@ public let EXPR_NODES: [Node] = [
     children: [
       Child(
         name: "operator",
-        deprecatedName: "operatorToken",
         kind: .token(choices: [.token(.binaryOperator)])
       )
+    ],
+    childHistory: [
+      [
+        "operator": .renamed(from: "operatorToken")
+      ]
     ]
   ),
 
@@ -191,9 +227,13 @@ public let EXPR_NODES: [Node] = [
     children: [
       Child(
         name: "literal",
-        deprecatedName: "booleanLiteral",
         kind: .token(choices: [.keyword(.true), .keyword(.false)])
       )
+    ],
+    childHistory: [
+      [
+        "literal": .renamed(from: "booleanLiteral")
+      ]
     ]
   ),
 
@@ -204,7 +244,7 @@ public let EXPR_NODES: [Node] = [
     children: [
       Child(
         name: "borrowKeyword",
-        kind: .token(choices: [.keyword(._borrow)])
+        kind: .token(choices: [.keyword(._borrow), .keyword(.borrow)])
       ),
       Child(
         name: "expression",
@@ -214,7 +254,7 @@ public let EXPR_NODES: [Node] = [
   ),
 
   Node(
-    kind: .canImportExpr,
+    kind: ._canImportExpr,
     base: .expr,
     nameForDiagnostics: "'canImport' expression",
     children: [
@@ -232,7 +272,7 @@ public let EXPR_NODES: [Node] = [
       ),
       Child(
         name: "versionInfo",
-        kind: .node(kind: .canImportVersionInfo),
+        kind: .node(kind: ._canImportVersionInfo),
         isOptional: true
       ),
       Child(
@@ -243,7 +283,7 @@ public let EXPR_NODES: [Node] = [
   ),
 
   Node(
-    kind: .canImportVersionInfo,
+    kind: ._canImportVersionInfo,
     base: .expr,
     nameForDiagnostics: nil,
     children: [
@@ -261,9 +301,13 @@ public let EXPR_NODES: [Node] = [
       ),
       Child(
         name: "version",
-        deprecatedName: "versionTuple",
         kind: .node(kind: .versionTuple)
       ),
+    ],
+    childHistory: [
+      [
+        "version": .renamed(from: "versionTuple")
+      ]
     ]
   ),
 
@@ -341,18 +385,12 @@ public let EXPR_NODES: [Node] = [
       ),
       Child(
         name: "name",
-        kind: .token(choices: [.token(.identifier)]),
-        isOptional: true
+        kind: .token(choices: [.token(.identifier), .keyword(.self)])
       ),
       Child(
-        name: "equal",
-        deprecatedName: "assignToken",
-        kind: .token(choices: [.token(.equal)]),
+        name: "initializer",
+        kind: .node(kind: .initializerClause),
         isOptional: true
-      ),
-      Child(
-        name: "expression",
-        kind: .node(kind: .expr)
       ),
       Child(
         name: "trailingComma",
@@ -461,7 +499,6 @@ public let EXPR_NODES: [Node] = [
       ),
       Child(
         name: "parameters",
-        deprecatedName: "parameterList",
         kind: .collection(kind: .closureParameterList, collectionElementName: "Parameter"),
         nameForDiagnostics: "parameters",
         documentation: "The actual parameters."
@@ -471,6 +508,11 @@ public let EXPR_NODES: [Node] = [
         kind: .token(choices: [.token(.rightParen)]),
         documentation: "The ')' to close the parameter clause."
       ),
+    ],
+    childHistory: [
+      [
+        "parameters": .renamed(from: "parameterList")
+      ]
     ]
   ),
 
@@ -565,18 +607,23 @@ public let EXPR_NODES: [Node] = [
       ),
       Child(
         name: "parameterClause",
-        deprecatedName: "input",
-        kind: .nodeChoices(choices: [
-          Child(
-            name: "simpleInput",
-            kind: .node(kind: .closureShorthandParameterList)
-          ),
-          Child(
-            name: "parameterClause",
-            deprecatedName: "input",
-            kind: .node(kind: .closureParameterClause)
-          ),
-        ]),
+        kind: .nodeChoices(
+          choices: [
+            Child(
+              name: "simpleInput",
+              kind: .node(kind: .closureShorthandParameterList)
+            ),
+            Child(
+              name: "parameterClause",
+              kind: .node(kind: .closureParameterClause)
+            ),
+          ],
+          childHistory: [
+            [
+              "parameterClause": .renamed(from: "input")
+            ]
+          ]
+        ),
         isOptional: true
       ),
       Child(
@@ -586,15 +633,20 @@ public let EXPR_NODES: [Node] = [
       ),
       Child(
         name: "returnClause",
-        deprecatedName: "output",
         kind: .node(kind: .returnClause),
         isOptional: true
       ),
       Child(
         name: "inKeyword",
-        deprecatedName: "inTok",
         kind: .token(choices: [.keyword(.in)])
       ),
+    ],
+    childHistory: [
+      [
+        "parameterClause": .renamed(from: "input"),
+        "returnClause": .renamed(from: "output"),
+        "inKeyword": .renamed(from: "inTok"),
+      ]
     ]
   ),
 
@@ -662,7 +714,6 @@ public let EXPR_NODES: [Node] = [
     children: [
       Child(
         name: "key",
-        deprecatedName: "keyExpression",
         kind: .node(kind: .expr),
         nameForDiagnostics: "key"
       ),
@@ -672,7 +723,6 @@ public let EXPR_NODES: [Node] = [
       ),
       Child(
         name: "value",
-        deprecatedName: "valueExpression",
         kind: .node(kind: .expr),
         nameForDiagnostics: "value"
       ),
@@ -681,6 +731,12 @@ public let EXPR_NODES: [Node] = [
         kind: .token(choices: [.token(.comma)]),
         isOptional: true
       ),
+    ],
+    childHistory: [
+      [
+        "key": .renamed(from: "keyExpression"),
+        "value": .renamed(from: "valueExpression"),
+      ]
     ]
   ),
 
@@ -798,9 +854,13 @@ public let EXPR_NODES: [Node] = [
     children: [
       Child(
         name: "placeholder",
-        deprecatedName: "identifier",
         kind: .token(choices: [.token(.identifier)])
       )
+    ],
+    childHistory: [
+      [
+        "placeholder": .renamed(from: "identifier")
+      ]
     ]
   ),
 
@@ -831,7 +891,6 @@ public let EXPR_NODES: [Node] = [
       ),
       Child(
         name: "pounds",
-        deprecatedName: "delimiter",
         kind: .token(choices: [.token(.rawStringPoundDelimiter)]),
         isOptional: true
       ),
@@ -847,6 +906,11 @@ public let EXPR_NODES: [Node] = [
         name: "rightParen",
         kind: .token(choices: [.token(.rightParen)])
       ),
+    ],
+    childHistory: [
+      [
+        "pounds": .renamed(from: "delimiter")
+      ]
     ]
   ),
 
@@ -857,9 +921,13 @@ public let EXPR_NODES: [Node] = [
     children: [
       Child(
         name: "literal",
-        deprecatedName: "floatingDigits",
         kind: .token(choices: [.token(.floatLiteral)])
       )
+    ],
+    childHistory: [
+      [
+        "literal": .renamed(from: "floatingDigits")
+      ]
     ]
   ),
 
@@ -892,18 +960,19 @@ public let EXPR_NODES: [Node] = [
       Child(
         name: "leftParen",
         kind: .token(choices: [.token(.leftParen)]),
-        isOptional: true
+        isOptional: true,
+        providesDefaultInitialization: false
       ),
       Child(
         name: "arguments",
-        deprecatedName: "argumentList",
         kind: .collection(kind: .labeledExprList, collectionElementName: "Argument"),
         nameForDiagnostics: "arguments"
       ),
       Child(
         name: "rightParen",
         kind: .token(choices: [.token(.rightParen)]),
-        isOptional: true
+        isOptional: true,
+        providesDefaultInitialization: false
       ),
       Child(
         name: "trailingClosure",
@@ -913,9 +982,18 @@ public let EXPR_NODES: [Node] = [
       ),
       Child(
         name: "additionalTrailingClosures",
-        kind: .collection(kind: .multipleTrailingClosureElementList, collectionElementName: "AdditionalTrailingClosure", defaultsToEmpty: true),
+        kind: .collection(
+          kind: .multipleTrailingClosureElementList,
+          collectionElementName: "AdditionalTrailingClosure",
+          defaultsToEmpty: true
+        ),
         nameForDiagnostics: "trailing closures"
       ),
+    ],
+    childHistory: [
+      [
+        "arguments": .renamed(from: "argumentList")
+      ]
     ]
   ),
 
@@ -925,8 +1003,12 @@ public let EXPR_NODES: [Node] = [
     nameForDiagnostics: nil,
     children: [
       Child(
+        name: "moduleSelector",
+        kind: .node(kind: .moduleSelector),
+        isOptional: true
+      ),
+      Child(
         name: "baseName",
-        deprecatedName: "identifier",
         kind: .token(choices: [
           .token(.identifier),
           .keyword(.self),
@@ -941,10 +1023,18 @@ public let EXPR_NODES: [Node] = [
       ),
       Child(
         name: "argumentNames",
-        deprecatedName: "declNameArguments",
         kind: .node(kind: .declNameArguments),
         isOptional: true
       ),
+    ],
+    childHistory: [
+      [
+        "moduleSelector": .introduced
+      ],
+      [
+        "baseName": .renamed(from: "identifier"),
+        "argumentNames": .renamed(from: "declNameArguments"),
+      ],
     ]
   ),
 
@@ -1027,13 +1117,17 @@ public let EXPR_NODES: [Node] = [
       ),
       Child(
         name: "operator",
-        deprecatedName: "operatorOperand",
         kind: .node(kind: .expr)
       ),
       Child(
         name: "rightOperand",
         kind: .node(kind: .expr)
       ),
+    ],
+    childHistory: [
+      [
+        "operator": .renamed(from: "operatorOperand")
+      ]
     ]
   ),
 
@@ -1044,9 +1138,13 @@ public let EXPR_NODES: [Node] = [
     children: [
       Child(
         name: "literal",
-        deprecatedName: "digits",
         kind: .token(choices: [.token(.integerLiteral)])
       )
+    ],
+    childHistory: [
+      [
+        "literal": .renamed(from: "digits")
+      ]
     ]
   ),
 
@@ -1074,16 +1172,21 @@ public let EXPR_NODES: [Node] = [
       ),
       Child(
         name: "isKeyword",
-        deprecatedName: "isTok",
         kind: .token(choices: [.keyword(.is)]),
         documentation: "The `is` keyword for this expression."
       ),
       Child(
         name: "type",
-        deprecatedName: "typeName",
         kind: .node(kind: .type),
-        documentation: "The type against which the expression will be checked to see if the expression can be cast to it."
+        documentation:
+          "The type against which the expression will be checked to see if the expression can be cast to it."
       ),
+    ],
+    childHistory: [
+      [
+        "isKeyword": .renamed(from: "isTok"),
+        "type": .renamed(from: "typeName"),
+      ]
     ]
   ),
 
@@ -1112,6 +1215,11 @@ public let EXPR_NODES: [Node] = [
           Child(
             name: "property",
             kind: .node(kind: .keyPathPropertyComponent)
+          ),
+          Child(
+            name: "method",
+            kind: .node(kind: .keyPathMethodComponent),
+            experimentalFeature: .keypathWithMethodMembers
           ),
           Child(
             name: "subscript",
@@ -1196,19 +1304,50 @@ public let EXPR_NODES: [Node] = [
     children: [
       Child(
         name: "leftSquare",
-        deprecatedName: "leftBracket",
         kind: .token(choices: [.token(.leftSquare)])
       ),
       Child(
         name: "arguments",
-        deprecatedName: "argumentList",
         kind: .collection(kind: .labeledExprList, collectionElementName: "Argument"),
         nameForDiagnostics: "arguments"
       ),
       Child(
         name: "rightSquare",
-        deprecatedName: "rightBracket",
         kind: .token(choices: [.token(.rightSquare)])
+      ),
+    ],
+    childHistory: [
+      [
+        "leftSquare": .renamed(from: "leftBracket"),
+        "arguments": .renamed(from: "argumentList"),
+        "rightSquare": .renamed(from: "rightBracket"),
+      ]
+    ]
+  ),
+
+  Node(
+    kind: .keyPathMethodComponent,
+    base: .syntax,
+    experimentalFeature: .keypathWithMethodMembers,
+    nameForDiagnostics: "key path method component",
+    documentation: "A key path component like `.method()`, `.method(10)`, or `.method(val: 10)`.",
+    children: [
+      Child(
+        name: "declName",
+        kind: .node(kind: .declReferenceExpr)
+      ),
+      Child(
+        name: "leftParen",
+        kind: .token(choices: [.token(.leftParen)])
+      ),
+      Child(
+        name: "arguments",
+        kind: .collection(kind: .labeledExprList, collectionElementName: "Argument"),
+        nameForDiagnostics: "arguments"
+      ),
+      Child(
+        name: "rightParen",
+        kind: .token(choices: [.token(.rightParen)])
       ),
     ]
   ),
@@ -1224,18 +1363,20 @@ public let EXPR_NODES: [Node] = [
     children: [
       Child(
         name: "pound",
-        deprecatedName: "poundToken",
         kind: .token(choices: [.token(.pound)]),
         documentation: "The `#` sign."
       ),
       Child(
+        name: "moduleSelector",
+        kind: .node(kind: .moduleSelector),
+        isOptional: true
+      ),
+      Child(
         name: "macroName",
-        deprecatedName: "macro",
         kind: .token(choices: [.token(.identifier)])
       ),
       Child(
         name: "genericArgumentClause",
-        deprecatedName: "genericArguments",
         kind: .node(kind: .genericArgumentClause),
         isOptional: true
       ),
@@ -1246,7 +1387,6 @@ public let EXPR_NODES: [Node] = [
       ),
       Child(
         name: "arguments",
-        deprecatedName: "argumentList",
         kind: .collection(kind: .labeledExprList, collectionElementName: "Argument")
       ),
       Child(
@@ -1261,8 +1401,23 @@ public let EXPR_NODES: [Node] = [
       ),
       Child(
         name: "additionalTrailingClosures",
-        kind: .collection(kind: .multipleTrailingClosureElementList, collectionElementName: "AdditionalTrailingClosure", defaultsToEmpty: true)
+        kind: .collection(
+          kind: .multipleTrailingClosureElementList,
+          collectionElementName: "AdditionalTrailingClosure",
+          defaultsToEmpty: true
+        )
       ),
+    ],
+    childHistory: [
+      [
+        "moduleSelector": .introduced
+      ],
+      [
+        "pound": .renamed(from: "poundToken"),
+        "macroName": .renamed(from: "macro"),
+        "genericArgumentClause": .renamed(from: "genericArguments"),
+        "arguments": .renamed(from: "argumentList"),
+      ],
     ]
   ),
 
@@ -1281,7 +1436,6 @@ public let EXPR_NODES: [Node] = [
       ),
       Child(
         name: "period",
-        deprecatedName: "dot",
         kind: .token(choices: [.token(.period)])
       ),
       Child(
@@ -1290,6 +1444,11 @@ public let EXPR_NODES: [Node] = [
         nameForDiagnostics: "name",
         documentation: "The name of the referenced function or a property."
       ),
+    ],
+    childHistory: [
+      [
+        "period": .renamed(from: "dot")
+      ]
     ]
   ),
 
@@ -1300,13 +1459,17 @@ public let EXPR_NODES: [Node] = [
     children: [
       Child(
         name: "consumeKeyword",
-        deprecatedName: "moveKeyword",
         kind: .token(choices: [.keyword(._move), .keyword(.consume)])
       ),
       Child(
         name: "expression",
         kind: .node(kind: .expr)
       ),
+    ],
+    childHistory: [
+      [
+        "consumeKeyword": .renamed(from: "moveKeyword")
+      ]
     ]
   ),
 
@@ -1394,9 +1557,13 @@ public let EXPR_NODES: [Node] = [
       ),
       Child(
         name: "pack",
-        deprecatedName: "packRefExpr",
         kind: .node(kind: .expr)
       ),
+    ],
+    childHistory: [
+      [
+        "pack": .renamed(from: "packRefExpr")
+      ]
     ]
   ),
 
@@ -1412,9 +1579,13 @@ public let EXPR_NODES: [Node] = [
       ),
       Child(
         name: "repetitionPattern",
-        deprecatedName: "patternExpr",
         kind: .node(kind: .expr)
       ),
+    ],
+    childHistory: [
+      [
+        "repetitionPattern": .renamed(from: "patternExpr")
+      ]
     ]
   ),
 
@@ -1446,9 +1617,13 @@ public let EXPR_NODES: [Node] = [
       ),
       Child(
         name: "operator",
-        deprecatedName: "operatorToken",
         kind: .token(choices: [.token(.postfixOperator)])
       ),
+    ],
+    childHistory: [
+      [
+        "operator": .renamed(from: "operatorToken")
+      ]
     ]
   ),
 
@@ -1472,14 +1647,18 @@ public let EXPR_NODES: [Node] = [
     children: [
       Child(
         name: "operator",
-        deprecatedName: "operatorToken",
         kind: .token(choices: [.token(.prefixOperator)])
       ),
       Child(
         name: "expression",
-        deprecatedName: "postfixExpression",
         kind: .node(kind: .expr)
       ),
+    ],
+    childHistory: [
+      [
+        "operator": .renamed(from: "operatorToken"),
+        "expression": .renamed(from: "postfixExpression"),
+      ]
     ]
   ),
 
@@ -1495,17 +1674,14 @@ public let EXPR_NODES: [Node] = [
       ),
       Child(
         name: "openingSlash",
-        deprecatedName: "openSlash",
         kind: .token(choices: [.token(.regexSlash)])
       ),
       Child(
         name: "regex",
-        deprecatedName: "regexPattern",
         kind: .token(choices: [.token(.regexLiteralPattern)])
       ),
       Child(
         name: "closingSlash",
-        deprecatedName: "closeSlash",
         kind: .token(choices: [.token(.regexSlash)])
       ),
       Child(
@@ -1513,6 +1689,13 @@ public let EXPR_NODES: [Node] = [
         kind: .token(choices: [.token(.regexPoundDelimiter)]),
         isOptional: true
       ),
+    ],
+    childHistory: [
+      [
+        "openingSlash": .renamed(from: "openSlash"),
+        "regex": .renamed(from: "regexPattern"),
+        "closingSlash": .renamed(from: "closeSlash"),
+      ]
     ]
   ),
 
@@ -1569,13 +1752,11 @@ public let EXPR_NODES: [Node] = [
     children: [
       Child(
         name: "openingPounds",
-        deprecatedName: "openDelimiter",
         kind: .token(choices: [.token(.rawStringPoundDelimiter)]),
         isOptional: true
       ),
       Child(
         name: "openingQuote",
-        deprecatedName: "openQuote",
         kind: .token(choices: [.token(.stringQuote), .token(.multilineStringQuote), .token(.singleQuote)])
       ),
       Child(
@@ -1584,15 +1765,21 @@ public let EXPR_NODES: [Node] = [
       ),
       Child(
         name: "closingQuote",
-        deprecatedName: "closeQuote",
         kind: .token(choices: [.token(.stringQuote), .token(.multilineStringQuote), .token(.singleQuote)])
       ),
       Child(
         name: "closingPounds",
-        deprecatedName: "closeDelimiter",
         kind: .token(choices: [.token(.rawStringPoundDelimiter)]),
         isOptional: true
       ),
+    ],
+    childHistory: [
+      [
+        "openingPounds": .renamed(from: "openDelimiter"),
+        "openingQuote": .renamed(from: "openQuote"),
+        "closingQuote": .renamed(from: "closeQuote"),
+        "closingPounds": .renamed(from: "closeDelimiter"),
+      ]
     ]
   ),
 
@@ -1664,18 +1851,15 @@ public let EXPR_NODES: [Node] = [
       ),
       Child(
         name: "leftSquare",
-        deprecatedName: "leftBracket",
         kind: .token(choices: [.token(.leftSquare)])
       ),
       Child(
         name: "arguments",
-        deprecatedName: "argumentList",
         kind: .collection(kind: .labeledExprList, collectionElementName: "Argument"),
         nameForDiagnostics: "arguments"
       ),
       Child(
         name: "rightSquare",
-        deprecatedName: "rightBracket",
         kind: .token(choices: [.token(.rightSquare)])
       ),
       Child(
@@ -1686,9 +1870,20 @@ public let EXPR_NODES: [Node] = [
       ),
       Child(
         name: "additionalTrailingClosures",
-        kind: .collection(kind: .multipleTrailingClosureElementList, collectionElementName: "AdditionalTrailingClosure", defaultsToEmpty: true),
+        kind: .collection(
+          kind: .multipleTrailingClosureElementList,
+          collectionElementName: "AdditionalTrailingClosure",
+          defaultsToEmpty: true
+        ),
         nameForDiagnostics: "trailing closures"
       ),
+    ],
+    childHistory: [
+      [
+        "leftSquare": .renamed(from: "leftBracket"),
+        "arguments": .renamed(from: "argumentList"),
+        "rightSquare": .renamed(from: "rightBracket"),
+      ]
     ]
   ),
 
@@ -1740,7 +1935,6 @@ public let EXPR_NODES: [Node] = [
     children: [
       Child(
         name: "attribute",
-        deprecatedName: "unknownAttr",
         kind: .node(kind: .attribute),
         documentation: "The `@unknown` attribute of a default label, if present.",
         isOptional: true
@@ -1763,6 +1957,11 @@ public let EXPR_NODES: [Node] = [
         name: "statements",
         kind: .collection(kind: .codeBlockItemList, collectionElementName: "Statement")
       ),
+    ],
+    childHistory: [
+      [
+        "attribute": .renamed(from: "unknownAttr")
+      ]
     ]
   ),
 
@@ -1798,7 +1997,7 @@ public let EXPR_NODES: [Node] = [
       }
       ```
 
-      A switch ecpression may be declared without any cases.
+      A switch expression may be declared without any cases.
       """,
     traits: [
       "Braced"
@@ -1811,7 +2010,6 @@ public let EXPR_NODES: [Node] = [
       ),
       Child(
         name: "subject",
-        deprecatedName: "expression",
         kind: .node(kind: .expr),
         documentation: "The expression to switch over."
       ),
@@ -1830,13 +2028,18 @@ public let EXPR_NODES: [Node] = [
         kind: .token(choices: [.token(.rightBrace)]),
         documentation: "The brace closing the switch body."
       ),
+    ],
+    childHistory: [
+      [
+        "subject": .renamed(from: "expression")
+      ]
     ]
   ),
 
   Node(
     kind: .ternaryExpr,
     base: .expr,
-    nameForDiagnostics: "ternay expression",
+    nameForDiagnostics: "ternary expression",
     documentation: """
       The ternary operator with operator precedences resolved.
 
@@ -1852,7 +2055,6 @@ public let EXPR_NODES: [Node] = [
     children: [
       Child(
         name: "condition",
-        deprecatedName: "conditionExpression",
         kind: .node(kind: .expr),
         nameForDiagnostics: "condition"
       ),
@@ -1862,21 +2064,26 @@ public let EXPR_NODES: [Node] = [
       ),
       Child(
         name: "thenExpression",
-        deprecatedName: "firstChoice",
         kind: .node(kind: .expr),
         nameForDiagnostics: "first choice"
       ),
       Child(
         name: "colon",
-        deprecatedName: "colonMark",
         kind: .token(choices: [.token(.colon)])
       ),
       Child(
         name: "elseExpression",
-        deprecatedName: "secondChoice",
         kind: .node(kind: .expr),
         nameForDiagnostics: "second choice"
       ),
+    ],
+    childHistory: [
+      [
+        "condition": .renamed(from: "conditionExpression"),
+        "thenExpression": .renamed(from: "firstChoice"),
+        "colon": .renamed(from: "colonMark"),
+        "elseExpression": .renamed(from: "secondChoice"),
+      ]
     ]
   ),
 
@@ -1978,13 +2185,17 @@ public let EXPR_NODES: [Node] = [
       ),
       Child(
         name: "elements",
-        deprecatedName: "elementList",
         kind: .collection(kind: .labeledExprList, collectionElementName: "Element")
       ),
       Child(
         name: "rightParen",
         kind: .token(choices: [.token(.rightParen)])
       ),
+    ],
+    childHistory: [
+      [
+        "elements": .renamed(from: "elementList")
+      ]
     ]
   ),
 
@@ -2013,7 +2224,6 @@ public let EXPR_NODES: [Node] = [
     children: [
       Child(
         name: "asKeyword",
-        deprecatedName: "asTok",
         kind: .token(choices: [.keyword(.as)])
       ),
       Child(
@@ -2021,6 +2231,11 @@ public let EXPR_NODES: [Node] = [
         kind: .token(choices: [.token(.postfixQuestionMark), .token(.exclamationMark)]),
         isOptional: true
       ),
+    ],
+    childHistory: [
+      [
+        "asKeyword": .renamed(from: "asTok")
+      ]
     ]
   ),
 
@@ -2037,9 +2252,13 @@ public let EXPR_NODES: [Node] = [
     children: [
       Child(
         name: "isKeyword",
-        deprecatedName: "isTok",
         kind: .token(choices: [.keyword(.is)])
       )
+    ],
+    childHistory: [
+      [
+        "isKeyword": .renamed(from: "isTok")
+      ]
     ]
   ),
 
@@ -2073,14 +2292,18 @@ public let EXPR_NODES: [Node] = [
       ),
       Child(
         name: "thenExpression",
-        deprecatedName: "firstChoice",
         kind: .node(kind: .expr)
       ),
       Child(
         name: "colon",
-        deprecatedName: "colonMark",
         kind: .token(choices: [.token(.colon)])
       ),
+    ],
+    childHistory: [
+      [
+        "thenExpression": .renamed(from: "firstChoice"),
+        "colon": .renamed(from: "colonMark"),
+      ]
     ]
   ),
 

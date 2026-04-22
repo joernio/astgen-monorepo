@@ -4,7 +4,7 @@ import XCTest
 
 @testable import class SwiftAstGenLib.PackageTestTargetParser
 
-final class PackageTestTargetParserTests: XCTestCase {
+final class PackageTestTargetParserTests: XCTestCase, TestUtils {
 
     static var allTests = [
         ("testSingleTestTarget", testSingleTestTarget),
@@ -15,20 +15,8 @@ final class PackageTestTargetParserTests: XCTestCase {
         ("testMissingPackageSwift", testMissingPackageSwift),
     ]
 
-    private func createTemporaryDirectory() -> URL {
-        let tempDir = URL(fileURLWithPath: NSTemporaryDirectory())
-            .appendingPathComponent("PackageTestTargetParserTests-\(UUID().uuidString)", isDirectory: true)
-        try! FileManager.default.createDirectory(atPath: tempDir.path, withIntermediateDirectories: true)
-        return tempDir
-    }
-
-    private func cleanup(directory: URL) {
-        try? FileManager.default.removeItem(at: directory)
-    }
-
     private func createPackageSwift(in directory: URL, content: String) {
-        let packageSwiftUrl = directory.appendingPathComponent("Package.swift")
-        try! content.write(to: packageSwiftUrl, atomically: true, encoding: .utf8)
+        createFile(at: directory, path: "Package.swift", content: content)
     }
 
     func testSingleTestTarget() throws {

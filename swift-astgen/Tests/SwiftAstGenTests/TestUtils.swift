@@ -26,18 +26,16 @@ extension TestUtils {
     func createFile(at baseDir: URL, path: String, content: String) {
         let fileUrl = baseDir.appendingPathComponent(path)
         let dirUrl = fileUrl.deletingLastPathComponent()
-        
-        if !FileManager.default.fileExists(atPath: dirUrl.path) {
-            try! FileManager.default.createDirectory(
-                atPath: dirUrl.path,
-                withIntermediateDirectories: true
-            )
-        }
-        
+
+        try! FileManager.default.createDirectory(
+            atPath: dirUrl.path,
+            withIntermediateDirectories: true
+        )
+
         try! content.write(to: fileUrl, atomically: true, encoding: .utf8)
     }
 
-    private func temporaryFileURL(fileName: String) -> URL? {
+    private func temporaryFileURL(fileName: String) -> URL {
         return URL(fileURLWithPath: NSTemporaryDirectory(), isDirectory: true).appendingPathComponent(
             fileName,
             isDirectory: true
@@ -45,10 +43,9 @@ extension TestUtils {
     }
 
     func loadJson(file: URL) -> TreeNode? {
-        let decoder = JSONDecoder()
         guard
-            let content = try? String(contentsOf: file, encoding: .utf8),
-            let treeNode = try? decoder.decode(TreeNode.self, from: content.data(using: .utf8)!)
+            let data = try? Data(contentsOf: file),
+            let treeNode = try? JSONDecoder().decode(TreeNode.self, from: data)
         else {
             return nil
         }
@@ -56,7 +53,7 @@ extension TestUtils {
     }
 
     func withCode(code: String, testFunction: (URL, URL, URL) throws -> Void) throws {
-        let srcTmpDir = temporaryFileURL(fileName: createUniqueName())!
+        let srcTmpDir = temporaryFileURL(fileName: createUniqueName())
         let outTmpDir = srcTmpDir.appendingPathComponent("out", isDirectory: true)
         let srcFile = srcTmpDir.appendingPathComponent("source.swift")
         let jsonFile = outTmpDir.appendingPathComponent("source.swift.json")
@@ -64,11 +61,6 @@ extension TestUtils {
         try FileManager.default.createDirectory(
             atPath: srcTmpDir.path,
             withIntermediateDirectories: true,
-            attributes: nil
-        )
-        _ = FileManager.default.createFile(
-            atPath: srcFile.path,
-            contents: nil,
             attributes: nil
         )
         try code.write(
