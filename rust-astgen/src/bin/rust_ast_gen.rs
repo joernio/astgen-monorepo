@@ -20,6 +20,7 @@ fn main() -> Result<()> {
 }
 
 #[derive(Parser)]
+#[clap(version)]
 struct RustAstGenCliArgs {
     #[arg(help = "Input directory containing a Rust project")]
     #[arg(short = 'i', long = "input-dir")]
