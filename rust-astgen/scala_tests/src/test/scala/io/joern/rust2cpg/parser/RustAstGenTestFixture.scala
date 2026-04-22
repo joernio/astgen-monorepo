@@ -46,7 +46,7 @@ trait RustAstGenTestFixture {
 
       require(exitCode == 0, s"rust_ast_gen failed with exit code $exitCode")
 
-      val json = ujson.read(Files.readString(outputDir.resolve("src").resolve("main.json")))
+      val json = ujson.read(Files.readString(outputDir.resolve("src").resolve("main.rs.json")))
       RustNodeSyntax.createRustNode(sourceFileJson(json)).asInstanceOf[SourceFile]
     } finally {
       deleteRecursively(projectDir)
