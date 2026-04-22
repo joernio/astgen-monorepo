@@ -15,9 +15,11 @@ fn main() -> Result<()> {
     let model = Model::from_ungrammar(&grammar)?;
 
     let codegen_version = env!("CARGO_PKG_VERSION").to_string();
-    let codegen_date = chrono::Local::now()
-        .format("%d %B %Y, %H:%M:%S %Z")
-        .to_string();
+    let codegen_date = args.include_date.then(|| {
+        chrono::Local::now()
+            .format("%d %B %Y, %H:%M:%S %Z")
+            .to_string()
+    });
     let package_name = "io.joern.rust2cpg.parser".to_string();
     let object_name = "RustNodeSyntax".to_string();
     let base_node_trait = "RustNode".to_string();
@@ -27,6 +29,9 @@ fn main() -> Result<()> {
         "Expr".to_string(),
         "Type".to_string(),
         "Stmt".to_string(),
+        "Item".to_string(),
+        "Meta".to_string(),
+        "Pat".to_string(),
     ];
     let config = ScalaAstGenConfig {
         package_name,
@@ -61,6 +66,12 @@ struct ScalaBindingsGenArgs {
     #[arg(help = "Output file path for the generated Scala file")]
     #[arg(short = 'o', long = "output")]
     output_file_path: PathBuf,
+
+    #[arg(help = "Include the current date in the generated file header")]
+    #[arg(default_value_t = true)]
+    #[arg(action = clap::ArgAction::Set)]
+    #[arg(long = "include-date")]
+    include_date: bool,
 }
 
 fn node_name_to_scala_name(node: &str) -> String {

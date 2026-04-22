@@ -31,8 +31,8 @@ pub struct ScalaAstGenConfig {
     pub token_name_to_json_kind: fn(&str) -> String,
 
     /// The time this code was generated.
-    /// Only included in the header
-    pub codegen_date: String,
+    /// Only included in the header when present.
+    pub codegen_date: Option<String>,
 
     /// The version of the code generator.
     /// Only included in the header.

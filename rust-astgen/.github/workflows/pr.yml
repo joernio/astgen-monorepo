@@ -26,11 +26,32 @@ jobs:
       - name: Run tests
         run: cargo test --locked
 
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: sbt
+          cache-dependency-path: |
+            scala_tests/build.sbt
+            scala_tests/project/build.properties
+
+      - name: Set up sbt
+        uses: sbt/setup-sbt@v1
+
+      - name: Regenerate Scala bindings
+        run: cargo run --locked --bin scala_bindings_gen -- --include-date=false --output scala_tests/src/main/scala/io/joern/rust2cpg/parser/RustNodeSyntax.scala
+
+      - name: Run Scala tests
+        working-directory: scala_tests
+        shell: bash
+        run: sbt test
+
       - name: Check if there are changes
         shell: bash
         run: |
           if [[ -n "$(git status --porcelain --untracked-files=no)" ]]; then
-            echo "::error title=Repository modified by CI::Did you forget to commit rust.ungram?"
+            echo "::error title=Repository modified by CI::Did you forget to commit regenerated files such as rust.ungram or RustNodeSyntax.scala?"
             echo "Changes:"
             git status --short
             exit 1

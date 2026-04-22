@@ -1,0 +1,7 @@
+.bsp/
+.idea/
+.coursier/
+.sbt-boot/
+.sbt-global/
+project/target/
+target/
