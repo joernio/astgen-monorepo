@@ -8,7 +8,7 @@ from astgen_regression.worktree import (
     get_repo_root,
     get_short_sha,
     create_worktree,
-    remove_worktree
+    remove_worktree,
 )
 
 
@@ -43,7 +43,7 @@ def cmd_local(args) -> None:
             ["git", "branch", "--show-current"],
             stdout=subprocess.PIPE,
             check=True,
-            cwd=str(repo_root)
+            cwd=str(repo_root),
         )
         current_branch = result.stdout.decode().strip()
         pr_sha = get_short_sha(repo_root, "HEAD")
@@ -51,7 +51,10 @@ def cmd_local(args) -> None:
         print(f"ERROR: Failed to get branch info: {e}", file=sys.stderr)
         sys.exit(1)
 
-    print(f"[local-regression] Current branch: {current_branch} @ {pr_sha}", file=sys.stderr)
+    print(
+        f"[local-regression] Current branch: {current_branch} @ {pr_sha}",
+        file=sys.stderr,
+    )
     print(f"[local-regression] Base branch:    {base_branch}", file=sys.stderr)
 
     # Build PR version (current tree)
@@ -62,21 +65,24 @@ def cmd_local(args) -> None:
     try:
         # Run install command if present
         if "install_command" in config["build"]:
-            print(f"[local-regression] Running: {config['build']['install_command']}", file=sys.stderr)
+            print(
+                f"[local-regression] Running: {config['build']['install_command']}",
+                file=sys.stderr,
+            )
             subprocess.run(
                 config["build"]["install_command"],
                 shell=True,
                 check=True,
-                cwd=str(repo_root)
+                cwd=str(repo_root),
             )
 
         # Run build command
-        print(f"[local-regression] Running: {config['build']['build_command']}", file=sys.stderr)
+        print(
+            f"[local-regression] Running: {config['build']['build_command']}",
+            file=sys.stderr,
+        )
         subprocess.run(
-            config["build"]["build_command"],
-            shell=True,
-            check=True,
-            cwd=str(repo_root)
+            config["build"]["build_command"], shell=True, check=True, cwd=str(repo_root)
         )
     except subprocess.CalledProcessError as e:
         print(f"ERROR: PR build failed: {e}", file=sys.stderr)
@@ -84,8 +90,14 @@ def cmd_local(args) -> None:
 
     # Validate that build created the dist directory
     if not pr_dist.exists():
-        print(f"ERROR: Build did not create expected directory: {dist_dir}", file=sys.stderr)
-        print("       Check that build.dist_dir is correctly configured in regression.yaml", file=sys.stderr)
+        print(
+            f"ERROR: Build did not create expected directory: {dist_dir}",
+            file=sys.stderr,
+        )
+        print(
+            "       Check that build.dist_dir is correctly configured in regression.yaml",
+            file=sys.stderr,
+        )
         sys.exit(1)
 
     # Setup worktree for base branch
@@ -95,9 +107,7 @@ def cmd_local(args) -> None:
         # Fetch base branch
         print(f"[local-regression] Fetching {base_branch}...", file=sys.stderr)
         subprocess.run(
-            ["git", "fetch", "origin", base_branch],
-            cwd=str(repo_root),
-            check=True
+            ["git", "fetch", "origin", base_branch], cwd=str(repo_root), check=True
         )
 
         base_ref = f"origin/{base_branch}"
@@ -117,7 +127,7 @@ def cmd_local(args) -> None:
                 config["build"]["install_command"],
                 shell=True,
                 check=True,
-                cwd=str(worktree_path)
+                cwd=str(worktree_path),
             )
 
         # Run build command
@@ -125,13 +135,19 @@ def cmd_local(args) -> None:
             config["build"]["build_command"],
             shell=True,
             check=True,
-            cwd=str(worktree_path)
+            cwd=str(worktree_path),
         )
 
         # Validate that build created the dist directory
         if not base_dist.exists():
-            print(f"ERROR: Base build did not create expected directory: {dist_dir}", file=sys.stderr)
-            print("       Check that build.dist_dir is correctly configured in regression.yaml", file=sys.stderr)
+            print(
+                f"ERROR: Base build did not create expected directory: {dist_dir}",
+                file=sys.stderr,
+            )
+            print(
+                "       Check that build.dist_dir is correctly configured in regression.yaml",
+                file=sys.stderr,
+            )
             sys.exit(1)
 
         # Run compare command

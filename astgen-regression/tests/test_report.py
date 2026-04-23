@@ -63,7 +63,7 @@ def test_build_diff_details_with_diffs():
     """Test rendering diff details block."""
     diffs = [
         ("file1.json", ["@@ -1 +1 @@\n", "-old\n", "+new\n"], "1 changed"),
-        ("file2.json", ["@@ -1 +1 @@\n", "-foo\n", "+bar\n"], "1 changed")
+        ("file2.json", ["@@ -1 +1 @@\n", "-foo\n", "+bar\n"], "1 changed"),
     ]
 
     result = build_diff_details(diffs, "AST", 200)
@@ -79,9 +79,7 @@ def test_build_diff_details_truncation():
     """Test diff truncation at max lines."""
     # Create many diff lines
     diff_lines = [f"line {i}\n" for i in range(300)]
-    diffs = [
-        ("file.json", diff_lines, "many changes")
-    ]
+    diffs = [("file.json", diff_lines, "many changes")]
 
     result = build_diff_details(diffs, "AST", max_total_lines=50)
 
@@ -93,33 +91,21 @@ def test_render_corpus_section():
     result_data = {
         "name": "test-corpus",
         "label": "test/test@1.0.0",
-        "base_metrics": {
-            "ast": {"file_count": 10, "total_size": 1024000}
-        },
-        "pr_metrics": {
-            "ast": {"file_count": 11, "total_size": 1048576}
-        },
+        "base_metrics": {"ast": {"file_count": 10, "total_size": 1024000}},
+        "pr_metrics": {"ast": {"file_count": 11, "total_size": 1048576}},
         "base_time": 5.5,
         "pr_time": 6.0,
         "comparison": {
             "only_in_base": [],
             "only_in_pr": ["new.json"],
-            "diffs": {
-                "ast": [
-                    ("changed.json", ["diff line\n"], "1 changed")
-                ]
-            }
-        }
+            "diffs": {"ast": [("changed.json", ["diff line\n"], "1 changed")]},
+        },
     }
 
     artifacts_config = [{"name": "ast", "pattern": "*.json"}]
 
     section = render_corpus_section(
-        "test-corpus",
-        "test/test@1.0.0",
-        result_data,
-        artifacts_config,
-        "PR"
+        "test-corpus", "test/test@1.0.0", result_data, artifacts_config, "PR"
     )
 
     assert "### test-corpus" in section
@@ -139,11 +125,7 @@ def test_render_report():
             "pr_metrics": {"ast": {"file_count": 11, "total_size": 2048}},
             "base_time": 1.0,
             "pr_time": 1.5,
-            "comparison": {
-                "only_in_base": [],
-                "only_in_pr": [],
-                "diffs": {"ast": []}
-            }
+            "comparison": {"only_in_base": [], "only_in_pr": [], "diffs": {"ast": []}},
         }
     ]
 
@@ -153,7 +135,7 @@ def test_render_report():
         "project_name": "test-astgen",
         "base_ref": "main @ abc123",
         "pr_ref": "feature @ def456",
-        "pr_number": None
+        "pr_number": None,
     }
 
     report = render_report(corpus_results, artifacts_config, metadata)
@@ -173,20 +155,16 @@ def test_write_diff_files():
             "label": "org/repo@1.0",
             "comparison": {
                 "diffs": {
-                    "ast": [
-                        ("file1.json", ["diff content\n"], "summary")
-                    ],
-                    "typemap": [
-                        ("file1.typemap", ["diff content\n"], "summary")
-                    ]
+                    "ast": [("file1.json", ["diff content\n"], "summary")],
+                    "typemap": [("file1.typemap", ["diff content\n"], "summary")],
                 }
-            }
+            },
         }
     ]
 
     artifacts_config = [
         {"name": "ast", "pattern": "*.json"},
-        {"name": "typemap", "pattern": "*.typemap"}
+        {"name": "typemap", "pattern": "*.typemap"},
     ]
 
     with tempfile.TemporaryDirectory() as tmpdir:

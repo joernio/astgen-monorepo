@@ -15,15 +15,23 @@ LANGUAGE_DEFAULTS = {
         "dist_dir": "dist",
         "exec_command": "node {dist_dir}/astgen.js -i {input_dir} -o {output_dir} -t ts",
         "artifacts": [
-            {"name": "AST", "pattern": "*.json", "description": "Abstract Syntax Tree files"},
-            {"name": "typemap", "pattern": "*.typemap", "description": "TypeScript type mapping files"}
+            {
+                "name": "AST",
+                "pattern": "*.json",
+                "description": "Abstract Syntax Tree files",
+            },
+            {
+                "name": "typemap",
+                "pattern": "*.typemap",
+                "description": "TypeScript type mapping files",
+            },
         ],
         "base_branch": "main",
         "python_version": "3.12",
         "setup_action": {
             "uses": "actions/setup-node@v6",
-            "with": {"node-version": "24", "cache": "yarn"}
-        }
+            "with": {"node-version": "24", "cache": "yarn"},
+        },
     },
     "rust": {
         "project_name": "rust_ast_gen",
@@ -33,14 +41,18 @@ LANGUAGE_DEFAULTS = {
         "dist_dir": "target/release",
         "exec_command": "{dist_dir}/rust_ast_gen --input-dir {input_dir} --output-dir {output_dir}",
         "artifacts": [
-            {"name": "AST", "pattern": "*.json", "description": "Abstract Syntax Tree files"}
+            {
+                "name": "AST",
+                "pattern": "*.json",
+                "description": "Abstract Syntax Tree files",
+            }
         ],
         "base_branch": "main",
         "python_version": "3.12",
         "setup_action": {
             "uses": "actions-rust-lang/setup-rust-toolchain@v1",
-            "with": None
-        }
+            "with": None,
+        },
     },
     "swift": {
         "project_name": "SwiftAstGen",
@@ -50,15 +62,19 @@ LANGUAGE_DEFAULTS = {
         "dist_dir": ".build/debug",
         "exec_command": "{dist_dir}/SwiftAstGen --src {input_dir} --output {output_dir}",
         "artifacts": [
-            {"name": "AST", "pattern": "*.json", "description": "Abstract Syntax Tree files"}
+            {
+                "name": "AST",
+                "pattern": "*.json",
+                "description": "Abstract Syntax Tree files",
+            }
         ],
         "base_branch": "main",
         "python_version": "3.12",
         "runs_on": "macos-latest",
         "setup_action": {
             "uses": "SwiftyLab/setup-swift@latest",
-            "with": {"swift-version": "6.1"}
-        }
+            "with": {"swift-version": "6.1"},
+        },
     },
     "dotnet": {
         "project_name": "DotNetAstGen",
@@ -68,15 +84,23 @@ LANGUAGE_DEFAULTS = {
         "dist_dir": "DotNetAstGen/bin/Release/net8.0",
         "exec_command": "dotnet run --project DotNetAstGen -i {input_dir} -o {output_dir}",
         "artifacts": [
-            {"name": "AST", "pattern": "*.json", "description": "Abstract Syntax Tree files"},
-            {"name": "Symbols", "pattern": "*_Symbols.json", "description": "Symbol summary files"}
+            {
+                "name": "AST",
+                "pattern": "*.json",
+                "description": "Abstract Syntax Tree files",
+            },
+            {
+                "name": "Symbols",
+                "pattern": "*_Symbols.json",
+                "description": "Symbol summary files",
+            },
         ],
         "base_branch": "main",
         "python_version": "3.12",
         "setup_action": {
             "uses": "actions/setup-dotnet@v4",
-            "with": {"dotnet-version": "8.0.x"}
-        }
+            "with": {"dotnet-version": "8.0.x"},
+        },
     },
     "ruby": {
         "project_name": "ruby_ast_gen",
@@ -86,14 +110,15 @@ LANGUAGE_DEFAULTS = {
         "dist_dir": "exe",
         "exec_command": "{dist_dir}/ruby_ast_gen -i {input_dir} -o {output_dir}",
         "artifacts": [
-            {"name": "AST", "pattern": "*.json", "description": "Abstract Syntax Tree files"}
+            {
+                "name": "AST",
+                "pattern": "*.json",
+                "description": "Abstract Syntax Tree files",
+            }
         ],
         "base_branch": "main",
         "python_version": "3.12",
-        "setup_action": {
-            "uses": "ruby/setup-ruby@v1",
-            "with": {"ruby-version": "3.3"}
-        }
+        "setup_action": {"uses": "ruby/setup-ruby@v1", "with": {"ruby-version": "3.3"}},
     },
     "go": {
         "project_name": "goastgen",
@@ -103,14 +128,15 @@ LANGUAGE_DEFAULTS = {
         "dist_dir": "build",
         "exec_command": "{dist_dir}/goastgen -out {output_dir} {input_dir}",
         "artifacts": [
-            {"name": "AST", "pattern": "*.json", "description": "Abstract Syntax Tree files"}
+            {
+                "name": "AST",
+                "pattern": "*.json",
+                "description": "Abstract Syntax Tree files",
+            }
         ],
         "base_branch": "main",
         "python_version": "3.12",
-        "setup_action": {
-            "uses": "actions/setup-go@v5",
-            "with": {"go-version": "1.22"}
-        }
+        "setup_action": {"uses": "actions/setup-go@v5", "with": {"go-version": "1.22"}},
     },
     "abap": {
         "project_name": "abapastgen",
@@ -120,15 +146,16 @@ LANGUAGE_DEFAULTS = {
         "dist_dir": "TODO",
         "exec_command": "TODO {dist_dir}/abapastgen -i {input_dir} -o {output_dir}",
         "artifacts": [
-            {"name": "AST", "pattern": "*.json", "description": "Abstract Syntax Tree files"}
+            {
+                "name": "AST",
+                "pattern": "*.json",
+                "description": "Abstract Syntax Tree files",
+            }
         ],
         "base_branch": "main",
         "python_version": "3.12",
-        "setup_action": {
-            "uses": "TODO",
-            "with": None
-        }
-    }
+        "setup_action": {"uses": "TODO", "with": None},
+    },
 }
 
 
@@ -143,17 +170,26 @@ def cmd_init(args) -> None:
 
     # Check if files exist
     if config_path.exists() and not args.force:
-        print(f"ERROR: {config_path} already exists. Use --force to overwrite.", file=sys.stderr)
+        print(
+            f"ERROR: {config_path} already exists. Use --force to overwrite.",
+            file=sys.stderr,
+        )
         sys.exit(1)
 
     if workflow_path.exists() and not args.force:
-        print(f"ERROR: {workflow_path} already exists. Use --force to overwrite.", file=sys.stderr)
+        print(
+            f"ERROR: {workflow_path} already exists. Use --force to overwrite.",
+            file=sys.stderr,
+        )
         sys.exit(1)
 
     # Get language defaults
     language = args.language or "javascript"
     if language not in LANGUAGE_DEFAULTS:
-        print(f"ERROR: Unknown language '{language}'. Supported: {', '.join(LANGUAGE_DEFAULTS.keys())}", file=sys.stderr)
+        print(
+            f"ERROR: Unknown language '{language}'. Supported: {', '.join(LANGUAGE_DEFAULTS.keys())}",
+            file=sys.stderr,
+        )
         sys.exit(1)
 
     defaults = LANGUAGE_DEFAULTS[language]
@@ -161,7 +197,7 @@ def cmd_init(args) -> None:
     # Setup Jinja2 environment
     env = Environment(
         loader=PackageLoader("astgen_regression", "templates"),
-        autoescape=select_autoescape()
+        autoescape=select_autoescape(),
     )
 
     # Render config template
@@ -170,7 +206,7 @@ def cmd_init(args) -> None:
 
     # Write config file
     config_path.parent.mkdir(parents=True, exist_ok=True)
-    config_path.write_text(config_content, encoding='utf-8')
+    config_path.write_text(config_content, encoding="utf-8")
     print(f"Created {config_path}")
 
     # Render workflow template
@@ -179,7 +215,7 @@ def cmd_init(args) -> None:
 
     # Write workflow file
     workflow_path.parent.mkdir(parents=True, exist_ok=True)
-    workflow_path.write_text(workflow_content, encoding='utf-8')
+    workflow_path.write_text(workflow_content, encoding="utf-8")
     print(f"Created {workflow_path}")
 
     print("\nNext steps:")

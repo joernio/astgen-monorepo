@@ -30,7 +30,7 @@ corpora:
     tag: "1.0.0"
     input_subdir: "src"
 """
-    with tempfile.NamedTemporaryFile(mode='w', suffix='.yaml', delete=False) as f:
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".yaml", delete=False) as f:
         f.write(config_yaml)
         config_path = Path(f.name)
 
@@ -61,7 +61,9 @@ def test_validate_config_missing_required_field():
         # Missing build, execute, corpora
     }
 
-    with pytest.raises(ConfigError, match="Missing required field: build.build_command"):
+    with pytest.raises(
+        ConfigError, match="Missing required field: build.build_command"
+    ):
         validate_config(config)
 
 
@@ -74,7 +76,7 @@ def test_validate_config_invalid_command_template():
         "build": {"build_command": "build", "dist_dir": "dist"},
         "execute": {
             "command": "run astgen",  # Missing {input_dir} and {output_dir}
-            "timeout": 600
+            "timeout": 600,
         },
         "artifacts": [{"name": "AST", "pattern": "*.json"}],
         "corpora": [
@@ -83,10 +85,12 @@ def test_validate_config_invalid_command_template():
                 "label": "test@1.0",
                 "clone_url": "https://github.com/test/test.git",
                 "tag": "1.0",
-                "input_subdir": ""
+                "input_subdir": "",
             }
-        ]
+        ],
     }
 
-    with pytest.raises(ConfigError, match="Command template must contain.*input_dir.*output_dir"):
+    with pytest.raises(
+        ConfigError, match="Command template must contain.*input_dir.*output_dir"
+    ):
         validate_config(config)

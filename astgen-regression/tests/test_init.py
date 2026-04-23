@@ -1,4 +1,5 @@
 """Tests for init command."""
+
 import tempfile
 from pathlib import Path
 from unittest.mock import patch
@@ -31,7 +32,9 @@ def test_language_defaults_has_go():
     assert go_config["language"] == "go"
     assert go_config["build_command"] == "go build -o build/goastgen"
     assert go_config["dist_dir"] == "build"
-    assert go_config["exec_command"] == "{dist_dir}/goastgen -out {output_dir} {input_dir}"
+    assert (
+        go_config["exec_command"] == "{dist_dir}/goastgen -out {output_dir} {input_dir}"
+    )
 
 
 def test_language_defaults_has_abap():
@@ -60,13 +63,14 @@ def test_cmd_init_with_go_language():
 
         # Mock args
         from unittest.mock import MagicMock
+
         args = MagicMock()
         args.config = config_path
         args.language = "go"
         args.force = False
 
         # Mock workflow path resolution
-        with patch('astgen_regression.commands.init.Path') as mock_path_class:
+        with patch("astgen_regression.commands.init.Path") as mock_path_class:
             # Make Path() return our temporary paths
             def path_side_effect(path_str):
                 if ".github/workflows" in path_str:
@@ -92,12 +96,13 @@ def test_cmd_init_with_dotnet_language():
         workflow_path = Path(tmpdir) / ".github" / "workflows" / "regression.yml"
 
         from unittest.mock import MagicMock
+
         args = MagicMock()
         args.config = config_path
         args.language = "dotnet"
         args.force = False
 
-        with patch('astgen_regression.commands.init.Path') as mock_path_class:
+        with patch("astgen_regression.commands.init.Path") as mock_path_class:
             # Make Path() return our temporary paths
             def path_side_effect(path_str):
                 if ".github/workflows" in path_str:
@@ -119,6 +124,7 @@ def test_cmd_init_rejects_csharp_language():
         config_path = Path(tmpdir) / "regression.yaml"
 
         from unittest.mock import MagicMock
+
         args = MagicMock()
         args.config = config_path
         args.language = "csharp"
@@ -137,6 +143,7 @@ def test_cmd_init_rejects_typescript_language():
         config_path = Path(tmpdir) / "regression.yaml"
 
         from unittest.mock import MagicMock
+
         args = MagicMock()
         args.config = config_path
         args.language = "typescript"

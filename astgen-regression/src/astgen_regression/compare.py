@@ -17,12 +17,12 @@ def normalize_json(path: Path) -> list[str]:
         List of lines (with newlines) for diffing
     """
     try:
-        obj = json.loads(path.read_text(errors='replace'))
+        obj = json.loads(path.read_text(errors="replace"))
         normalized = json.dumps(obj, indent=2, sort_keys=True) + "\n"
         return normalized.splitlines(keepends=True)
     except Exception:
         # Fall back to raw text if JSON is malformed
-        return path.read_text(errors='replace').splitlines(keepends=True)
+        return path.read_text(errors="replace").splitlines(keepends=True)
 
 
 def json_diff_summary(base_path: Path, pr_path: Path) -> str:
@@ -37,8 +37,8 @@ def json_diff_summary(base_path: Path, pr_path: Path) -> str:
         "whitespace/ordering only" or "" on parse error
     """
     try:
-        base_obj = json.loads(base_path.read_text(errors='replace'))
-        pr_obj = json.loads(pr_path.read_text(errors='replace'))
+        base_obj = json.loads(base_path.read_text(errors="replace"))
+        pr_obj = json.loads(pr_path.read_text(errors="replace"))
     except Exception:
         return ""
 
@@ -85,11 +85,7 @@ def json_diff_summary(base_path: Path, pr_path: Path) -> str:
     return ", ".join(parts) if parts else "whitespace/ordering only"
 
 
-def compare_outputs(
-    base_dir: Path,
-    pr_dir: Path,
-    artifacts_config: list[dict]
-) -> dict:
+def compare_outputs(base_dir: Path, pr_dir: Path, artifacts_config: list[dict]) -> dict:
     """Compare two output directories.
 
     Args:
@@ -140,8 +136,9 @@ def compare_outputs(
         pr_path = pr_files[rel]
 
         # Quick check: same size and identical bytes
-        if (base_path.stat().st_size == pr_path.stat().st_size and
-            filecmp.cmp(str(base_path), str(pr_path), shallow=False)):
+        if base_path.stat().st_size == pr_path.stat().st_size and filecmp.cmp(
+            str(base_path), str(pr_path), shallow=False
+        ):
             continue
 
         # Files differ - determine which artifact type
@@ -160,12 +157,11 @@ def compare_outputs(
         pr_text = normalize_json(pr_path)
         summary = json_diff_summary(base_path, pr_path)
 
-        diff_lines = list(difflib.unified_diff(
-            base_text,
-            pr_text,
-            fromfile=f"out-base/{rel}",
-            tofile=f"out-pr/{rel}"
-        ))
+        diff_lines = list(
+            difflib.unified_diff(
+                base_text, pr_text, fromfile=f"out-base/{rel}", tofile=f"out-pr/{rel}"
+            )
+        )
 
         if diff_lines:
             diffs_by_artifact[artifact_name].append((rel, diff_lines, summary))
@@ -173,5 +169,5 @@ def compare_outputs(
     return {
         "only_in_base": only_in_base,
         "only_in_pr": only_in_pr,
-        "diffs": diffs_by_artifact
+        "diffs": diffs_by_artifact,
     }

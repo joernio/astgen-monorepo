@@ -28,13 +28,7 @@ def clone_corpus(corpus_config: dict, temp_dir: Path) -> Path | None:
 
     print(f"[corpus] Cloning {clone_url} @ {tag}...", file=sys.stderr)
 
-    cmd = [
-        "git", "clone",
-        "--depth", "1",
-        "--branch", tag,
-        clone_url,
-        str(clone_dir)
-    ]
+    cmd = ["git", "clone", "--depth", "1", "--branch", tag, clone_url, str(clone_dir)]
 
     try:
         subprocess.run(
@@ -42,20 +36,14 @@ def clone_corpus(corpus_config: dict, temp_dir: Path) -> Path | None:
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             check=True,
-            timeout=300  # 5 minutes
+            timeout=300,  # 5 minutes
         )
     except subprocess.CalledProcessError as e:
-        stderr = e.stderr.decode(errors='replace')[:500]
-        print(
-            f"WARNING: Failed to clone {clone_url}: {stderr}",
-            file=sys.stderr
-        )
+        stderr = e.stderr.decode(errors="replace")[:500]
+        print(f"WARNING: Failed to clone {clone_url}: {stderr}", file=sys.stderr)
         return None
     except subprocess.TimeoutExpired:
-        print(
-            f"WARNING: Clone timeout for {clone_url} (5 minutes)",
-            file=sys.stderr
-        )
+        print(f"WARNING: Clone timeout for {clone_url} (5 minutes)", file=sys.stderr)
         return None
     except Exception as e:
         print(f"WARNING: Clone failed for {clone_url}: {e}", file=sys.stderr)

@@ -21,20 +21,19 @@ def test_render_command():
 
 def test_execute_astgen_success():
     """Test successful astgen execution."""
-    exec_config = {
-        "command": "echo test",
-        "timeout": 600
-    }
+    exec_config = {"command": "echo test", "timeout": 600}
 
     with tempfile.TemporaryDirectory() as tmpdir:
         dist_dir = Path(tmpdir) / "dist"
         input_dir = Path(tmpdir) / "input"
         output_dir = Path(tmpdir) / "output"
 
-        with patch('subprocess.run') as mock_run:
+        with patch("subprocess.run") as mock_run:
             mock_run.return_value = MagicMock(returncode=0)
 
-            success, elapsed = execute_astgen(exec_config, dist_dir, input_dir, output_dir)
+            success, elapsed = execute_astgen(
+                exec_config, dist_dir, input_dir, output_dir
+            )
 
             assert success is True
             assert elapsed >= 0
@@ -42,23 +41,21 @@ def test_execute_astgen_success():
 
 def test_execute_astgen_nonzero_exit():
     """Test astgen execution with non-zero exit code."""
-    exec_config = {
-        "command": "false",
-        "timeout": 600
-    }
+    exec_config = {"command": "false", "timeout": 600}
 
     with tempfile.TemporaryDirectory() as tmpdir:
         dist_dir = Path(tmpdir) / "dist"
         input_dir = Path(tmpdir) / "input"
         output_dir = Path(tmpdir) / "output"
 
-        with patch('subprocess.run') as mock_run:
+        with patch("subprocess.run") as mock_run:
             mock_run.return_value = MagicMock(
-                returncode=1,
-                stderr=b"Error: something failed"
+                returncode=1, stderr=b"Error: something failed"
             )
 
-            success, elapsed = execute_astgen(exec_config, dist_dir, input_dir, output_dir)
+            success, elapsed = execute_astgen(
+                exec_config, dist_dir, input_dir, output_dir
+            )
 
             assert success is False
             assert elapsed >= 0
@@ -66,20 +63,19 @@ def test_execute_astgen_nonzero_exit():
 
 def test_execute_astgen_timeout():
     """Test astgen execution timeout."""
-    exec_config = {
-        "command": "sleep 1000",
-        "timeout": 1
-    }
+    exec_config = {"command": "sleep 1000", "timeout": 1}
 
     with tempfile.TemporaryDirectory() as tmpdir:
         dist_dir = Path(tmpdir) / "dist"
         input_dir = Path(tmpdir) / "input"
         output_dir = Path(tmpdir) / "output"
 
-        with patch('subprocess.run') as mock_run:
+        with patch("subprocess.run") as mock_run:
             mock_run.side_effect = subprocess.TimeoutExpired("sleep 1000", 1)
 
-            success, elapsed = execute_astgen(exec_config, dist_dir, input_dir, output_dir)
+            success, elapsed = execute_astgen(
+                exec_config, dist_dir, input_dir, output_dir
+            )
 
             assert success is False
             assert elapsed >= 0

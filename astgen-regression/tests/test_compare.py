@@ -7,32 +7,32 @@ from astgen_regression.compare import compare_outputs, normalize_json, json_diff
 
 def test_normalize_json_valid():
     """Test normalizing valid JSON file."""
-    with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
         json.dump({"z": 3, "a": 1, "b": 2}, f)
         path = Path(f.name)
 
     try:
         lines = normalize_json(path)
-        text = ''.join(lines)
+        text = "".join(lines)
 
         # Should be sorted and indented
         parsed = json.loads(text)
         assert parsed == {"a": 1, "b": 2, "z": 3}
         assert '"a": 1' in text
-        assert text.startswith('{')
+        assert text.startswith("{")
     finally:
         path.unlink()
 
 
 def test_normalize_json_malformed():
     """Test normalizing malformed JSON falls back to raw text."""
-    with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
         f.write("{invalid json")
         path = Path(f.name)
 
     try:
         lines = normalize_json(path)
-        text = ''.join(lines)
+        text = "".join(lines)
 
         assert text == "{invalid json"
     finally:
@@ -44,11 +44,11 @@ def test_json_diff_summary_added_removed_changed():
     base_json = {"a": 1, "b": 2, "c": {"d": 3}}
     pr_json = {"a": 1, "b": 999, "e": 5}
 
-    with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
         json.dump(base_json, f)
         base_path = Path(f.name)
 
-    with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
         json.dump(pr_json, f)
         pr_path = Path(f.name)
 
@@ -70,11 +70,11 @@ def test_json_diff_summary_identical():
     """Test diff summary for identical JSON."""
     data = {"a": 1, "b": 2}
 
-    with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
         json.dump(data, f)
         base_path = Path(f.name)
 
-    with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
         json.dump(data, f)
         pr_path = Path(f.name)
 
@@ -89,11 +89,11 @@ def test_json_diff_summary_identical():
 
 def test_json_diff_summary_parse_error():
     """Test diff summary when JSON is malformed."""
-    with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
         f.write("{invalid")
         base_path = Path(f.name)
 
-    with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
         f.write("{also invalid")
         pr_path = Path(f.name)
 
@@ -193,7 +193,7 @@ def test_compare_outputs_multiple_artifacts():
     """Test comparing with multiple artifact types."""
     artifacts_config = [
         {"name": "ast", "pattern": "*.json"},
-        {"name": "typemap", "pattern": "*.typemap"}
+        {"name": "typemap", "pattern": "*.typemap"},
     ]
 
     with tempfile.TemporaryDirectory() as tmpdir:

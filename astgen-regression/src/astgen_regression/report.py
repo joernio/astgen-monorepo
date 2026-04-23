@@ -66,9 +66,7 @@ def format_table_row(metric: str, base_val: str, pr_val: str, delta: str) -> str
 
 
 def build_diff_details(
-    diffs: list[tuple[str, list[str], str]],
-    kind: str,
-    max_total_lines: int = 200
+    diffs: list[tuple[str, list[str], str]], kind: str, max_total_lines: int = 200
 ) -> str:
     """Build collapsible diff details block.
 
@@ -98,7 +96,7 @@ def build_diff_details(
             header += f"  [{summary}]"
         diff_text_parts.append(header + "\n")
 
-        chunk = diff_lines[:max_total_lines - lines_used]
+        chunk = diff_lines[: max_total_lines - lines_used]
         lines_used += len(chunk)
         diff_text_parts.append("".join(chunk))
 
@@ -118,7 +116,7 @@ def render_corpus_section(
     label: str,
     result: dict,
     artifacts_config: list[dict],
-    pr_label: str = "PR"
+    pr_label: str = "PR",
 ) -> str:
     """Render Markdown section for one corpus.
 
@@ -150,40 +148,40 @@ def render_corpus_section(
         base_size = bm.get(art_name, {}).get("total_size", 0)
         pr_size = pm.get(art_name, {}).get("total_size", 0)
 
-        rows.append(format_table_row(
-            f"{art_label} files generated",
-            str(base_count),
-            str(pr_count),
-            signed_int(pr_count - base_count)
-        ))
+        rows.append(
+            format_table_row(
+                f"{art_label} files generated",
+                str(base_count),
+                str(pr_count),
+                signed_int(pr_count - base_count),
+            )
+        )
 
-        rows.append(format_table_row(
-            f"Total {art_label} size",
-            human_size(base_size),
-            human_size(pr_size),
-            pct_delta(base_size, pr_size)
-        ))
+        rows.append(
+            format_table_row(
+                f"Total {art_label} size",
+                human_size(base_size),
+                human_size(pr_size),
+                pct_delta(base_size, pr_size),
+            )
+        )
 
         diff_count = len(cmp["diffs"].get(art_name, []))
-        rows.append(format_table_row(
-            f"Files with {art_label} diffs",
-            "—",
-            str(diff_count),
-            ""
-        ))
+        rows.append(
+            format_table_row(f"Files with {art_label} diffs", "—", str(diff_count), "")
+        )
 
     # Wall-clock time row
-    rows.append(format_table_row(
-        "Wall-clock time",
-        f"{bt:.1f} s",
-        f"{pt:.1f} s",
-        pct_delta(bt, pt)
-    ))
+    rows.append(
+        format_table_row(
+            "Wall-clock time", f"{bt:.1f} s", f"{pt:.1f} s", pct_delta(bt, pt)
+        )
+    )
 
     header = (
         f"### {name} ({label})\n\n"
         f"| {'Metric':<24} | {'base (main)':>11} | {pr_label:>8} | {'Delta':>8} |\n"
-        f"|{'-'*26}|{'-'*13}|{'-'*10}|{'-'*10}|"
+        f"|{'-' * 26}|{'-' * 13}|{'-' * 10}|{'-' * 10}|"
     )
 
     table = header + "\n" + "\n".join(rows) + "\n"
@@ -201,9 +199,7 @@ def render_corpus_section(
 
 
 def render_report(
-    corpus_results: list[dict],
-    artifacts_config: list[dict],
-    metadata: dict
+    corpus_results: list[dict], artifacts_config: list[dict], metadata: dict
 ) -> str:
     """Render complete Markdown report.
 
@@ -225,7 +221,7 @@ def render_report(
     report_parts = [
         "<!-- astgen-regression -->",
         f"## {project_name} Regression Report",
-        ""
+        "",
     ]
 
     # Provenance line
@@ -242,11 +238,7 @@ def render_report(
     # Corpus sections
     for result in corpus_results:
         section = render_corpus_section(
-            result["name"],
-            result["label"],
-            result,
-            artifacts_config,
-            pr_label
+            result["name"], result["label"], result, artifacts_config, pr_label
         )
         report_parts.append(section)
         report_parts.append("")
@@ -255,9 +247,7 @@ def render_report(
 
 
 def write_diff_files(
-    diffs_dir: Path,
-    corpus_results: list[dict],
-    artifacts_config: list[dict]
+    diffs_dir: Path, corpus_results: list[dict], artifacts_config: list[dict]
 ) -> None:
     """Write full untruncated diff files.
 
@@ -289,10 +279,8 @@ def write_diff_files(
 
             diff_file = diffs_dir / f"{name}-{art_name}.diff"
             try:
-                diff_file.write_text("".join(parts), encoding='utf-8')
+                diff_file.write_text("".join(parts), encoding="utf-8")
             except IOError as e:
                 import sys
-                print(
-                    f"WARNING: Failed to write {diff_file}: {e}",
-                    file=sys.stderr
-                )
+
+                print(f"WARNING: Failed to write {diff_file}: {e}", file=sys.stderr)

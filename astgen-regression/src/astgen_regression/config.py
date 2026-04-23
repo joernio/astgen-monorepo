@@ -7,6 +7,7 @@ import yaml
 
 class ConfigError(Exception):
     """Configuration validation error."""
+
     pass
 
 
@@ -26,7 +27,7 @@ def load_config(config_path: Path) -> dict[str, Any]:
         raise ConfigError(f"Config file not found: {config_path}")
 
     try:
-        with open(config_path, 'r', encoding='utf-8') as f:
+        with open(config_path, "r", encoding="utf-8") as f:
             config = yaml.safe_load(f)
     except yaml.YAMLError as e:
         raise ConfigError(f"Invalid YAML: {e}")
@@ -69,7 +70,9 @@ def validate_config(config: dict[str, Any]) -> None:
         )
 
     if "corpora" not in config or not config["corpora"]:
-        raise ConfigError("Missing required field: corpora (must have at least one corpus)")
+        raise ConfigError(
+            "Missing required field: corpora (must have at least one corpus)"
+        )
 
     # Validate each corpus
     for i, corpus in enumerate(config["corpora"]):
