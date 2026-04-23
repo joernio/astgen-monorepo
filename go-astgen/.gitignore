@@ -1,0 +1,14 @@
+# directories
+bin
+build
+dist
+
+.DS_Store
+.vscode
+.idea
+.ast
+
+*.h
+*.lib
+*.so
+*.dylib

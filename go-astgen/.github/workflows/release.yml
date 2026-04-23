@@ -1,0 +1,57 @@
+name: release
+
+on:
+  push:
+    branches: [main]
+
+concurrency: production
+
+jobs:
+  release:
+    name: Build and Release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: '0'
+      - name: Set up Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: 1.21.12
+      - name: Get next release version (dry run)
+        id: taggerDryRun
+        uses: anothrNick/github-tag-action@1.61.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          WITH_V: true
+          DRY_RUN: true
+      - name: echo new tag
+        run: |
+          echo "The next tag version will be: ${{ steps.taggerDryRun.outputs.new_tag }}"
+      - name: echo tag
+        run: |
+          echo "The current tag is: ${{ steps.taggerDryRun.outputs.tag }}"
+      - name: Build
+        run: |
+          GOOS=linux GOARCH=amd64 go build -o build/goastgen-linux -ldflags "-X main.Version=${{ steps.taggerDryRun.outputs.tag }}"
+          GOOS=linux GOARCH=arm64 go build -o build/goastgen-linux-arm64 -ldflags "-X main.Version=${{ steps.taggerDryRun.outputs.tag }}"
+          GOOS=windows GOARCH=amd64 go build -o build/goastgen-windows.exe -ldflags "-X main.Version=${{ steps.taggerDryRun.outputs.tag }}"
+          GOOS=darwin GOARCH=amd64 go build -o build/goastgen-macos -ldflags "-X main.Version=${{ steps.taggerDryRun.outputs.tag }}"
+          GOOS=darwin GOARCH=arm64 go build -o build/goastgen-macos-arm64 -ldflags "-X main.Version=${{ steps.taggerDryRun.outputs.tag }}"
+      - name: Set next release version
+        id: taggerFinal
+        uses: anothrNick/github-tag-action@1.61.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          WITH_V: true
+      - name: Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ steps.taggerDryRun.outputs.new_tag }}
+          files: |
+            build/goastgen-linux
+            build/goastgen-linux-arm64
+            build/goastgen-windows.exe
+            build/goastgen-macos
+            build/goastgen-macos-arm64
