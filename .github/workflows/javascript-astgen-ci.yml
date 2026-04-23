@@ -1,11 +1,8 @@
 name: JavaScript AST Generator CI
 
 on:
-  pull_request:
-    paths:
-      - 'javascript-astgen/**'
-      - '.github/workflows/javascript-astgen-ci.yml'
-  workflow_dispatch:
+  workflow_call:  # Called by monorepo-ci.yml
+  workflow_dispatch:  # Manual runs for testing
 
 defaults:
   run:
