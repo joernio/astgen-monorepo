@@ -1,0 +1,59 @@
+#!/usr/bin/env ruby
+
+# require "bundler/setup"
+# We do the below instead of the above, as the above can be flaky
+libs = File.expand_path("../../vendor/bundle/ruby/*/gems/**/lib", __FILE__)
+$LOAD_PATH.unshift *Dir.glob(libs)
+
+require_relative "../lib/ruby_ast_gen"
+
+options = {
+  input: nil,
+  output: '.ast',
+  exclude: '^(tests?|vendor|spec)',
+  debug: false
+}
+
+# Parse ARGV manually
+i = 0
+while i < ARGV.size
+  case ARGV[i]
+  when '-i', '--input'
+    i += 1
+    options[:input] = ARGV[i]
+  when '-o', '--output'
+    i += 1
+    options[:output] = ARGV[i]
+  when '-e', '--exclude'
+    i += 1
+    options[:exclude] = ARGV[i]
+  when '-d', '--debug'
+    i += 1
+    options[:debug] = true 
+  when '--version'
+    puts RubyAstGen::VERSION
+    exit
+  when '--help'
+    puts <<-HELP
+Usage:
+  -i, --input      The input file or directory (required)
+  -o, --output     The output directory (default: '.ast')
+  -e, --exclude    The exclusion regex (default: '^(tests?|vendor|spec)')
+  -d, --debug      Enable debug logging
+      --version    Print the version
+      --help       Print usage
+    HELP
+    exit
+  else
+    puts "Unknown option: #{ARGV[i]}"
+    exit 1
+  end
+  i += 1
+end
+
+if options[:input].nil?
+  puts "Error: '-i' or '--input' is required."
+  exit 1
+end
+
+RubyAstGen::parse(options)

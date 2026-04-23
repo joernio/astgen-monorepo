@@ -1,0 +1,18 @@
+/.bundle/
+/.yardoc
+/_yardoc/
+/coverage/
+/vendor/
+/doc/
+/pkg/
+/spec/reports/
+/tmp/
+/.ast/
+.idea
+.vscode
+*.gem
+*.jar
+Gemfile.lock
+# rspec failure tracking
+.rspec_status
+**/*.DS_Store
