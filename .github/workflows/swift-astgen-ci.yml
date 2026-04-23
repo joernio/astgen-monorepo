@@ -11,7 +11,7 @@ defaults:
     working-directory: swift-astgen
 
 jobs:
-  test:
+  swift-ci:
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]

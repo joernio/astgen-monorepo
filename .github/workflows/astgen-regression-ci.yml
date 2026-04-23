@@ -12,7 +12,7 @@ defaults:
     working-directory: astgen-regression
 
 jobs:
-  test:
+  astgen-regression-ci:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
