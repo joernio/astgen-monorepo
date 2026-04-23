@@ -1,0 +1,59 @@
+# Language-specific workflows
+languages:
+  - name: javascript
+    workflow: .github/workflows/javascript-astgen-ci.yml
+    paths:
+      - 'javascript-astgen/**'
+      - '.github/workflows/javascript-astgen-ci.yml'
+
+  - name: rust
+    workflow: .github/workflows/rust-astgen-ci.yml
+    paths:
+      - 'rust-astgen/**'
+      - '.github/workflows/rust-astgen-ci.yml'
+
+  - name: dotnet
+    workflow: .github/workflows/dotnet-astgen-ci.yml
+    paths:
+      - 'dotnet-astgen/**'
+      - '.github/workflows/dotnet-astgen-ci.yml'
+
+  - name: go
+    workflow: .github/workflows/go-astgen-ci.yml
+    paths:
+      - 'go-astgen/**'
+      - '.github/workflows/go-astgen-ci.yml'
+
+  - name: ruby
+    workflow: .github/workflows/ruby-astgen-ci.yml
+    paths:
+      - 'ruby-astgen/**'
+      - '.github/workflows/ruby-astgen-ci.yml'
+
+  - name: swift
+    workflow: .github/workflows/swift-astgen-ci.yml
+    paths:
+      - 'swift-astgen/**'
+      - '.github/workflows/swift-astgen-ci.yml'
+
+  - name: regression
+    workflow: .github/workflows/astgen-regression-ci.yml
+    paths:
+      - 'astgen-regression/**'
+      - '.github/workflows/astgen-regression-ci.yml'
+
+# Shared infrastructure paths
+shared:
+  # Changes to these paths trigger ALL language workflows
+  trigger_all:
+    - '.github/workflows/monorepo-ci.yml'
+    - '.github/monorepo-ci-config.yml'
+
+  # Changes to these paths trigger NO workflows (documentation only)
+  trigger_none:
+    - '*.md'
+    - 'CLAUDE.md'
+    - 'CLAUDE.local.md'
+    - 'docs/**'
+    - 'LICENSE'
+    - '.gitignore'
