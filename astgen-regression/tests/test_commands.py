@@ -43,7 +43,7 @@ def test_cmd_compare_exits_with_code_1_on_regressions():
         }
 
         # Mock corpus results with regressions (diffs present)
-        mock_corpus_results = [
+        _ = [
             {
                 "name": "test-corpus",
                 "label": "test@1.0",
@@ -112,7 +112,7 @@ def test_cmd_compare_exits_with_code_0_when_no_regressions():
         }
 
         # Mock corpus results with NO regressions (empty diffs)
-        mock_corpus_results = [
+        _ = [
             {
                 "name": "test-corpus",
                 "label": "test@1.0",

@@ -1,6 +1,5 @@
 """Local command implementation."""
 
-from pathlib import Path
 import subprocess
 import sys
 
@@ -86,7 +85,7 @@ def cmd_local(args) -> None:
     # Validate that build created the dist directory
     if not pr_dist.exists():
         print(f"ERROR: Build did not create expected directory: {dist_dir}", file=sys.stderr)
-        print(f"       Check that build.dist_dir is correctly configured in regression.yaml", file=sys.stderr)
+        print("       Check that build.dist_dir is correctly configured in regression.yaml", file=sys.stderr)
         sys.exit(1)
 
     # Setup worktree for base branch
@@ -132,7 +131,7 @@ def cmd_local(args) -> None:
         # Validate that build created the dist directory
         if not base_dist.exists():
             print(f"ERROR: Base build did not create expected directory: {dist_dir}", file=sys.stderr)
-            print(f"       Check that build.dist_dir is correctly configured in regression.yaml", file=sys.stderr)
+            print("       Check that build.dist_dir is correctly configured in regression.yaml", file=sys.stderr)
             sys.exit(1)
 
         # Run compare command

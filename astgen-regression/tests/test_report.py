@@ -1,10 +1,15 @@
+import tempfile
+from pathlib import Path
+
 from astgen_regression.report import (
+    build_diff_details,
+    format_table_row,
     human_size,
     pct_delta,
+    render_corpus_section,
+    render_report,
     signed_int,
-    format_table_row,
-    build_diff_details,
-    render_corpus_section
+    write_diff_files,
 )
 
 
@@ -122,11 +127,6 @@ def test_render_corpus_section():
     assert "| Metric" in section
     assert "+1" in section  # file count delta
     assert "<details>" in section  # diff details
-
-
-import tempfile
-from pathlib import Path
-from astgen_regression.report import render_report, write_diff_files
 
 
 def test_render_report():

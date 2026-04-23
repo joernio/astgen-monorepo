@@ -1,7 +1,6 @@
-import tempfile
-from pathlib import Path
-from unittest.mock import patch, MagicMock
 import subprocess
+from pathlib import Path
+from unittest.mock import MagicMock, patch
 from astgen_regression.worktree import (
     create_worktree,
     remove_worktree,

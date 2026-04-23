@@ -1,7 +1,8 @@
+import json
 import tempfile
 from pathlib import Path
-import json
-from astgen_regression.compare import normalize_json, json_diff_summary
+
+from astgen_regression.compare import compare_outputs, normalize_json, json_diff_summary
 
 
 def test_normalize_json_valid():
@@ -103,10 +104,6 @@ def test_json_diff_summary_parse_error():
     finally:
         base_path.unlink()
         pr_path.unlink()
-
-
-import difflib
-from astgen_regression.compare import compare_outputs
 
 
 def test_compare_outputs_identical():

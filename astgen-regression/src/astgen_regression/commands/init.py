@@ -182,6 +182,6 @@ def cmd_init(args) -> None:
     workflow_path.write_text(workflow_content, encoding='utf-8')
     print(f"Created {workflow_path}")
 
-    print(f"\nNext steps:")
+    print("\nNext steps:")
     print(f"  1. Edit {config_path} to define your corpora")
-    print(f"  2. Run: astgen-regression local")
+    print("  2. Run: astgen-regression local")
