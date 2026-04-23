@@ -1,11 +1,8 @@
 name: AST Generator Regression Framework CI
 
 on:
-  pull_request:
-    paths:
-      - 'astgen-regression/**'
-      - '.github/workflows/astgen-regression-ci.yml'
-  workflow_dispatch:
+  workflow_call:  # Called by monorepo-ci.yml
+  workflow_dispatch:  # Manual runs for testing
 
 defaults:
   run:

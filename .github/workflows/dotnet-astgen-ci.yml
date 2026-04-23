@@ -1,11 +1,8 @@
 name: .NET AST Generator CI
 
 on:
-  pull_request:
-    paths:
-      - 'dotnet-astgen/**'
-      - '.github/workflows/dotnet-astgen-ci.yml'
-  workflow_dispatch:
+  workflow_call:  # Called by monorepo-ci.yml
+  workflow_dispatch:  # Manual runs for testing
 
 defaults:
   run:

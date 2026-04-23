@@ -1,10 +1,8 @@
 name: Rust AST Generator CI
 
 on:
-  pull_request:
-    paths:
-      - 'rust-astgen/**'
-      - '.github/workflows/rust-astgen-ci.yml'
+  workflow_call:  # Called by monorepo-ci.yml
+  workflow_dispatch:  # Manual runs for testing
 
 defaults:
   run:

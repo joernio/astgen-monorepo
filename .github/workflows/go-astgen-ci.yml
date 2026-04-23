@@ -1,10 +1,8 @@
 name: Go AST Generator CI
 
 on:
-  pull_request:
-    paths:
-      - 'go-astgen/**'
-      - '.github/workflows/go-astgen-ci.yml'
+  workflow_call:  # Called by monorepo-ci.yml
+  workflow_dispatch:  # Manual runs for testing
 
 defaults:
   run:
