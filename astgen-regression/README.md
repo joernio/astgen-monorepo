@@ -34,7 +34,7 @@ pip install -e .
    ```bash
    astgen-regression init --language javascript
    ```
-   This creates `regression.yaml` and `.github/workflows/regression.yml`.
+   This creates `regression.yaml` and `.github/workflows/javascript-astgen-regression.yml`.
 
 2. **Configure corpora**
    Edit `regression.yaml` to define test codebases:
@@ -72,7 +72,7 @@ Options:
 
 Creates:
 - `regression.yaml`: Configuration file
-- `.github/workflows/regression.yml`: GitHub Actions workflow
+- `.github/workflows/{language}-astgen-regression.yml`: GitHub Actions workflow (e.g., `javascript-astgen-regression.yml`)
 
 ### `compare`
 
@@ -199,7 +199,7 @@ List of test codebases:
 
 ## GitHub Actions Integration
 
-The generated workflow (`.github/workflows/regression.yml`) runs automatically on:
+The generated workflow (`.github/workflows/{language}-astgen-regression.yml`) runs automatically on:
 - Pull requests to the base branch
 - Manual workflow dispatch
 

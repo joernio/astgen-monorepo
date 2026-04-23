@@ -154,3 +154,71 @@ def test_cmd_init_rejects_typescript_language():
             cmd_init(args)
 
         assert exc_info.value.code == 1
+
+
+def test_cmd_init_creates_workflow_with_language_prefix():
+    """Test init command creates workflow file with language prefix (e.g. javascript-astgen-regression.yml)."""
+    import os
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        config_path = Path(tmpdir) / "regression.yaml"
+        workflows_dir = Path(tmpdir) / ".github" / "workflows"
+
+        from unittest.mock import MagicMock
+
+        args = MagicMock()
+        args.config = config_path
+        args.language = "javascript"
+        args.force = False
+
+        # Change to tmpdir so workflow is created there
+        original_cwd = os.getcwd()
+        try:
+            os.chdir(tmpdir)
+
+            # Run init
+            cmd_init(args)
+
+            # Verify workflow file created with language prefix
+            expected_workflow = workflows_dir / "javascript-astgen-regression.yml"
+            assert expected_workflow.exists(), (
+                f"Expected workflow at {expected_workflow}"
+            )
+
+            # Verify content contains JavaScript-specific configuration
+            content = expected_workflow.read_text()
+            assert "node" in content.lower() or "javascript" in content.lower()
+        finally:
+            os.chdir(original_cwd)
+
+
+def test_cmd_init_creates_workflow_with_rust_prefix():
+    """Test init command creates workflow file with rust prefix."""
+    import os
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        config_path = Path(tmpdir) / "regression.yaml"
+        workflows_dir = Path(tmpdir) / ".github" / "workflows"
+
+        from unittest.mock import MagicMock
+
+        args = MagicMock()
+        args.config = config_path
+        args.language = "rust"
+        args.force = False
+
+        # Change to tmpdir so workflow is created there
+        original_cwd = os.getcwd()
+        try:
+            os.chdir(tmpdir)
+
+            # Run init
+            cmd_init(args)
+
+            # Verify workflow file created with language prefix
+            expected_workflow = workflows_dir / "rust-astgen-regression.yml"
+            assert expected_workflow.exists(), (
+                f"Expected workflow at {expected_workflow}"
+            )
+        finally:
+            os.chdir(original_cwd)
