@@ -4,6 +4,7 @@ on:
   push:
     tags:
       - 'astgen-regression/v*'
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -21,6 +22,20 @@ jobs:
         with:
           fetch-depth: '0'
 
+      - name: Discover latest tag (manual run)
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          LATEST_TAG=$(git tag --list 'astgen-regression/v*' --sort=-v:refname | head -n 1)
+          echo "RELEASE_TAG=$LATEST_TAG" >> $GITHUB_ENV
+          echo "Using latest tag: $LATEST_TAG"
+        working-directory: .
+
+      - name: Set tag from push event
+        if: github.event_name == 'push'
+        run: |
+          echo "RELEASE_TAG=${{ github.ref_name }}" >> $GITHUB_ENV
+        working-directory: .
+
       - name: Set up Python
         uses: actions/setup-python@v6
         with:
@@ -30,7 +45,7 @@ jobs:
 
       - name: Extract version from tag
         run: |
-          TAG_VERSION=${GITHUB_REF#refs/tags/astgen-regression/v}
+          TAG_VERSION=${RELEASE_TAG#astgen-regression/v}
           echo "TAG_VERSION=$TAG_VERSION" >> $GITHUB_ENV
           echo "Tag version: $TAG_VERSION"
 
@@ -61,7 +76,7 @@ jobs:
       - name: Create GitHub release
         uses: softprops/action-gh-release@v3
         with:
-          tag_name: ${{ github.ref_name }}
+          tag_name: ${{ env.RELEASE_TAG }}
           files: |
             astgen-regression-${{ env.TAG_VERSION }}.tar.gz
           body: |

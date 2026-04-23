@@ -4,6 +4,7 @@ on:
   push:
     tags:
       - 'rust-astgen/v*'
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -15,16 +16,36 @@ defaults:
 jobs:
   verify:
     runs-on: ubuntu-24.04
+    outputs:
+      release_tag: ${{ steps.set-tag.outputs.release_tag }}
     steps:
       - name: Checkout
         uses: actions/checkout@v6
+        with:
+          fetch-depth: '0'
+
+      - name: Discover latest tag (manual run)
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          LATEST_TAG=$(git tag --list 'rust-astgen/v*' --sort=-v:refname | head -n 1)
+          echo "RELEASE_TAG=$LATEST_TAG" >> $GITHUB_ENV
+          echo "Using latest tag: $LATEST_TAG"
+
+      - name: Set tag from push event
+        if: github.event_name == 'push'
+        run: |
+          echo "RELEASE_TAG=${{ github.ref_name }}" >> $GITHUB_ENV
+
+      - name: Set tag output
+        id: set-tag
+        run: echo "release_tag=${{ env.RELEASE_TAG }}" >> $GITHUB_OUTPUT
 
       - name: Set up Rust
         uses: dtolnay/rust-toolchain@stable
 
       - name: Extract version from tag
         run: |
-          TAG_VERSION=${GITHUB_REF#refs/tags/rust-astgen/v}
+          TAG_VERSION=${RELEASE_TAG#rust-astgen/v}
           echo "TAG_VERSION=$TAG_VERSION" >> $GITHUB_ENV
           echo "Tag version: $TAG_VERSION"
 
@@ -119,5 +140,5 @@ jobs:
       - name: Create GitHub release
         uses: softprops/action-gh-release@v3
         with:
-          tag_name: ${{ github.ref_name }}
+          tag_name: ${{ needs.verify.outputs.release_tag }}
           files: release-artifacts/*
