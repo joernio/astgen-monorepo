@@ -11,7 +11,7 @@ defaults:
     working-directory: go-astgen
 
 jobs:
-  build:
+  go-ci:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:

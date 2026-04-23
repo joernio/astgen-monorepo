@@ -18,7 +18,7 @@ def get_repo_root() -> Path:
         ["git", "rev-parse", "--show-toplevel"],
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
-        check=True
+        check=True,
     )
     return Path(result.stdout.decode().strip())
 
@@ -38,7 +38,7 @@ def get_short_sha(repo_root: Path, ref: str) -> str:
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         check=True,
-        cwd=str(repo_root)
+        cwd=str(repo_root),
     )
     return result.stdout.decode().strip()
 
@@ -53,14 +53,18 @@ def create_worktree(repo_root: Path, worktree_path: Path, branch: str) -> None:
     """
     # Remove existing worktree if present
     if worktree_path.exists():
-        print(f"[worktree] Removing existing worktree at {worktree_path}", file=sys.stderr)
+        print(
+            f"[worktree] Removing existing worktree at {worktree_path}", file=sys.stderr
+        )
         remove_worktree(repo_root, worktree_path)
 
-    print(f"[worktree] Creating worktree for {branch} at {worktree_path}", file=sys.stderr)
+    print(
+        f"[worktree] Creating worktree for {branch} at {worktree_path}", file=sys.stderr
+    )
     subprocess.run(
         ["git", "worktree", "add", str(worktree_path), branch],
         cwd=str(repo_root),
-        check=True
+        check=True,
     )
 
 
@@ -77,7 +81,7 @@ def remove_worktree(repo_root: Path, worktree_path: Path) -> None:
             cwd=str(repo_root),
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
-            check=True
+            check=True,
         )
     except subprocess.CalledProcessError:
         # Silently continue - cleanup failure is not critical

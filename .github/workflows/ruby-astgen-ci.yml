@@ -11,7 +11,7 @@ defaults:
     working-directory: ruby-astgen
 
 jobs:
-  test:
+  ruby-ci:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository

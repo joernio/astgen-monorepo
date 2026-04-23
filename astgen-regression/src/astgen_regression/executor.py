@@ -7,10 +7,7 @@ import time
 
 
 def render_command(
-    exec_config: dict,
-    dist_dir: Path,
-    input_dir: Path,
-    output_dir: Path
+    exec_config: dict, dist_dir: Path, input_dir: Path, output_dir: Path
 ) -> str:
     """Render command template with placeholders replaced.
 
@@ -25,17 +22,12 @@ def render_command(
     """
     cmd_template = exec_config["command"]
     return cmd_template.format(
-        dist_dir=str(dist_dir),
-        input_dir=str(input_dir),
-        output_dir=str(output_dir)
+        dist_dir=str(dist_dir), input_dir=str(input_dir), output_dir=str(output_dir)
     )
 
 
 def execute_astgen(
-    exec_config: dict,
-    dist_dir: Path,
-    input_dir: Path,
-    output_dir: Path
+    exec_config: dict, dist_dir: Path, input_dir: Path, output_dir: Path
 ) -> tuple[bool, float]:
     """Execute astgen binary and measure elapsed time.
 
@@ -62,16 +54,15 @@ def execute_astgen(
             shell=True,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
-            timeout=timeout
+            timeout=timeout,
         )
         elapsed = time.monotonic() - t0
 
         if result.returncode != 0:
-            stderr = result.stderr.decode(errors='replace')[:500]
+            stderr = result.stderr.decode(errors="replace")[:500]
             print(
-                f"WARNING: astgen exited {result.returncode}\n"
-                f"  stderr: {stderr}",
-                file=sys.stderr
+                f"WARNING: astgen exited {result.returncode}\n  stderr: {stderr}",
+                file=sys.stderr,
             )
             return False, elapsed
 
@@ -79,10 +70,7 @@ def execute_astgen(
 
     except subprocess.TimeoutExpired:
         elapsed = time.monotonic() - t0
-        print(
-            f"WARNING: astgen timed out after {elapsed:.1f}s",
-            file=sys.stderr
-        )
+        print(f"WARNING: astgen timed out after {elapsed:.1f}s", file=sys.stderr)
         return False, elapsed
 
     except Exception as e:

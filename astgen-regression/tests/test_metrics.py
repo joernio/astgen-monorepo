@@ -7,7 +7,7 @@ def test_collect_metrics_empty_dir():
     """Test metrics for empty output directory."""
     artifacts_config = [
         {"name": "ast", "pattern": "*.json"},
-        {"name": "typemap", "pattern": "*.typemap"}
+        {"name": "typemap", "pattern": "*.typemap"},
     ]
 
     with tempfile.TemporaryDirectory() as tmpdir:
@@ -17,7 +17,7 @@ def test_collect_metrics_empty_dir():
 
         assert metrics == {
             "ast": {"file_count": 0, "total_size": 0},
-            "typemap": {"file_count": 0, "total_size": 0}
+            "typemap": {"file_count": 0, "total_size": 0},
         }
 
 
@@ -25,7 +25,7 @@ def test_collect_metrics_with_files():
     """Test metrics collection with actual files."""
     artifacts_config = [
         {"name": "ast", "pattern": "*.json"},
-        {"name": "typemap", "pattern": "*.typemap"}
+        {"name": "typemap", "pattern": "*.typemap"},
     ]
 
     with tempfile.TemporaryDirectory() as tmpdir:

@@ -11,13 +11,13 @@ def test_clone_corpus_success():
         "name": "test-corpus",
         "clone_url": "https://github.com/test/repo.git",
         "tag": "v1.0.0",
-        "input_subdir": "src"
+        "input_subdir": "src",
     }
 
     with tempfile.TemporaryDirectory() as tmpdir:
         temp_path = Path(tmpdir)
 
-        with patch('subprocess.run') as mock_run:
+        with patch("subprocess.run") as mock_run:
             mock_run.return_value = MagicMock(returncode=0)
 
             result = clone_corpus(corpus_config, temp_path)
@@ -43,13 +43,13 @@ def test_clone_corpus_no_input_subdir():
         "name": "test-corpus",
         "clone_url": "https://github.com/test/repo.git",
         "tag": "v1.0.0",
-        "input_subdir": ""
+        "input_subdir": "",
     }
 
     with tempfile.TemporaryDirectory() as tmpdir:
         temp_path = Path(tmpdir)
 
-        with patch('subprocess.run') as mock_run:
+        with patch("subprocess.run") as mock_run:
             mock_run.return_value = MagicMock(returncode=0)
 
             result = clone_corpus(corpus_config, temp_path)
@@ -63,17 +63,15 @@ def test_clone_corpus_failure():
         "name": "test-corpus",
         "clone_url": "https://github.com/test/nonexistent.git",
         "tag": "v1.0.0",
-        "input_subdir": "src"
+        "input_subdir": "src",
     }
 
     with tempfile.TemporaryDirectory() as tmpdir:
         temp_path = Path(tmpdir)
 
-        with patch('subprocess.run') as mock_run:
+        with patch("subprocess.run") as mock_run:
             mock_run.side_effect = subprocess.CalledProcessError(
-                128,
-                "git clone",
-                stderr=b"fatal: repository not found"
+                128, "git clone", stderr=b"fatal: repository not found"
             )
 
             result = clone_corpus(corpus_config, temp_path)
@@ -87,13 +85,13 @@ def test_clone_corpus_timeout():
         "name": "test-corpus",
         "clone_url": "https://github.com/test/huge-repo.git",
         "tag": "v1.0.0",
-        "input_subdir": ""
+        "input_subdir": "",
     }
 
     with tempfile.TemporaryDirectory() as tmpdir:
         temp_path = Path(tmpdir)
 
-        with patch('subprocess.run') as mock_run:
+        with patch("subprocess.run") as mock_run:
             mock_run.side_effect = subprocess.TimeoutExpired("git clone", 300)
 
             result = clone_corpus(corpus_config, temp_path)

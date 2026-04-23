@@ -42,7 +42,9 @@ def cmd_compare(args) -> None:
     corpus_results = []
 
     try:
-        artifacts_config = config.get("artifacts", [{"name": "ast", "pattern": "*.json"}])
+        artifacts_config = config.get(
+            "artifacts", [{"name": "ast", "pattern": "*.json"}]
+        )
 
         for corpus_config in config["corpora"]:
             name = corpus_config["name"]
@@ -55,39 +57,35 @@ def cmd_compare(args) -> None:
 
             if input_dir is None:
                 # Clone failed
-                corpus_results.append({
-                    "name": name,
-                    "label": f"{label} [CLONE FAILED]",
-                    "base_metrics": {},
-                    "pr_metrics": {},
-                    "base_time": 0.0,
-                    "pr_time": 0.0,
-                    "comparison": {
-                        "only_in_base": [],
-                        "only_in_pr": [],
-                        "diffs": {}
+                corpus_results.append(
+                    {
+                        "name": name,
+                        "label": f"{label} [CLONE FAILED]",
+                        "base_metrics": {},
+                        "pr_metrics": {},
+                        "base_time": 0.0,
+                        "pr_time": 0.0,
+                        "comparison": {
+                            "only_in_base": [],
+                            "only_in_pr": [],
+                            "diffs": {},
+                        },
                     }
-                })
+                )
                 continue
 
             # Run base astgen
             base_output = Path(temp_dir) / f"out-base-{name}"
             print(f"[regression] Running base astgen on {name}...", file=sys.stderr)
             base_success, base_time = execute_astgen(
-                config["execute"],
-                base_dist,
-                input_dir,
-                base_output
+                config["execute"], base_dist, input_dir, base_output
             )
 
             # Run PR astgen
             pr_output = Path(temp_dir) / f"out-pr-{name}"
             print(f"[regression] Running PR astgen on {name}...", file=sys.stderr)
             pr_success, pr_time = execute_astgen(
-                config["execute"],
-                pr_dist,
-                input_dir,
-                pr_output
+                config["execute"], pr_dist, input_dir, pr_output
             )
 
             # Collect metrics
@@ -98,15 +96,17 @@ def cmd_compare(args) -> None:
             print(f"[regression] Comparing outputs for {name}...", file=sys.stderr)
             comparison = compare_outputs(base_output, pr_output, artifacts_config)
 
-            corpus_results.append({
-                "name": name,
-                "label": label,
-                "base_metrics": base_metrics,
-                "pr_metrics": pr_metrics,
-                "base_time": base_time,
-                "pr_time": pr_time,
-                "comparison": comparison
-            })
+            corpus_results.append(
+                {
+                    "name": name,
+                    "label": label,
+                    "base_metrics": base_metrics,
+                    "pr_metrics": pr_metrics,
+                    "base_time": base_time,
+                    "pr_time": pr_time,
+                    "comparison": comparison,
+                }
+            )
 
     finally:
         # Clean up temp directory
@@ -117,7 +117,7 @@ def cmd_compare(args) -> None:
         "project_name": config["project"]["name"],
         "base_ref": args.base_ref,
         "pr_ref": args.pr_ref,
-        "pr_number": args.pr_number
+        "pr_number": args.pr_number,
     }
 
     report = render_report(corpus_results, artifacts_config, metadata)

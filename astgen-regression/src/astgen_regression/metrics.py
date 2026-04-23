@@ -34,9 +34,6 @@ def collect_metrics(output_dir: Path, artifacts_config: list[dict] | None) -> di
                     file_count += 1
                     total_size += path.stat().st_size
 
-        metrics[name] = {
-            "file_count": file_count,
-            "total_size": total_size
-        }
+        metrics[name] = {"file_count": file_count, "total_size": total_size}
 
     return metrics
