@@ -1,0 +1,71 @@
+name: Ruby AST Generator Release
+
+on:
+  push:
+    tags:
+      - 'ruby-astgen/v*'
+
+permissions:
+  contents: write
+
+defaults:
+  run:
+    working-directory: ruby-astgen
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Extract version from tag
+        run: |
+          TAG_VERSION=${GITHUB_REF#refs/tags/ruby-astgen/v}
+          echo "NEW_TAG=v$TAG_VERSION" >> $GITHUB_ENV
+          echo "The tag version is: v$TAG_VERSION"
+
+      - name: Update version file
+        run: ./update_version.rb $NEW_TAG
+
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: 3.1.4
+          bundler-cache: false
+          working-directory: ruby-astgen
+
+      - name: Set up JRuby
+        working-directory: ruby-astgen
+        run: |
+          curl 'https://repo1.maven.org/maven2/org/jruby/jruby-complete/9.4.8.0/jruby-complete-9.4.8.0.jar' \
+            --output jruby.jar
+
+      - name: Install dependencies and build release
+        run: |
+          mkdir -p ${PWD}/vendor/bundle/jruby/3.1.0
+          export GEM_HOME=${PWD}/vendor/bundle/jruby/3.1.0
+          export GEM_PATH=${PWD}/vendor/bundle/jruby/3.1.0
+          export PATH=$GEM_HOME/bin:$PATH
+
+          java -jar jruby.jar -S gem install bundler -v 2.5.21 --install-dir ${GEM_HOME}
+          java -jar jruby.jar -S bundle install
+
+          find vendor/bundle/jruby/3.1.0 -mindepth 1 -maxdepth 1 -type \
+            d ! -name "gems" ! -name "bin" ! -name "specifications" \
+            -exec rm -rf {} +
+          zip -r ruby_ast_gen_${{ env.NEW_TAG }}.zip \
+            lib exe vendor Gemfile ruby_ast_gen.gemspec
+
+      - name: Upload vendored distribution to GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          files: |
+            ruby-astgen/ruby_ast_gen_*.zip

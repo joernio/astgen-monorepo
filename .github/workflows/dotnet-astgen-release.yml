@@ -1,0 +1,62 @@
+name: .NET AST Generator Release
+
+on:
+  push:
+    tags:
+      - 'dotnet-astgen/v*'
+
+concurrency: dotnet-astgen-release
+
+permissions:
+  contents: write
+
+defaults:
+  run:
+    working-directory: dotnet-astgen
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: '0'
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.x'
+      - name: Extract version from tag
+        run: |
+          TAG_VERSION=${GITHUB_REF#refs/tags/dotnet-astgen/v}
+          echo "NEXT_VERSION=v$TAG_VERSION" >> $GITHUB_ENV
+          echo "The tag version is: v$TAG_VERSION"
+      - name: Install dependencies
+        run: dotnet restore
+      - name: Compile
+        run: ./build-with-version.sh $NEXT_VERSION
+      - name: Build
+        run: |
+          ./publish-release.sh linux x64
+          ./publish-release.sh linux arm64
+          ./publish-release.sh osx x64
+          ./publish-release.sh win x64
+      - name: Rename
+        run: |
+          mv ./release/linux/DotNetAstGen dotnetastgen-linux
+          mv ./release/linux-arm/DotNetAstGen dotnetastgen-linux-arm64
+          mv ./release/macos/DotNetAstGen dotnetastgen-macos
+          mv ./release/win/DotNetAstGen.exe dotnetastgen-win.exe
+      - name: Make executable
+        run: |
+          chmod +x dotnetastgen-linux-arm64
+          chmod +x dotnetastgen-macos
+      - name: Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ github.ref_name }}
+          files: |
+            dotnet-astgen/dotnetastgen-linux
+            dotnet-astgen/dotnetastgen-linux-arm64
+            dotnet-astgen/dotnetastgen-macos
+            dotnet-astgen/dotnetastgen-win.exe

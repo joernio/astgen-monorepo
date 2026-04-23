@@ -1,0 +1,51 @@
+name: Go AST Generator Release
+
+on:
+  push:
+    tags:
+      - 'go-astgen/v*'
+
+concurrency: go-astgen-release
+
+permissions:
+  contents: write
+
+defaults:
+  run:
+    working-directory: go-astgen
+
+jobs:
+  release:
+    name: Build and Release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: '0'
+      - name: Set up Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: 1.21.12
+      - name: Extract version from tag
+        run: |
+          TAG_VERSION=${GITHUB_REF#refs/tags/go-astgen/v}
+          echo "TAG_VERSION=$TAG_VERSION" >> $GITHUB_ENV
+          echo "The tag version is: v$TAG_VERSION"
+      - name: Build
+        run: |
+          GOOS=linux GOARCH=amd64 go build -o build/goastgen-linux -ldflags "-X main.Version=v${{ env.TAG_VERSION }}"
+          GOOS=linux GOARCH=arm64 go build -o build/goastgen-linux-arm64 -ldflags "-X main.Version=v${{ env.TAG_VERSION }}"
+          GOOS=windows GOARCH=amd64 go build -o build/goastgen-windows.exe -ldflags "-X main.Version=v${{ env.TAG_VERSION }}"
+          GOOS=darwin GOARCH=amd64 go build -o build/goastgen-macos -ldflags "-X main.Version=v${{ env.TAG_VERSION }}"
+          GOOS=darwin GOARCH=arm64 go build -o build/goastgen-macos-arm64 -ldflags "-X main.Version=v${{ env.TAG_VERSION }}"
+      - name: Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ github.ref_name }}
+          files: |
+            go-astgen/build/goastgen-linux
+            go-astgen/build/goastgen-linux-arm64
+            go-astgen/build/goastgen-windows.exe
+            go-astgen/build/goastgen-macos
+            go-astgen/build/goastgen-macos-arm64

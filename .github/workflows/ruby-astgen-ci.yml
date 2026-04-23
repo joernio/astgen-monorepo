@@ -1,0 +1,28 @@
+name: Ruby AST Generator CI
+
+on:
+  pull_request:
+    paths:
+      - 'ruby-astgen/**'
+      - '.github/workflows/ruby-astgen-ci.yml'
+
+defaults:
+  run:
+    working-directory: ruby-astgen
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: 3.1.4
+          bundler-cache: true
+          working-directory: ruby-astgen
+
+      - name: Run the default task
+        run: bundle exec rake

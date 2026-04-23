@@ -1,0 +1,29 @@
+name: Go AST Generator CI
+
+on:
+  pull_request:
+    paths:
+      - 'go-astgen/**'
+      - '.github/workflows/go-astgen-ci.yml'
+
+defaults:
+  run:
+    working-directory: go-astgen
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: '0'
+      - name: Set up Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: 1.18
+      - name: Build
+        run: ./build.sh

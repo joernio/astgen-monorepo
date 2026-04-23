@@ -1,0 +1,43 @@
+name: .NET AST Generator CI
+
+on:
+  pull_request:
+    paths:
+      - 'dotnet-astgen/**'
+      - '.github/workflows/dotnet-astgen-ci.yml'
+  workflow_dispatch:
+
+defaults:
+  run:
+    working-directory: dotnet-astgen
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: '0'
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.x'
+      - name: Install dependencies
+        run: dotnet restore
+      - name: Build
+        run: dotnet build
+      - name: Test with the dotnet CLI
+        run: dotnet test
+  formatting:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: '0'
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.x'
+      - name: Check formatting
+        run:  dotnet format --verify-no-changes

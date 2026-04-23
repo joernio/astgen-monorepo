@@ -1,0 +1,71 @@
+name: JavaScript AST Generator Release
+
+on:
+  push:
+    tags:
+      - 'javascript-astgen/v*'
+
+defaults:
+  run:
+    working-directory: javascript-astgen
+
+jobs:
+  release:
+    concurrency: javascript-astgen-release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: '0'
+      - name: Install node
+        uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+          cache: 'yarn'
+          cache-dependency-path: 'javascript-astgen/yarn.lock'
+      - name: Install ldid
+        uses: MOZGIII/install-ldid-action@v1
+        with:
+          tag: v2.1.5-procursus6
+      - name: Build
+        run: |
+          yarn install
+          yarn build
+      - name: Test
+        run: |
+          yarn test
+      - name: Create binaries
+        run: |
+          yarn binary
+      - name: Rename
+        run: |
+          mv astgen-linux-x64 astgen-linux
+          mv astgen-linux-arm64 astgen-linux-arm
+          mv astgen-macos-x64 astgen-macos
+          mv astgen-macos-arm64 astgen-macos-arm
+          mv astgen-win-x64.exe astgen-win.exe
+      - name: Run gzexe
+        run: |
+          gzexe astgen-linux
+          rm astgen-linux~
+          gzexe astgen-linux-arm
+          rm astgen-linux-arm~
+      - name: Print size and version
+        run: |
+          ls -lh ./astgen*
+          ASTGEN_VERSION=$(./astgen-linux --version)
+          echo "ASTGEN_VERSION=$ASTGEN_VERSION" >> $GITHUB_ENV
+          echo "astgen version is: $ASTGEN_VERSION"
+      - name: Upload binaries to release
+        uses: softprops/action-gh-release@v3
+        with:
+          tag_name: ${{ github.ref_name }}
+          files: |
+            javascript-astgen/astgen-win.exe
+            javascript-astgen/astgen-macos
+            javascript-astgen/astgen-macos-arm
+            javascript-astgen/astgen-linux
+            javascript-astgen/astgen-linux-arm
