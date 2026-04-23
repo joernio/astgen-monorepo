@@ -1,0 +1,17 @@
+.DS_Store
+/.build
+/Packages
+xcuserdata/
+DerivedData/
+.swiftpm/configuration/registries.json
+.swiftpm/xcode/package.xcworkspace/contents.xcworkspacedata
+.netrc
+/ast_out
+/.vscode
+SwiftNodeSyntax.scala
+target/
+.bsp/
+.idea/
+/.worktrees
+/regression-diffs
+__pycache__
