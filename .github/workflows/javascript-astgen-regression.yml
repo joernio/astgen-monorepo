@@ -4,8 +4,6 @@ on:
   pull_request:
     paths:
       - 'javascript-astgen/**'
-      - 'astgen-regression/**'
-      - '.github/workflows/javascript-astgen-regression.yml'
 
 defaults:
   run:

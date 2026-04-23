@@ -4,8 +4,6 @@ on:
   pull_request:
     paths:
       - 'swift-astgen/**'
-      - 'astgen-regression/**'
-      - '.github/workflows/swift-astgen-regression.yml'
 
 defaults:
   run:
