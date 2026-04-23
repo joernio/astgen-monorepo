@@ -53,49 +53,59 @@ To specify the path to the project or the output directory.
 
 ## Regression Testing
 
-SwiftAstGen includes regression tests to ensure AST output stability across code changes.
+Regression testing compares AST output between two versions of SwiftAstGen (base branch vs. PR) across real-world Swift codebases to ensure output stability across code changes.
 
-### Running Locally
-
-The easiest way to run regression tests locally is with the automated runner:
-
+**Prerequisites:**
 ```bash
-python3 scripts/regression-local.py
+# Install the regression testing framework from the monorepo root
+cd ../astgen-regression
+python -m venv .venv
+source .venv/bin/activate  # Windows: .venv\Scripts\activate
+pip install -r requirements.txt
+pip install -e .
 ```
 
-This will automatically:
-- Build the current branch in debug mode
-- Checkout master in a temporary worktree
-- Build master in debug mode
-- Run the regression harness comparing both versions
-- Clean up the temporary worktree
-
-For manual control:
+**Run locally** (compares current branch against `main`):
 
 ```bash
-# Build both binaries
-swift build                                      # Current branch
-git worktree add .worktrees/master origin/master
-(cd .worktrees/master && swift build)            # Master version
+# From the swift-astgen directory
+astgen-regression local
+```
 
-# Run regression tests
-python3 scripts/regression.py \
+This command automatically:
+- Creates a git worktree for the base branch
+- Builds both versions (base and PR) in debug mode
+- Runs SwiftAstGen on configured test corpora
+- Generates a detailed Markdown report with diffs
+- Cleans up the worktree
+
+**Manual comparison** of two pre-built distributions:
+
+```bash
+astgen-regression compare \
   --base-dist .worktrees/master/.build/debug \
   --pr-dist .build/debug \
+  --base-ref "main @ abc1234" \
+  --pr-ref "feature @ def5678" \
   --output-diffs ./regression-diffs
 ```
 
-### CI Integration
+The report shows:
+- AST file counts and total sizes
+- Wall-clock execution time
+- Per-file content diffs (collapsible)
 
-Regression tests run automatically on all pull requests via GitHub Actions:
-- Builds debug binaries for both master and PR branches
-- Compares AST output against three Swift open-source projects (Alamofire, Vapor, RxSwift)
+**CI Integration:**
+
+Regression tests run automatically on all pull requests via GitHub Actions (`.github/workflows/swift-astgen-regression.yml`):
+- Builds debug binaries for both main and PR branches
+- Compares AST output against configured Swift open-source projects
 - Posts results as PR comments
 - Uploads diff artifacts on failure
 
-### Adding Test Cases
+**Configuration:**
 
-Add Swift files to `Tests/RegressionCorpus/` to expand coverage. Files should:
-- Exercise diverse Swift syntax (operators, generics, macros, etc.)
-- Be valid, compilable Swift code
-- Cover edge cases or previously fixed bugs
+Test corpora are configured in `regression.yaml`. To add or modify test cases:
+1. Edit `regression.yaml` to add new corpus entries
+2. Specify git repository URL and tag/commit
+3. Configure any required build or input subdirectories

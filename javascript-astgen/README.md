@@ -41,27 +41,48 @@ This will use `jest` with `ts-jest` to run the tests in `test/`.
 
 ## Regression Testing
 
-The regression harness compares AST and type-map output between two versions of astgen (base branch vs. PR) across two real-world TypeScript corpora: [typeorm@0.3.21](https://github.com/typeorm/typeorm) and [fastify@v5.3.3](https://github.com/fastify/fastify).
+Regression testing compares AST and type-map output between two versions of astgen (base branch vs. PR) across real-world TypeScript corpora including [typeorm@0.3.21](https://github.com/typeorm/typeorm) and [fastify@v5.3.3](https://github.com/fastify/fastify).
+
+**Prerequisites:**
+```bash
+# Install the regression testing framework from the monorepo root
+cd ../astgen-regression
+python -m venv .venv
+source .venv/bin/activate  # Windows: .venv\Scripts\activate
+pip install -r requirements.txt
+pip install -e .
+```
 
 **Run locally** (compares current branch against `main`):
 
 ```bash
-yarn regression
+# From the javascript-astgen directory
+astgen-regression local
 ```
 
-To compare against a different base branch:
+This command automatically:
+- Creates a git worktree for the base branch
+- Builds both versions (base and PR)
+- Runs astgen on configured test corpora
+- Generates a detailed Markdown report with diffs
+- Cleans up the worktree
+
+**Manual comparison** of two pre-built distributions:
 
 ```bash
-python3 scripts/regression-local.py --base-branch <branch>
+astgen-regression compare \
+  --base-dist ./dist-base \
+  --pr-dist ./dist-pr \
+  --base-ref "main @ abc1234" \
+  --pr-ref "feature @ def5678"
 ```
 
-The script builds both versions, clones the corpora, runs astgen on each, and prints a Markdown report to stdout showing:
-
+The report shows:
 - AST and typemap file counts and total sizes
 - Wall-clock execution time
-- Per-file content diffs (collapsible, truncated to 200 lines)
+- Per-file content diffs (collapsible)
 
-**CI:** The regression workflow runs automatically on every pull request (`.github/workflows/regression.yml`) and posts or updates a comment on the PR with the full report.
+**CI:** The regression workflow runs automatically on every pull request (`.github/workflows/javascript-astgen-regression.yml`) and posts or updates a comment on the PR with the full report.
 
 ## Getting Help
 
