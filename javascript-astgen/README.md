@@ -16,6 +16,8 @@ Type maps are generated using the Typescript compiler / type checker API.
 
 ## Usage
 
+Install the tool and run on any JavaScript/TypeScript project to generate AST and type information.
+
 ## Building
 
 ```bash
