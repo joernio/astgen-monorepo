@@ -100,9 +100,9 @@ def compare_outputs(base_dir: Path, pr_dir: Path, artifacts_config: list[dict]) 
         - diffs: Dict mapping artifact name to list of
                  (rel_path, diff_lines, summary) tuples
     """
-    only_in_base = []
-    only_in_pr = []
-    diffs_by_artifact = {}
+    only_in_base: list[str] = []
+    only_in_pr: list[str] = []
+    diffs_by_artifact: dict[str, list[tuple[str, list[str], str]]] = {}
 
     # Initialize diffs dict for each artifact
     for artifact in artifacts_config:

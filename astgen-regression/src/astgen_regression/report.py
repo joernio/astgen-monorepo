@@ -12,11 +12,12 @@ def human_size(n_bytes: int) -> str:
     Returns:
         Formatted string like "1.5 MB"
     """
+    size = float(n_bytes)
     for unit in ("B", "KB", "MB", "GB"):
-        if n_bytes < 1024.0 or unit == "GB":
-            return f"{n_bytes:.1f} {unit}"
-        n_bytes /= 1024.0
-    return f"{n_bytes:.1f} GB"
+        if size < 1024.0 or unit == "GB":
+            return f"{size:.1f} {unit}"
+        size /= 1024.0
+    return f"{size:.1f} GB"
 
 
 def pct_delta(base: float, pr: float) -> str:

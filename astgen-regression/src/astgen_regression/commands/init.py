@@ -2,6 +2,7 @@
 
 from pathlib import Path
 import sys
+from typing import Any
 
 from jinja2 import Environment, PackageLoader, select_autoescape
 
@@ -192,7 +193,7 @@ def cmd_init(args) -> None:
         )
         sys.exit(1)
 
-    defaults = LANGUAGE_DEFAULTS[language]
+    defaults: dict[str, Any] = LANGUAGE_DEFAULTS[language]
 
     # Setup Jinja2 environment
     env = Environment(
