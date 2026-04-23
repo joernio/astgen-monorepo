@@ -9,7 +9,7 @@ Each tool is independently versioned and released:
 - **[JavaScript AST Generator](./javascript-astgen/)** - Generate ASTs for JavaScript/TypeScript code
 - **[Rust AST Generator](./rust-astgen/)** - Generate ASTs for Rust code  
 - **[Swift AST Generator](./swift-astgen/)** - Generate ASTs for Swift code
-- **[.NET AST Generator](./dotnet-astgen/)** - Generate ASTs for C#/F#/.NET code
+- **[.NET AST Generator](./dotnet-astgen/)** - Generate ASTs for C#/.NET code
 - **[Go AST Generator](./go-astgen/)** - Generate ASTs for Go code
 - **[Ruby AST Generator](./ruby-astgen/)** - Generate ASTs for Ruby code
 - **[ABAP AST Generator](./abap-astgen/)** - Generate ASTs for ABAP code _(deferred)_
