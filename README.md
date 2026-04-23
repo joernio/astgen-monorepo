@@ -33,7 +33,7 @@ Each tool uses prefixed tags for releases:
 - `rust-astgen/v2.0.0`
 - etc.
 
-See the [Releases page](../../releases) for downloadable binaries.
+See the [Releases page](https://github.com/joernio/astgen-monorepo/releases) for downloadable binaries.
 
 ## Contributing
 
