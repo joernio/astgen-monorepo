@@ -1,0 +1,11 @@
+{
+  "name": "monorepo-ci-scripts",
+  "version": "1.0.0",
+  "description": "Path detection scripts for monorepo CI orchestration",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "minimatch": "^9.0.3",
+    "js-yaml": "^4.1.0"
+  }
+}
