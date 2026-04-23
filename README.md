@@ -35,6 +35,31 @@ Each tool uses prefixed tags for releases:
 
 See the [Releases page](https://github.com/joernio/astgen-monorepo/releases) for downloadable binaries.
 
+### Creating a Release
+
+**Via Git Tag (recommended):**
+
+1. Update version in the language-specific files (e.g., `package.json`, `Cargo.toml`, etc.)
+2. Commit the version change
+3. Create and push a prefixed tag:
+   ```bash
+   git tag javascript-astgen/v3.43.0
+   git push origin javascript-astgen/v3.43.0
+   ```
+4. The release workflow will automatically build and publish binaries
+
+**Manual Release (GitHub Actions):**
+
+If you need to re-release or rebuild an existing tag:
+
+1. Go to the [Actions tab](https://github.com/joernio/astgen-monorepo/actions)
+2. Select the language-specific release workflow (e.g., "JavaScript AST Generator Release")
+3. Click "Run workflow"
+4. Select the branch (usually `main`)
+5. Click "Run workflow"
+
+The workflow will automatically discover the latest tag for that language and create/update the release with fresh binaries.
+
 ## Contributing
 
 Each tool has its own contribution guidelines. See the README in each directory.
