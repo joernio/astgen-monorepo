@@ -42,8 +42,8 @@ jobs:
       - name: Extract version from tag
         run: |
           TAG_VERSION=${RELEASE_TAG#dotnet-astgen/v}
-          echo "NEXT_VERSION=v$TAG_VERSION" >> $GITHUB_ENV
-          echo "The tag version is: v$TAG_VERSION"
+          echo "NEXT_VERSION=$TAG_VERSION" >> $GITHUB_ENV
+          echo "The tag version is: $TAG_VERSION"
       - name: Install dependencies
         run: dotnet restore
       - name: Compile
