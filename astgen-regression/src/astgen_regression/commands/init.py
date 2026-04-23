@@ -167,7 +167,17 @@ def cmd_init(args) -> None:
         args: Parsed command-line arguments
     """
     config_path = args.config
-    workflow_path = Path(".github/workflows/regression.yml")
+
+    # Get language to determine workflow filename
+    language = args.language or "javascript"
+    if language not in LANGUAGE_DEFAULTS:
+        print(
+            f"ERROR: Unknown language '{language}'. Supported: {', '.join(LANGUAGE_DEFAULTS.keys())}",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+
+    workflow_path = Path(f".github/workflows/{language}-astgen-regression.yml")
 
     # Check if files exist
     if config_path.exists() and not args.force:
@@ -180,15 +190,6 @@ def cmd_init(args) -> None:
     if workflow_path.exists() and not args.force:
         print(
             f"ERROR: {workflow_path} already exists. Use --force to overwrite.",
-            file=sys.stderr,
-        )
-        sys.exit(1)
-
-    # Get language defaults
-    language = args.language or "javascript"
-    if language not in LANGUAGE_DEFAULTS:
-        print(
-            f"ERROR: Unknown language '{language}'. Supported: {', '.join(LANGUAGE_DEFAULTS.keys())}",
             file=sys.stderr,
         )
         sys.exit(1)
