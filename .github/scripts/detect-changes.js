@@ -32,13 +32,13 @@ function main() {
     const changedFiles = changedFilesOutput.trim().split('\n').filter(f => f.length > 0);
 
     if (changedFiles.length === 0) {
-      console.log('No changed files detected');
+      console.error('No changed files detected');
       console.log('[]');
       return;
     }
 
-    console.log(`Changed files (${changedFiles.length}):`);
-    changedFiles.forEach(f => console.log(`  - ${f}`));
+    console.error(`Changed files (${changedFiles.length}):`);
+    changedFiles.forEach(f => console.error(`  - ${f}`));
 
     // Determine which workflows to trigger
     const triggeredLanguages = new Set();
@@ -51,7 +51,7 @@ function main() {
           minimatch(file, pattern, { dot: true })
         );
         if (matchesNone) {
-          console.log(`  ${file} matches trigger_none pattern, skipping`);
+          console.error(`  ${file} matches trigger_none pattern, skipping`);
           continue;
         }
       }
@@ -62,7 +62,7 @@ function main() {
           minimatch(file, pattern, { dot: true })
         );
         if (matchesAll) {
-          console.log(`  ${file} matches trigger_all pattern`);
+          console.error(`  ${file} matches trigger_all pattern`);
           triggerAll = true;
           break;
         }
@@ -74,7 +74,7 @@ function main() {
           minimatch(file, pattern, { dot: true })
         );
         if (matchesLanguage) {
-          console.log(`  ${file} matches ${language.name}`);
+          console.error(`  ${file} matches ${language.name}`);
           triggeredLanguages.add(language.name);
         }
       }
@@ -83,13 +83,13 @@ function main() {
     // Build result
     let result;
     if (triggerAll) {
-      console.log('Triggering ALL languages due to shared infrastructure change');
+      console.error('Triggering ALL languages due to shared infrastructure change');
       result = config.languages.map(l => l.name);
     } else {
       result = Array.from(triggeredLanguages);
     }
 
-    console.log(`\nTriggered workflows: ${JSON.stringify(result)}`);
+    console.error(`\nTriggered workflows: ${JSON.stringify(result)}`);
     console.log(JSON.stringify(result));
 
   } catch (error) {
