@@ -70,7 +70,7 @@ jobs:
         run: git worktree remove --force ../javascript-astgen-base
 
       - name: Upload diff artifacts
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: regression-diffs
           path: javascript-astgen/regression-diffs/
