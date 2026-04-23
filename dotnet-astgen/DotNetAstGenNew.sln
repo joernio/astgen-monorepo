@@ -1,0 +1,22 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DotNetAstGen", "DotNetAstGen\DotNetAstGen.csproj", "{4DB05B27-3A8B-4EBC-A9DC-F02236F6952E}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DotNetAstGen.Test", "DotNetAstGen.Test\DotNetAstGen.Test.csproj", "{D3B633F4-76F4-4D89-86F5-1B994A329D58}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{4DB05B27-3A8B-4EBC-A9DC-F02236F6952E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4DB05B27-3A8B-4EBC-A9DC-F02236F6952E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4DB05B27-3A8B-4EBC-A9DC-F02236F6952E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4DB05B27-3A8B-4EBC-A9DC-F02236F6952E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D3B633F4-76F4-4D89-86F5-1B994A329D58}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D3B633F4-76F4-4D89-86F5-1B994A329D58}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D3B633F4-76F4-4D89-86F5-1B994A329D58}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D3B633F4-76F4-4D89-86F5-1B994A329D58}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal
