@@ -99,13 +99,15 @@ jobs:
 
       - name: Rename release binary
         shell: bash
+        working-directory: rust-astgen
         run: |
           mkdir -p dist
           cp "target/release/rust_ast_gen${{ matrix.binary_extension }}" "dist/${{ matrix.asset_name }}"
 
       - name: Generate RustNodeSyntax.scala
         if: matrix.os == 'ubuntu-24.04'
-        run: cargo run --release --locked --bin scala_bindings_gen -- --output ../dist/RustNodeSyntax.scala
+        working-directory: rust-astgen
+        run: cargo run --release --locked --bin scala_bindings_gen -- --output dist/RustNodeSyntax.scala
 
       - name: Upload release binary
         uses: actions/upload-artifact@v7
