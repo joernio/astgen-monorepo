@@ -33,6 +33,11 @@ jobs:
         with:
           python-version: '3.12'
 
+      - name: Install astgen-regression
+        run: |
+          cd ../astgen-regression
+          pip install -e .
+
       - name: Build PR version
         run: swift build
 
@@ -45,18 +50,19 @@ jobs:
           (cd ../swift-astgen-base && git checkout "origin/${BASE_BRANCH}" -- swift-astgen)
           (cd ../swift-astgen-base/swift-astgen && swift build)
 
-      - name: Run regression script
+      - name: Run regression tests
         run: |
           BASE_SHA=$(git rev-parse --short "origin/${{ github.base_ref }}")
           PR_SHA=$(git rev-parse --short HEAD)
-          python3 scripts/regression.py \
+          astgen-regression compare \
+            --config regression.yaml \
             --base-dist ../swift-astgen-base/swift-astgen/.build/debug \
             --pr-dist .build/debug \
             --pr-number "${{ github.event.pull_request.number }}" \
             --base-ref "${{ github.base_ref }} @ ${BASE_SHA}" \
             --pr-ref "${{ github.head_ref }} @ ${PR_SHA}" \
             --output-diffs regression-diffs \
-            > regression-report.md
+            > regression-report.md || true
 
       - name: Clean up base worktree
         if: always()

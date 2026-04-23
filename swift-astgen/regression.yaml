@@ -1,0 +1,43 @@
+# astgen-regression configuration
+project:
+  name: "swift-astgen"
+  language: "swift"
+
+build:
+  build_command: "swift build"
+  dist_dir: ".build/debug"
+
+execute:
+  command: "{dist_dir}/SwiftAstGen --src {input_dir} --output {output_dir}"
+  timeout: 600  # seconds
+
+artifacts:
+  - name: "AST"
+    pattern: "*.json"
+    description: "Abstract Syntax Tree files"
+
+corpora:
+  - name: "alamofire"
+    label: "Alamofire/Alamofire@5.9.1"
+    clone_url: "https://github.com/Alamofire/Alamofire.git"
+    tag: "5.9.1"
+    input_subdir: "Source"
+  - name: "vapor"
+    label: "vapor/vapor@4.99.3"
+    clone_url: "https://github.com/vapor/vapor.git"
+    tag: "4.99.3"
+    input_subdir: "Sources/Vapor"
+  - name: "rxswift"
+    label: "ReactiveX/RxSwift@6.7.1"
+    clone_url: "https://github.com/ReactiveX/RxSwift.git"
+    tag: "6.7.1"
+    input_subdir: "RxSwift"
+
+github:
+  base_branch: "main"
+  python_version: "3.12"
+  runs_on: "macos-latest"
+  setup_action:
+    uses: "SwiftyLab/setup-swift@latest"
+    with:
+      swift-version: "6.1"

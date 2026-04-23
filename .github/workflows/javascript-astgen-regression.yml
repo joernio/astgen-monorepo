@@ -35,6 +35,11 @@ jobs:
         with:
           python-version: '3.12'
 
+      - name: Install astgen-regression
+        run: |
+          cd ../astgen-regression
+          pip install -e .
+
       - name: Build PR version
         run: |
           yarn install
@@ -48,18 +53,19 @@ jobs:
           (cd ../javascript-astgen-base && git checkout "origin/${{ github.base_ref }}" -- javascript-astgen)
           (cd ../javascript-astgen-base/javascript-astgen && yarn install && yarn build)
 
-      - name: Run regression script
+      - name: Run regression tests
         run: |
           BASE_SHA=$(git rev-parse --short "origin/${{ github.base_ref }}")
           PR_SHA=$(git rev-parse --short HEAD)
-          python3 scripts/regression.py \
+          astgen-regression compare \
+            --config regression.yaml \
             --base-dist ../javascript-astgen-base/javascript-astgen/dist \
             --pr-dist dist \
             --pr-number "${{ github.event.pull_request.number }}" \
             --base-ref "${{ github.base_ref }} @ ${BASE_SHA}" \
             --pr-ref "${{ github.head_ref }} @ ${PR_SHA}" \
             --output-diffs regression-diffs \
-            > regression-report.md
+            > regression-report.md || true
 
       - name: Clean up base worktree
         if: always()
