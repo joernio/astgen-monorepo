@@ -1,0 +1,102 @@
+name: Swift AST Generator Regression
+
+on:
+  pull_request:
+    paths:
+      - 'swift-astgen/**'
+      - 'astgen-regression/**'
+      - '.github/workflows/swift-astgen-regression.yml'
+
+defaults:
+  run:
+    working-directory: swift-astgen
+
+jobs:
+  regression:
+    runs-on: macos-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - name: Checkout PR branch
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Install Swift
+        uses: SwiftyLab/setup-swift@latest
+        with:
+          swift-version: "6.1"
+
+      - name: Setup Python 3.12
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+
+      - name: Build PR version
+        run: swift build
+
+      - name: Build base version
+        run: |
+          set -e
+          BASE_BRANCH="${{ github.base_ref }}"
+          git fetch origin "${BASE_BRANCH}"
+          git worktree add ../swift-astgen-base "origin/${BASE_BRANCH}" --no-checkout
+          (cd ../swift-astgen-base && git checkout "origin/${BASE_BRANCH}" -- swift-astgen)
+          (cd ../swift-astgen-base/swift-astgen && swift build)
+
+      - name: Run regression script
+        run: |
+          BASE_SHA=$(git rev-parse --short "origin/${{ github.base_ref }}")
+          PR_SHA=$(git rev-parse --short HEAD)
+          python3 scripts/regression.py \
+            --base-dist ../swift-astgen-base/swift-astgen/.build/debug \
+            --pr-dist .build/debug \
+            --pr-number "${{ github.event.pull_request.number }}" \
+            --base-ref "${{ github.base_ref }} @ ${BASE_SHA}" \
+            --pr-ref "${{ github.head_ref }} @ ${PR_SHA}" \
+            --output-diffs regression-diffs \
+            > regression-report.md
+
+      - name: Clean up base worktree
+        if: always()
+        run: git worktree remove --force ../swift-astgen-base
+
+      - name: Upload diff artifacts
+        uses: actions/upload-artifact@v7
+        with:
+          name: regression-diffs
+          path: swift-astgen/regression-diffs/
+          if-no-files-found: ignore
+
+      - name: Post PR comment
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const fs = require('fs');
+            let body = fs.readFileSync('swift-astgen/regression-report.md', 'utf8');
+            const runUrl = `${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}`;
+            body += `\n\n---\n📎 Full diff files available as [workflow artifacts](${runUrl}).`;
+            const marker = '<!-- swiftastgen-regression -->';
+            body = marker + '\n' + body;
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+            const existing = comments.find(c => c.body.includes(marker));
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existing.id,
+                body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body,
+              });
+            }
