@@ -1,0 +1,135 @@
+name: Monorepo CI
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  detect-changes:
+    name: Detect changed paths
+    runs-on: ubuntu-latest
+    outputs:
+      workflows: ${{ steps.detect.outputs.workflows }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0  # Full history for accurate diff
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install detection script dependencies
+        working-directory: .github/scripts
+        run: npm install
+
+      - name: Run path detection
+        id: detect
+        run: |
+          WORKFLOWS=$(node .github/scripts/detect-changes.js)
+          echo "workflows=$WORKFLOWS" >> $GITHUB_OUTPUT
+
+      - name: Summary
+        run: |
+          echo "### Detected Changes" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Workflows to trigger: \`${{ steps.detect.outputs.workflows }}\`" >> $GITHUB_STEP_SUMMARY
+
+  call-javascript-ci:
+    name: JavaScript CI
+    needs: detect-changes
+    if: contains(fromJSON(needs.detect-changes.outputs.workflows), 'javascript')
+    uses: ./.github/workflows/javascript-astgen-ci.yml
+
+  call-rust-ci:
+    name: Rust CI
+    needs: detect-changes
+    if: contains(fromJSON(needs.detect-changes.outputs.workflows), 'rust')
+    uses: ./.github/workflows/rust-astgen-ci.yml
+
+  call-dotnet-ci:
+    name: .NET CI
+    needs: detect-changes
+    if: contains(fromJSON(needs.detect-changes.outputs.workflows), 'dotnet')
+    uses: ./.github/workflows/dotnet-astgen-ci.yml
+
+  call-go-ci:
+    name: Go CI
+    needs: detect-changes
+    if: contains(fromJSON(needs.detect-changes.outputs.workflows), 'go')
+    uses: ./.github/workflows/go-astgen-ci.yml
+
+  call-ruby-ci:
+    name: Ruby CI
+    needs: detect-changes
+    if: contains(fromJSON(needs.detect-changes.outputs.workflows), 'ruby')
+    uses: ./.github/workflows/ruby-astgen-ci.yml
+
+  call-swift-ci:
+    name: Swift CI
+    needs: detect-changes
+    if: contains(fromJSON(needs.detect-changes.outputs.workflows), 'swift')
+    uses: ./.github/workflows/swift-astgen-ci.yml
+
+  call-regression-ci:
+    name: Regression CI
+    needs: detect-changes
+    if: contains(fromJSON(needs.detect-changes.outputs.workflows), 'regression')
+    uses: ./.github/workflows/astgen-regression-ci.yml
+
+  summary:
+    name: CI Summary
+    runs-on: ubuntu-latest
+    needs:
+      - detect-changes
+      - call-javascript-ci
+      - call-rust-ci
+      - call-dotnet-ci
+      - call-go-ci
+      - call-ruby-ci
+      - call-swift-ci
+      - call-regression-ci
+    if: always()
+    steps:
+      - name: Check workflow results
+        run: |
+          echo "### Workflow Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          # Check each job result
+          JAVASCRIPT_RESULT="${{ needs.call-javascript-ci.result }}"
+          RUST_RESULT="${{ needs.call-rust-ci.result }}"
+          DOTNET_RESULT="${{ needs.call-dotnet-ci.result }}"
+          GO_RESULT="${{ needs.call-go-ci.result }}"
+          RUBY_RESULT="${{ needs.call-ruby-ci.result }}"
+          SWIFT_RESULT="${{ needs.call-swift-ci.result }}"
+          REGRESSION_RESULT="${{ needs.call-regression-ci.result }}"
+
+          echo "| Language | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|----------|--------|" >> $GITHUB_STEP_SUMMARY
+
+          [[ "$JAVASCRIPT_RESULT" != "skipped" ]] && echo "| JavaScript | $JAVASCRIPT_RESULT |" >> $GITHUB_STEP_SUMMARY
+          [[ "$RUST_RESULT" != "skipped" ]] && echo "| Rust | $RUST_RESULT |" >> $GITHUB_STEP_SUMMARY
+          [[ "$DOTNET_RESULT" != "skipped" ]] && echo "| .NET | $DOTNET_RESULT |" >> $GITHUB_STEP_SUMMARY
+          [[ "$GO_RESULT" != "skipped" ]] && echo "| Go | $GO_RESULT |" >> $GITHUB_STEP_SUMMARY
+          [[ "$RUBY_RESULT" != "skipped" ]] && echo "| Ruby | $RUBY_RESULT |" >> $GITHUB_STEP_SUMMARY
+          [[ "$SWIFT_RESULT" != "skipped" ]] && echo "| Swift | $SWIFT_RESULT |" >> $GITHUB_STEP_SUMMARY
+          [[ "$REGRESSION_RESULT" != "skipped" ]] && echo "| Regression | $REGRESSION_RESULT |" >> $GITHUB_STEP_SUMMARY
+
+          # Fail if any job failed
+          if [[ "$JAVASCRIPT_RESULT" == "failure" ]] || \
+             [[ "$RUST_RESULT" == "failure" ]] || \
+             [[ "$DOTNET_RESULT" == "failure" ]] || \
+             [[ "$GO_RESULT" == "failure" ]] || \
+             [[ "$RUBY_RESULT" == "failure" ]] || \
+             [[ "$SWIFT_RESULT" == "failure" ]] || \
+             [[ "$REGRESSION_RESULT" == "failure" ]]; then
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "❌ One or more workflows failed" >> $GITHUB_STEP_SUMMARY
+            exit 1
+          fi
+
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "✅ All triggered workflows passed" >> $GITHUB_STEP_SUMMARY
