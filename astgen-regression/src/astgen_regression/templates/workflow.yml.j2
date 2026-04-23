@@ -1,0 +1,105 @@
+name: regression
+on:
+  pull_request:
+permissions:
+  contents: read
+  pull-requests: write  # Required for posting PR comments
+jobs:
+  regression:
+    runs-on: {{ runs_on | default('ubuntu-latest') }}
+    steps:
+      - name: Checkout PR branch
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - name: Checkout astgen-regression
+        uses: actions/checkout@v6
+        with:
+          repository: joernio/astgen-regression
+          path: .astgen-regression
+      - name: Setup Python {{ python_version }}
+        uses: actions/setup-python@v6
+        with:
+          python-version: '{{ python_version }}'
+{% if setup_action %}
+      - name: Setup {{ language }}
+        uses: {{ setup_action.uses }}
+{% if setup_action.with %}
+        with:
+{% for key, value in setup_action.with.items() %}
+          {{ key }}: {{ value | tojson }}
+{% endfor %}
+{% endif %}
+{% endif %}
+      - name: Install astgen-regression
+        run: |
+          cd .astgen-regression
+          pip install -r requirements.txt
+          pip install -e .
+      - name: Build PR version
+        run: |
+{% if install_command %}
+          {{ install_command }}
+{% endif %}
+          {{ build_command }}
+      - name: Build base version
+        run: |
+          set -e
+          git fetch origin {% raw %}${{ github.base_ref }}{% endraw %}
+          git worktree add .worktrees/regression-base "origin/{% raw %}${{ github.base_ref }}{% endraw %}"
+          cd .worktrees/regression-base
+{% if install_command %}
+          {{ install_command }}
+{% endif %}
+          {{ build_command }}
+      - name: Run regression
+        run: |
+          BASE_SHA=$(git rev-parse --short "origin/{% raw %}${{ github.base_ref }}{% endraw %}")
+          PR_SHA=$(git rev-parse --short HEAD)
+          astgen-regression compare \
+            --base-dist .worktrees/regression-base/{{ dist_dir }} \
+            --pr-dist {{ dist_dir }} \
+            --pr-number "{% raw %}${{ github.event.pull_request.number }}{% endraw %}" \
+            --base-ref "{% raw %}${{ github.base_ref }}{% endraw %} @ ${BASE_SHA}" \
+            --pr-ref "{% raw %}${{ github.head_ref }}{% endraw %} @ ${PR_SHA}" \
+            --output-diffs regression-diffs \
+            > regression-report.md || true
+      - name: Clean up base worktree
+        if: always()
+        run: git worktree remove --force .worktrees/regression-base
+      - name: Upload diff artifacts
+        uses: actions/upload-artifact@v7
+        with:
+          name: regression-diffs
+          path: regression-diffs/
+          if-no-files-found: ignore
+      - name: Post PR comment
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const fs = require('fs');
+            let body = fs.readFileSync('regression-report.md', 'utf8');
+            const runUrl = `{% raw %}${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}{% endraw %}`;
+            body += `\n\n---\n📎 Full diff files available as [workflow artifacts](${runUrl}).`;
+            const marker = '<!-- astgen-regression -->';
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+            const existing = comments.find(c => c.body.includes(marker));
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existing.id,
+                body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body,
+              });
+            }

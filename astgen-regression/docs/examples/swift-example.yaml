@@ -1,0 +1,29 @@
+# Example astgen-regression config for Swift astgen
+
+project:
+  name: "SwiftAstGen"
+  language: "swift"
+
+build:
+  build_command: "swift build -c release"
+  dist_dir: ".build/release"
+
+execute:
+  command: "{dist_dir}/SwiftAstGen --src {input_dir} --output {output_dir}"
+  timeout: 600
+
+artifacts:
+  - name: "AST"
+    pattern: "*.json"
+    description: "Abstract Syntax Tree files"
+
+corpora:
+  - name: "swift-package-manager"
+    label: "swiftlang/swift-package-manager@6.0"
+    clone_url: "https://github.com/swiftlang/swift-package-manager.git"
+    tag: "swift-6.0-RELEASE"
+    input_subdir: "Sources"
+
+github:
+  base_branch: "main"
+  python_version: "3.12"

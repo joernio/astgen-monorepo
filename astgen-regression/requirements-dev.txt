@@ -1,0 +1,5 @@
+# Development dependencies
+-r requirements.txt  # Include core dependencies
+
+# Testing
+pytest>=9.0

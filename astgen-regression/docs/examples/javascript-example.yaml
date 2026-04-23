@@ -1,0 +1,33 @@
+# Example astgen-regression config for JavaScript/TypeScript astgen
+
+project:
+  name: "astgen"
+  language: "javascript"
+
+build:
+  install_command: "yarn install"
+  build_command: "yarn build"
+  dist_dir: "dist"
+
+execute:
+  command: "node {dist_dir}/astgen.js -i {input_dir} -o {output_dir} -t ts"
+  timeout: 600
+
+artifacts:
+  - name: "AST"
+    pattern: "*.json"
+    description: "Abstract Syntax Tree files"
+  - name: "typemap"
+    pattern: "*.typemap"
+    description: "TypeScript type mapping files"
+
+corpora:
+  - name: "typeorm"
+    label: "typeorm/typeorm@0.3.21"
+    clone_url: "https://github.com/typeorm/typeorm.git"
+    tag: "0.3.21"
+    input_subdir: "src"
+
+github:
+  base_branch: "main"
+  python_version: "3.12"
