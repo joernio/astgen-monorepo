@@ -7,7 +7,7 @@ from typing import Any
 from jinja2 import Environment, PackageLoader, select_autoescape
 
 
-LANGUAGE_DEFAULTS = {
+LANGUAGE_DEFAULTS: dict[str, dict[str, Any]] = {
     "javascript": {
         "project_name": "astgen",
         "language": "javascript",
@@ -193,7 +193,7 @@ def cmd_init(args) -> None:
         )
         sys.exit(1)
 
-    defaults: dict[str, Any] = LANGUAGE_DEFAULTS[language]
+    defaults = LANGUAGE_DEFAULTS[language]
 
     # Setup Jinja2 environment
     env = Environment(
