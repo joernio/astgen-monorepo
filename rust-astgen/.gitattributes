@@ -1,0 +1,5 @@
+# Keep copied ungrammar file on LF so build.rs byte comparisons stay stable across OSes.
+rust.ungram text eol=lf
+
+# Also the auto-generated RustNodeSyntax.scala
+scala_tests/src/main/scala/io/joern/rust2cpg/parser/RustNodeSyntax.scala text eol=lf
