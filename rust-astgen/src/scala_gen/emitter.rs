@@ -182,8 +182,9 @@ fn emit_base_node_and_token_traits(
             "\n",
             "  sealed trait {node_base} {{\n",
             "    def json: Value\n",
-            "    def children: Seq[Value] = json.obj.get(\"children\").map(_.arr.toSeq).getOrElse(Seq.empty)\n",
-            "    protected lazy val _childrenByKind: Map[String, Seq[Value]] = children.groupBy(_(\"nodeKind\").str)\n",
+            "    protected lazy val _children: Seq[Value] = json.obj.get(\"children\").map(_.arr.toSeq).getOrElse(Seq.empty)\n",
+            "    def children: Seq[Value] = _children\n",
+            "    protected lazy val _childrenByKind: Map[String, Seq[Value]] = _children.groupBy(_(\"nodeKind\").str)\n",
             "    private lazy val rangeObj = json.obj.get(\"range\").map(_.obj)\n",
             "    private def rangeField(name: String): Option[Int] = rangeObj.flatMap(_.get(name)).map(_.num.toInt)\n",
             "    def startOffset: Option[Int] = rangeField(\"startOffset\")\n",
@@ -357,13 +358,13 @@ fn scala_json_lookup_code_for_trait_node(element: &Element, config: &ScalaAstGen
     let scala_type = (config.node_name_to_scala_name)(&element.node_or_token_name);
     match element.cardinality {
         Cardinality::One => format!(
-            "{create_fn}(children.find(child => {kinds_name}.contains(child(\"nodeKind\").str)).get).asInstanceOf[{scala_type}]"
+            "{create_fn}(_children.find(child => {kinds_name}.contains(child(\"nodeKind\").str)).get).asInstanceOf[{scala_type}]"
         ),
         Cardinality::Optional => format!(
-            "children.find(child => {kinds_name}.contains(child(\"nodeKind\").str)).map({create_fn}(_).asInstanceOf[{scala_type}])"
+            "_children.find(child => {kinds_name}.contains(child(\"nodeKind\").str)).map({create_fn}(_).asInstanceOf[{scala_type}])"
         ),
         Cardinality::Many => format!(
-            "children.filter(child => {kinds_name}.contains(child(\"nodeKind\").str)).map({create_fn}(_).asInstanceOf[{scala_type}])"
+            "_children.filter(child => {kinds_name}.contains(child(\"nodeKind\").str)).map({create_fn}(_).asInstanceOf[{scala_type}])"
         ),
     }
 }
@@ -523,8 +524,9 @@ object ExampleAst {
 
   sealed trait AstNode {
     def json: Value
-    def children: Seq[Value] = json.obj.get("children").map(_.arr.toSeq).getOrElse(Seq.empty)
-    protected lazy val _childrenByKind: Map[String, Seq[Value]] = children.groupBy(_("nodeKind").str)
+    protected lazy val _children: Seq[Value] = json.obj.get("children").map(_.arr.toSeq).getOrElse(Seq.empty)
+    def children: Seq[Value] = _children
+    protected lazy val _childrenByKind: Map[String, Seq[Value]] = _children.groupBy(_("nodeKind").str)
     private lazy val rangeObj = json.obj.get("range").map(_.obj)
     private def rangeField(name: String): Option[Int] = rangeObj.flatMap(_.get(name)).map(_.num.toInt)
     def startOffset: Option[Int] = rangeField("startOffset")
@@ -605,8 +607,9 @@ object ExampleAst {
 
   sealed trait AstNode {
     def json: Value
-    def children: Seq[Value] = json.obj.get("children").map(_.arr.toSeq).getOrElse(Seq.empty)
-    protected lazy val _childrenByKind: Map[String, Seq[Value]] = children.groupBy(_("nodeKind").str)
+    protected lazy val _children: Seq[Value] = json.obj.get("children").map(_.arr.toSeq).getOrElse(Seq.empty)
+    def children: Seq[Value] = _children
+    protected lazy val _childrenByKind: Map[String, Seq[Value]] = _children.groupBy(_("nodeKind").str)
     private lazy val rangeObj = json.obj.get("range").map(_.obj)
     private def rangeField(name: String): Option[Int] = rangeObj.flatMap(_.get(name)).map(_.num.toInt)
     def startOffset: Option[Int] = rangeField("startOffset")
@@ -641,7 +644,7 @@ object ExampleAst {
 
   final case class CallNode(json: Value) extends AstNode with ExprNode with StmtNode {
     def callToken: callToken = createAstNode(_childrenByKind("CALL_TOKEN").head).asInstanceOf[callToken]
-    def expr: Option[ExprNode] = children.find(child => _exprNodeKinds.contains(child("nodeKind").str)).map(createAstNode(_).asInstanceOf[ExprNode])
+    def expr: Option[ExprNode] = _children.find(child => _exprNodeKinds.contains(child("nodeKind").str)).map(createAstNode(_).asInstanceOf[ExprNode])
   }
 
   final case class FnNode(json: Value) extends AstNode with ItemNode with StmtNode {
