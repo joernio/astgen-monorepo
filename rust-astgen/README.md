@@ -1,7 +1,24 @@
-# rust_ast_gen
+# Rust AST Generator
 
-A tool that generates JSON AST representations of Rust source files,
-built on top of [rust-analyzer](https://github.com/rust-lang/rust-analyzer)'s libraries.
+Generates JSON AST representations of Rust source files, built on top of [rust-analyzer](https://github.com/rust-lang/rust-analyzer)'s libraries.
+
+## Supported languages
+
+| Language | Tool used     | Notes |
+| -------- | ------------- | ----- |
+| Rust     | rust-analyzer |       |
+
+## Building
+
+```bash
+cargo build --release
+```
+
+## Testing
+
+```bash
+cargo test
+```
 
 ## Usage
 
@@ -18,8 +35,8 @@ One `.json` file is produced per `.rs` source file, mirroring the input director
 
 Set `RUST_LOG=info` (or `debug`/`trace`) for progress output.
 
-## Building
+## Example
 
-```
-cargo build --release
+```bash
+./target/release/rust_ast_gen --input-dir <path to project> --output-dir <path to output>
 ```
