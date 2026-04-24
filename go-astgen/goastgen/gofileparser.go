@@ -6,6 +6,7 @@ import (
 	"go/token"
 	"log"
 	"reflect"
+	"sort"
 	"unsafe"
 )
 
@@ -316,7 +317,10 @@ Returns:
 func (goFile *GoFile) processMap(object interface{}) interface{} {
 	value := reflect.ValueOf(object)
 	objMap := make(map[string]interface{})
-	for _, key := range value.MapKeys() {
+	// Sort keys so node_id assignment (via lastNodeId) is deterministic across runs.
+	keys := value.MapKeys()
+	sort.Slice(keys, func(i, j int) bool { return keys[i].String() < keys[j].String() })
+	for _, key := range keys {
 		objValue := value.MapIndex(key)
 
 		// If the map is created to accept valye of any type i.e. map[string]interface{}.
