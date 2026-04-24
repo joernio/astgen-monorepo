@@ -1,39 +1,58 @@
-# DotNetAstGen
+# .NET AST Generator
 
-This script creates an Abstract Syntax Tree (AST) of all `.cs` files in JSON format. The AST is created by using the Roslyn .NET compiler.
+Generates JSON Abstract Syntax Trees (ASTs) for `.cs` source files using the [Roslyn](https://github.com/dotnet/roslyn) .NET compiler. Also extracts symbol summaries from `.dll` assemblies when paired with their `.pdb` files.
 
-## Supported languages & dialects
+## Supported languages
 
-| Language    | Tool used                   | Notes                           |
-| ----------- | --------------------------- | ------------------------------- |
-| .NET        | Roslyn                      | WIP |
+| Language   | Tool used | Notes |
+| ---------- | --------- | ----- |
+| C# / .NET  | Roslyn    | WIP   |
 
-## Getting Started
+## Building
 
-Use `dotnet run --project DotNetAstGen -i <target_source> -o <target_output>` to compile and run the
-project. This will generate JSON AST files from the given source code.
+```bash
+dotnet build
+```
 
-For parsing symbols of DLL files, one needs the DLL and PDB file (of the same name) to live together
-in the same directory. The names of the symbol summaries will be the name of the DLL file with the
-prefix `_Symbols.json` and will live in the output directory.
+To build a single all-in-one executable, use `./publish-release.sh <os> <arch>`:
 
-## Releasing
-
-To build a single all-in-one executable, make use of `./publish-release.sh <os> <arch>`, e.g.
-
-```Bash
+```bash
 ./publish-release.sh linux x64
 ./publish-release.sh linux arm
 ./publish-release.sh osx x64
 ./publish-release.sh win x64
 ```
 
-This will create an executable, e.g., `./release/linux/DotNetAstGen`.
+This creates an executable at `./release/<os>/DotNetAstGen`.
 
-## Getting Help
+## Testing
 
-TODO
+```bash
+dotnet test
+```
+
+## Usage
+
+```
+Options:
+  -d, --debug     Enable verbose output.
+  -i, --input     Input file or directory. Ingested file types are `.cs`, `.dll`, and `.pdb`. (required)
+  -o, --output    Output directory. (default: `./.ast`)
+  -e, --exclude   Exclusion regex for files to filter out.
+```
+
+For parsing symbols of DLL files, both the `.dll` and `.pdb` file (with matching names) must live in the same directory. Symbol summaries are written to the output directory with a `_Symbols.json` suffix.
 
 ## Example
 
-TODO
+Run directly via `dotnet run`:
+
+```bash
+dotnet run --project DotNetAstGen -- -i <target_source> -o <target_output>
+```
+
+Run the published binary:
+
+```bash
+./release/linux/DotNetAstGen -i <target_source> -o <target_output>
+```

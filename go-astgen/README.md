@@ -1,106 +1,90 @@
-# AST generator
+# Go AST Generator
 
-This utility generates Abstract Syntax Tree (AST) for .go files in JSON format. 
+Generates JSON Abstract Syntax Trees (ASTs) for `.go` source files using the Go standard library.
 
-If you pass the root folder of the go project, it will iterate through all `.go` files from project directory 
-and generate ast in JSON format for each `.go` file.
+If you pass the root folder of a Go project, it iterates through all `.go` files in the project directory and generates an AST in JSON format for each file.
 
-## Usage
+## Supported languages
+
+| Language | Tool used          | Notes |
+| -------- | ------------------ | ----- |
+| Go       | Go standard library |      |
 
 ## Building
 
-Run below command from within root folder of the cloned repository.
-
 ```bash
- go build -o build/goastgen
+go build -o build/goastgen
 ```
 
-This will generate native binary for your local machine inside `build` folder
+This generates a native binary for your local machine in the `build` folder.
 
-## Getting Help
+## Testing
 
 ```bash
-build/goastgen -help
+go test
+```
 
+## Usage
+
+```
 Usage:
-	goastgen [falgs] <source location>
+    goastgen [flags] <source location>
 
 Flags:
+  -exclude string
+        regex to exclude files
   -help
-    	print the usage
+        print the usage
+  -include string
+        regex to include files
+  -include-packages string
+        ',' separated list of only package folders (e.g. "/pkg/, /cmd/")
   -out string
-    	Out put location of ast (default ".ast")
+        Output location of ast (default ".ast")
   -version
-    	print the version
+        print the version
 ```
 
 ## Example
 
 ### Single file
-1. Generate AST with single `.go` file path without passing `-out` flag to indicate ast json out location.
+
+Without `-out` the AST is written next to the source in a `.ast/` directory:
 
 ```bash
-$ goastgen <filepath>/<go filename>
-
-e.g
-$ goastgen /path/src/hello.go 
-
-It should generate the AST in JSON format at 
-
-/path/src/.ast/hello.go.json
+$ goastgen /path/src/hello.go
+# -> /path/src/.ast/hello.go.json
 ```
 
-2. Generate AST with single `.go` file with `-out` flag 
+With `-out` the output directory is overridden:
 
 ```bash
-$ goastgen -out <output location> <filepath>/<go filename>
-
-e.g
-$ goastgen -out /tmp/randompath /path/src/hello.go 
-
-It should generate the AST in JSON format at 
-
-/tmp/randompath/hello.go.json
+$ goastgen -out /tmp/randompath /path/src/hello.go
+# -> /tmp/randompath/hello.go.json
 ```
 
-### Complete project directory
+### Project directory
 
-```bash
+Given a project tree:
+
+```
 /path/repository
       - hello.go
       - anotherfile.go
       - somepkg
             - somelib.go
 ```
-1. Generate AST with above root directory of the go project without passing `-out` flag
+
+Without `-out`:
+
 ```bash
-$ goastgen <root directory location of go project>
-
-e.g.
 $ goastgen /path/repository
-
-It should generate AST in JSON fromat for each .go file at following location
-
-/path/repository/.ast
-                  - hello.go.json
-                  - anotherfile.go.json
-                  - somepkg
-                        - somelib.go.json      
+# -> /path/repository/.ast/{hello.go.json, anotherfile.go.json, somepkg/somelib.go.json}
 ```
 
-2. Generate AST with above root directory of the go project with `-out` flag
+With `-out`:
 
 ```bash
-$ goastgen -out <output location> <root directory location of go project> 
-
-e.g.
-$ goastgen -out /temp/out/ /path/repository
-
-It should generate AST in JSON fromat for each .go file at following location
-
-/temp/out/
-          - hello.go.json
-          - anotherfile.go.json
-          - somepkg
-                - somelib.go.json      
+$ goastgen -out /tmp/out/ /path/repository
+# -> /tmp/out/{hello.go.json, anotherfile.go.json, somepkg/somelib.go.json}
 ```

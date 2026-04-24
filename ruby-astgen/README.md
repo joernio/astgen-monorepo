@@ -1,48 +1,64 @@
-# RubyAstGen
+# Ruby AST Generator
 
-A Ruby parser than dumps the AST as JSON output. Uses the 
-[`parser` gem](https://github.com/whitequark/parser/tree/90e0a4e2be86b02c423c77337adcfccdf6dd611b), thus supports
-parsing Ruby version 1.8, 1.9, 2.0, 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7, 3.0, 3.1, and 3.2 syntax with 
-backwards-compatible AST formats.
+Generates JSON Abstract Syntax Trees (ASTs) for Ruby source files. Uses the [`parser` gem](https://github.com/whitequark/parser), which supports Ruby 1.8 through 3.2 syntax with backwards-compatible AST formats.
+
+## Supported languages
+
+| Language | Tool used    | Notes                     |
+| -------- | ------------ | ------------------------- |
+| Ruby     | `parser` gem | Ruby 1.8 – 3.2 syntax     |
+
+## Building
+
+The release uses JRuby to enable a standalone distribution. With JRuby installed:
+
+```bash
+jruby -S bundle install
+```
+
+Alternatively, using the JRuby complete JAR:
+
+```bash
+curl 'https://repo1.maven.org/maven2/org/jruby/jruby-complete/9.4.8.0/jruby-complete-9.4.8.0.jar' \
+    --output jruby.jar
+java -jar jruby.jar -S gem install bundler --install-dir vendor/bundle/jruby/3.1.0
+java -jar jruby.jar -s vendor/bundle/jruby/3.1.0/bin/bundle install
+```
+
+> If switching between native `ruby` and `jruby` (or vice versa), delete the `vendor/` folder before running `jruby -S bundle install` to avoid a clash.
+
+## Testing
+
+```bash
+rake spec
+```
+
+You can also run `bin/console` for an interactive prompt.
 
 ## Usage
 
-The release uses JRuby to enable an effective standalone version. Using `jruby`, one can run
 ```
-jruby -S bundle install
-jruby -S bundle exec exe/ruby_ast_gen
-```
-
-If using the JAR file, instead you can run
-```
-curl 'https://repo1.maven.org/maven2/org/jruby/jruby-complete/9.4.8.0/jruby-complete-9.4.8.0.jar' \
-    --output jruby.jar
-java -jar jruby.jar \
-    -S gem install bundler --install-dir vendor/bundle/jruby/3.1.0
-java -jar jruby.jar -s vendor/bundle/jruby/3.1.0/bin/bundle install
-java -jar jruby.jar -S vendor/bundle/jruby/3.1.0/bin/bundle exec exe/ruby_ast_gen
+Usage:
+  -i, --input      The input file or directory (required)
+  -o, --output     The output directory (default: '.ast')
+  -e, --exclude    The exclusion regex (default: '^(tests?|vendor|spec)')
+  -d, --debug      Enable debug logging
+      --version    Print the version
+      --help       Print usage
 ```
 
-The commands are as follows:
-```
-usage: ruby_ast_gen [options]
-    -i, --input    The input file or directory
-    -o, --output   The output directory
-    -e, --exclude  The exclusion regex
-    -l, --log      The logging level
-    --version      Print the version
-    --help         Print usage
+## Example
+
+```bash
+jruby -S bundle exec exe/ruby_ast_gen -i <path to project> -o <path to output>
 ```
 
-## Development
+Using the JRuby complete JAR:
 
-After checking out the repo, run `bin/setup` to install dependencies. Then, run `rake spec` to run the tests. You can 
-also run `bin/console` for an interactive prompt that will allow you to experiment.
-
-To install this gem onto your local machine, run `bundle exec rake install`. To package, run `rake build`.
-
-If you are switching between native `ruby` and `jruby` or vice versa, make sure to delete the `vendor` folder before running `jruby -S bundle install` otherwise there will be a clash
+```bash
+java -jar jruby.jar -S vendor/bundle/jruby/3.1.0/bin/bundle exec exe/ruby_ast_gen -i <input> -o <output>
+```
 
 ## License
 
-The gem is available as open source under the terms of the [MIT License](https://opensource.org/licenses/MIT).
+Available as open source under the terms of the [MIT License](https://opensource.org/licenses/MIT).
