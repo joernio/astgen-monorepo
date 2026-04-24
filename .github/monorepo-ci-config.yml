@@ -51,9 +51,8 @@ shared:
 
   # Changes to these paths trigger NO workflows (documentation only)
   trigger_none:
-    - '*.md'
-    - 'CLAUDE.md'
-    - 'CLAUDE.local.md'
+    - '**/*.md'
     - 'docs/**'
-    - 'LICENSE'
-    - '.gitignore'
+    - '**/LICENSE'
+    - '**/LICENSE.txt'
+    - '**/.gitignore'
