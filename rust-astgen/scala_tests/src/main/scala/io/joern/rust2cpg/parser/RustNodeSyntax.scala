@@ -333,6 +333,7 @@ object RustNodeSyntax {
   sealed trait RustNode {
     def json: Value
     protected lazy val _children: Seq[Value] = json.obj.get("children").map(_.arr.toSeq).getOrElse(Seq.empty)
+    def children: Seq[Value] = _children
     protected lazy val _childrenByKind: Map[String, Seq[Value]] = _children.groupBy(_("nodeKind").str)
     private lazy val rangeObj = json.obj.get("range").map(_.obj)
     private def rangeField(name: String): Option[Int] = rangeObj.flatMap(_.get(name)).map(_.num.toInt)

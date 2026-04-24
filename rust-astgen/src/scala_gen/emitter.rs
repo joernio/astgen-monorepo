@@ -183,6 +183,7 @@ fn emit_base_node_and_token_traits(
             "  sealed trait {node_base} {{\n",
             "    def json: Value\n",
             "    protected lazy val _children: Seq[Value] = json.obj.get(\"children\").map(_.arr.toSeq).getOrElse(Seq.empty)\n",
+            "    def children: Seq[Value] = _children\n",
             "    protected lazy val _childrenByKind: Map[String, Seq[Value]] = _children.groupBy(_(\"nodeKind\").str)\n",
             "    private lazy val rangeObj = json.obj.get(\"range\").map(_.obj)\n",
             "    private def rangeField(name: String): Option[Int] = rangeObj.flatMap(_.get(name)).map(_.num.toInt)\n",
@@ -524,6 +525,7 @@ object ExampleAst {
   sealed trait AstNode {
     def json: Value
     protected lazy val _children: Seq[Value] = json.obj.get("children").map(_.arr.toSeq).getOrElse(Seq.empty)
+    def children: Seq[Value] = _children
     protected lazy val _childrenByKind: Map[String, Seq[Value]] = _children.groupBy(_("nodeKind").str)
     private lazy val rangeObj = json.obj.get("range").map(_.obj)
     private def rangeField(name: String): Option[Int] = rangeObj.flatMap(_.get(name)).map(_.num.toInt)
@@ -606,6 +608,7 @@ object ExampleAst {
   sealed trait AstNode {
     def json: Value
     protected lazy val _children: Seq[Value] = json.obj.get("children").map(_.arr.toSeq).getOrElse(Seq.empty)
+    def children: Seq[Value] = _children
     protected lazy val _childrenByKind: Map[String, Seq[Value]] = _children.groupBy(_("nodeKind").str)
     private lazy val rangeObj = json.obj.get("range").map(_.obj)
     private def rangeField(name: String): Option[Int] = rangeObj.flatMap(_.get(name)).map(_.num.toInt)
