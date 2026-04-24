@@ -116,7 +116,7 @@ pub(crate) fn write_json_to_file(json_tree: &str, output_file: &Path) -> anyhow:
         )
     })?;
 
-    std::fs::write(&output_file, json_tree)
+    std::fs::write(output_file, json_tree)
         .with_context(|| format!("failed to write JSON to file: {}", output_file.display()))
 }
 
@@ -140,7 +140,7 @@ pub fn run(config: &config::RustAstGenConfig) -> anyhow::Result<()> {
 
             let file_result = if let Some(input_file_path) = input_file_path {
                 if let Err(e) =
-                    process_file(file_id, &input_file_path, &analysis, &semantics, config)
+                    process_file(file_id, input_file_path, &analysis, &semantics, config)
                 {
                     error!("{e}");
                     None
@@ -177,7 +177,7 @@ fn process_file(
 
     info!("building the JSON tree: {}", input_file_path.display());
 
-    let json_root = RustAstGenJsonNode::from_node(&syntax_tree, &file_line_index);
+    let json_root = RustAstGenJsonNode::from_node(syntax_tree, &file_line_index);
     let contents = syntax_tree.text().to_string();
     let loc = file_line_index
         .line_col(syntax_tree.text_range().end())
@@ -195,7 +195,7 @@ fn process_file(
         children: vec![json_root],
     };
 
-    let output_file = config.make_output_path_for_input_file(&input_file_path.to_path_buf())?;
+    let output_file = config.make_output_path_for_input_file(input_file_path)?;
 
     info!("writing to: {}", output_file.display());
 
