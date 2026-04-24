@@ -1,10 +1,10 @@
 use crate::{cargo, config};
-use anyhow::{Context};
+use anyhow::Context;
 use log::{error, info};
 use ra_ap_hir::{Semantics, attach_db};
 use ra_ap_ide::{Analysis, AnalysisHost, LineIndex, RootDatabase};
 use ra_ap_syntax::{AstNode, NodeOrToken, SyntaxNode, SyntaxToken};
-use ra_ap_vfs::{FileId};
+use ra_ap_vfs::FileId;
 use serde::Serialize;
 use std::path::Path;
 
@@ -136,12 +136,12 @@ pub fn run(config: &config::RustAstGenConfig) -> anyhow::Result<()> {
     // Process each file
     attach_db(semantics.db, || {
         for (file_id, file_vfs_path) in input_rust_files {
-            let input_file_path = file_vfs_path
-                .as_path()
-                .map(AsRef::<Path>::as_ref);
+            let input_file_path = file_vfs_path.as_path().map(AsRef::<Path>::as_ref);
 
             let file_result = if let Some(input_file_path) = input_file_path {
-                if let Err(e) = process_file(file_id, &input_file_path, &analysis, &semantics, config) {
+                if let Err(e) =
+                    process_file(file_id, &input_file_path, &analysis, &semantics, config)
+                {
                     error!("{e}");
                     None
                 } else {
@@ -157,7 +157,6 @@ pub fn run(config: &config::RustAstGenConfig) -> anyhow::Result<()> {
             if file_result.is_none() {
                 println!("Skipped: {}", file_vfs_path);
             }
-
         }
     });
 
@@ -171,7 +170,6 @@ fn process_file(
     semantics: &Semantics<RootDatabase>,
     config: &config::RustAstGenConfig,
 ) -> anyhow::Result<()> {
-
     info!("parsing: {}", input_file_path.display());
     let source_file = semantics.parse_guess_edition(file_id);
     let syntax_tree = source_file.syntax();
