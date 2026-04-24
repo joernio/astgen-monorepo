@@ -1,10 +1,10 @@
 use crate::{cargo, config};
-use anyhow::Context;
+use anyhow::{Context};
 use log::{error, info};
 use ra_ap_hir::{Semantics, attach_db};
 use ra_ap_ide::{Analysis, AnalysisHost, LineIndex, RootDatabase};
 use ra_ap_syntax::{AstNode, NodeOrToken, SyntaxNode, SyntaxToken};
-use ra_ap_vfs::{FileId, VfsPath};
+use ra_ap_vfs::{FileId};
 use serde::Serialize;
 use std::path::Path;
 
@@ -136,9 +136,28 @@ pub fn run(config: &config::RustAstGenConfig) -> anyhow::Result<()> {
     // Process each file
     attach_db(semantics.db, || {
         for (file_id, file_vfs_path) in input_rust_files {
-            if let Err(e) = process_file(file_id, file_vfs_path, &analysis, &semantics, config) {
-                error!("{e}")
+            let input_file_path = file_vfs_path
+                .as_path()
+                .map(AsRef::<Path>::as_ref);
+
+            let file_result = if let Some(input_file_path) = input_file_path {
+                if let Err(e) = process_file(file_id, &input_file_path, &analysis, &semantics, config) {
+                    error!("{e}");
+                    None
+                } else {
+                    Some(())
+                }
+            } else {
+                error!("failed to convert VfsPath to Path: {:?}", file_vfs_path);
+                None
+            };
+
+            // Writing to stdout on purpose so joern's AstGenRunner can detect
+            // that some relevant file was skipped.
+            if file_result.is_none() {
+                println!("Skipped: {}", file_vfs_path);
             }
+
         }
     });
 
@@ -147,18 +166,13 @@ pub fn run(config: &config::RustAstGenConfig) -> anyhow::Result<()> {
 
 fn process_file(
     file_id: FileId,
-    file_vfs_path: VfsPath,
+    input_file_path: &Path,
     analysis: &Analysis,
     semantics: &Semantics<RootDatabase>,
     config: &config::RustAstGenConfig,
 ) -> anyhow::Result<()> {
-    let input_file_path = file_vfs_path
-        .as_path()
-        .map(AsRef::<Path>::as_ref)
-        .with_context(|| format!("failed to convert VfsPath to Path: {:?}", file_vfs_path))?;
 
     info!("parsing: {}", input_file_path.display());
-
     let source_file = semantics.parse_guess_edition(file_id);
     let syntax_tree = source_file.syntax();
     let file_line_index = analysis.file_line_index(file_id)?;
