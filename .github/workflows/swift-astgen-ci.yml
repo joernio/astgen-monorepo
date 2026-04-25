@@ -25,6 +25,7 @@ jobs:
         uses: SwiftyLab/setup-swift@latest
         with:
           swift-version: "6.1"
+          cache-dependency-path: swift-astgen/Package.resolved
       - name: Run Linux Build
         if: matrix.os == 'ubuntu-latest'
         run: |
@@ -65,6 +66,10 @@ jobs:
         with:
           distribution: temurin
           java-version: 21
+          cache: sbt
+          cache-dependency-path: |
+            swift-astgen/Tests/ScalaSwiftNodeSyntaxTests/build.sbt
+            swift-astgen/Tests/ScalaSwiftNodeSyntaxTests/project/build.properties
       - name: Run Scala Tests
         run: sbt test
         working-directory: swift-astgen/Tests/ScalaSwiftNodeSyntaxTests
