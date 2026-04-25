@@ -4,15 +4,15 @@ A monorepo containing language-specific AST generation tools for the [Joern](htt
 
 ## Available Tools
 
-| Language        | Directory                                  | Parser / Backend    | Status   |
-| --------------- | ------------------------------------------ | ------------------- | -------- |
-| ABAP            | [`abap-astgen/`](./abap-astgen/)           | —                   | Deferred |
-| C# / .NET       | [`dotnet-astgen/`](./dotnet-astgen/)       | Roslyn              | Active   |
-| Go              | [`go-astgen/`](./go-astgen/)               | Go standard library | Active   |
-| JavaScript / TS | [`javascript-astgen/`](./javascript-astgen/) | Babel + tsc       | Active   |
-| Ruby            | [`ruby-astgen/`](./ruby-astgen/)           | `parser` gem        | Active   |
-| Rust            | [`rust-astgen/`](./rust-astgen/)           | rust-analyzer       | Active   |
-| Swift           | [`swift-astgen/`](./swift-astgen/)         | SwiftSyntax         | Active   |
+| Language        | Directory                                  | Parser / Backend    | Status   | Latest Release |
+| --------------- | ------------------------------------------ | ------------------- | -------- | -------------- |
+| ABAP            | [`abap-astgen/`](./abap-astgen/)           | —                   | Deferred | —              |
+| C# / .NET       | [`dotnet-astgen/`](./dotnet-astgen/)       | Roslyn              | Active   | [![Release](https://img.shields.io/github/v/release/joernio/astgen-monorepo?filter=dotnet-astgen%2F*&label=)](https://github.com/joernio/astgen-monorepo/releases?q=dotnet-astgen) |
+| Go              | [`go-astgen/`](./go-astgen/)               | Go standard library | Active   | [![Release](https://img.shields.io/github/v/release/joernio/astgen-monorepo?filter=go-astgen%2F*&label=)](https://github.com/joernio/astgen-monorepo/releases?q=go-astgen) |
+| JavaScript / TS | [`javascript-astgen/`](./javascript-astgen/) | Babel + tsc       | Active   | [![Release](https://img.shields.io/github/v/release/joernio/astgen-monorepo?filter=javascript-astgen%2F*&label=)](https://github.com/joernio/astgen-monorepo/releases?q=javascript-astgen) |
+| Ruby            | [`ruby-astgen/`](./ruby-astgen/)           | `parser` gem        | Active   | [![Release](https://img.shields.io/github/v/release/joernio/astgen-monorepo?filter=ruby-astgen%2F*&label=)](https://github.com/joernio/astgen-monorepo/releases?q=ruby-astgen) |
+| Rust            | [`rust-astgen/`](./rust-astgen/)           | rust-analyzer       | Active   | [![Release](https://img.shields.io/github/v/release/joernio/astgen-monorepo?filter=rust-astgen%2F*&label=)](https://github.com/joernio/astgen-monorepo/releases?q=rust-astgen) |
+| Swift           | [`swift-astgen/`](./swift-astgen/)         | SwiftSyntax         | Active   | [![Release](https://img.shields.io/github/v/release/joernio/astgen-monorepo?filter=swift-astgen%2F*&label=)](https://github.com/joernio/astgen-monorepo/releases?q=swift-astgen) |
 
 ## Testing framework
 
