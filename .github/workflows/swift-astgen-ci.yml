@@ -25,7 +25,6 @@ jobs:
         uses: SwiftyLab/setup-swift@latest
         with:
           swift-version: "6.1"
-          cache-dependency-path: swift-astgen/Package.resolved
       - name: Run Linux Build
         if: matrix.os == 'ubuntu-latest'
         run: |
