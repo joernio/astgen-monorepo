@@ -1,4 +1,4 @@
-use crate::grammar::model::{Cardinality, Element, Model};
+use crate::grammar::model::{Cardinality, Element, ElementName, Model};
 use crate::scala_gen::config::ScalaAstGenConfig;
 use heck::ToLowerCamelCase;
 use std::collections::HashMap;
@@ -9,14 +9,13 @@ pub fn generate_scala(model: &Model, config: &ScalaAstGenConfig) -> Result<Strin
     let mut out = String::new();
 
     // Sorted for deterministic output.
-    let tokens = sorted(model.tokens.iter().cloned().collect());
-    let trait_nodes = sorted(config.trait_nodes.clone());
+    let tokens = sorted(model.tokens().map(ToOwned::to_owned).collect());
+    let trait_nodes = sorted(config.trait_nodes.to_owned());
     let non_trait_nodes = sorted(
         model
-            .node_names
-            .iter()
-            .filter(|name| !trait_nodes.contains(*name))
-            .cloned()
+            .nodes()
+            .filter(|name| !trait_nodes.iter().any(|trait_node| trait_node == name))
+            .map(ToOwned::to_owned)
             .collect(),
     );
 
@@ -55,12 +54,16 @@ fn trait_membership_relation(
 
     for trait_node in trait_nodes {
         let mut members = model
-            .collect_descendant_nodes(trait_node, &|name| trait_nodes.contains(&name.to_string()))
+            // essentially a `contains` check, but `contains` would require `String`.
+            // so, the alternative described in the rustdoc for `contains` is to use `any` here
+            .collect_descendant_nodes(trait_node, &|name| {
+                trait_nodes.iter().any(|trait_node| trait_node == name)
+            })
             .into_iter()
             .collect::<Vec<_>>();
 
         members.sort();
-        result.insert(trait_node.clone(), members);
+        result.insert(trait_node.to_owned(), members);
     }
 
     result
@@ -74,24 +77,19 @@ fn inverse_trait_membership_relation(
     trait_nodes: &[String],
     trait_membership: &HashMap<String, Vec<String>>,
 ) -> HashMap<String, Vec<String>> {
-    let mut result = HashMap::new();
+    let mut result = non_trait_nodes
+        .iter()
+        .map(|node| (node.to_owned(), Vec::new()))
+        .collect::<HashMap<_, _>>();
 
-    // TODO: there's probably a better way of writing this...
-
-    for node in non_trait_nodes {
-        let mut traits_for_node = Vec::new();
-
-        for trait_node in trait_nodes {
-            let Some(members) = trait_membership.get(trait_node) else {
-                continue;
-            };
-
-            if members.contains(node) {
-                traits_for_node.push(trait_node.clone());
+    for trait_node in trait_nodes {
+        if let Some(members) = trait_membership.get(trait_node) {
+            for member in members {
+                if let Some(traits_for_node) = result.get_mut(member) {
+                    traits_for_node.push(trait_node.to_owned());
+                }
             }
         }
-
-        result.insert(node.clone(), traits_for_node);
     }
 
     result
@@ -112,16 +110,16 @@ fn emit_header(out: &mut String, config: &ScalaAstGenConfig) -> Result<(), Error
         writeln!(out, "// Generated on {codegen_date}")?;
     }
 
-    write!(out, "\n")
+    writeln!(out)
 }
 
 // TODO: Should come from the config
 fn emit_imports(out: &mut String) -> Result<(), Error> {
-    write!(out, "import ujson.Value\n")
+    writeln!(out, "import ujson.Value")
 }
 
 fn emit_object_open(out: &mut String, config: &ScalaAstGenConfig) -> Result<(), Error> {
-    write!(out, "object {} {{\n", config.object_name)
+    writeln!(out, "object {} {{", config.object_name)
 }
 
 fn emit_object_close(out: &mut String) -> Result<(), Error> {
@@ -169,7 +167,7 @@ fn emit_kind_map(
         writeln!(out, "    \"{json_kind}\" -> (json => {scala_name}(json)),")?;
     }
 
-    write!(out, "  )\n")
+    writeln!(out, "  )")
 }
 
 fn emit_base_node_and_token_traits(
@@ -222,7 +220,7 @@ fn emit_trait_kind_sets(
         for kind in kinds {
             writeln!(out, "    \"{kind}\",")?;
         }
-        write!(out, "  )\n")?;
+        writeln!(out, "  )")?;
     }
 
     Ok(())
@@ -254,7 +252,7 @@ fn emit_node_case_classes(
 ) -> Result<(), Error> {
     for node in non_trait_nodes {
         let scala_name = (config.node_name_to_scala_name)(node);
-        let extends = std::iter::once(config.base_node_trait.clone())
+        let extends = std::iter::once(config.base_node_trait.to_owned())
             .chain(
                 inverse_trait_membership
                     .get(node)
@@ -270,13 +268,13 @@ fn emit_node_case_classes(
             "\n  final case class {scala_name}(json: Value) extends {extends} {{"
         )?;
 
-        if let Some(elements) = model.node_elements.get(node) {
+        if let Some(elements) = model.elements(node) {
             for element in elements {
-                emit_accessor(out, model, config, element)?;
+                emit_accessor(out, config, element)?;
             }
         }
 
-        write!(out, "  }}\n")?;
+        writeln!(out, "  }}")?;
     }
 
     Ok(())
@@ -284,13 +282,12 @@ fn emit_node_case_classes(
 
 fn emit_accessor(
     out: &mut String,
-    model: &Model,
     config: &ScalaAstGenConfig,
     element: &Element,
 ) -> Result<(), Error> {
-    let accessor = scala_safe_identifier(&scala_accessor_name(element, model, config));
-    let scala_type = scala_type_name(element, model, config);
-    let rhs = scala_json_lookup_code(element, model, config);
+    let accessor = scala_safe_identifier(&scala_accessor_name(element, config));
+    let scala_type = scala_type_name(element, config);
+    let rhs = scala_json_lookup_code(element, config);
 
     match element.cardinality {
         Cardinality::One => writeln!(out, "    def {accessor}: {scala_type} = {rhs}",),
@@ -316,26 +313,27 @@ fn emit_token_case_classes(
     Ok(())
 }
 
-fn scala_accessor_name(element: &Element, model: &Model, config: &ScalaAstGenConfig) -> String {
-    if model.tokens.contains(&element.node_or_token_name) {
-        (config.token_name_to_scala_name)(&element.node_or_token_name).to_lower_camel_case()
-    } else {
-        element.node_or_token_name.to_lower_camel_case()
+fn scala_accessor_name(element: &Element, config: &ScalaAstGenConfig) -> String {
+    match &element.name {
+        ElementName::Node(node) => node.as_str().to_lower_camel_case(),
+        ElementName::Token(token) => {
+            (config.token_name_to_scala_name)(token.as_str()).to_lower_camel_case()
+        }
     }
 }
 
-fn scala_type_name(element: &Element, model: &Model, config: &ScalaAstGenConfig) -> String {
-    if model.tokens.contains(&element.node_or_token_name) {
-        (config.token_name_to_scala_name)(&element.node_or_token_name)
-    } else {
-        (config.node_name_to_scala_name)(&element.node_or_token_name)
+fn scala_type_name(element: &Element, config: &ScalaAstGenConfig) -> String {
+    match &element.name {
+        ElementName::Node(node) => (config.node_name_to_scala_name)(node.as_str()),
+        ElementName::Token(token) => (config.token_name_to_scala_name)(token.as_str()),
     }
 }
 
 fn scala_json_lookup_code_for_token(element: &Element, config: &ScalaAstGenConfig) -> String {
     let create_fn = format!("create{}", config.base_node_trait);
-    let kind = (config.token_name_to_json_kind)(&element.node_or_token_name);
-    let scala_type = (config.token_name_to_scala_name)(&element.node_or_token_name);
+    let name = element.name.as_str();
+    let kind = (config.token_name_to_json_kind)(name);
+    let scala_type = (config.token_name_to_scala_name)(name);
     match element.cardinality {
         Cardinality::One => {
             format!("{create_fn}(_childrenByKind(\"{kind}\").head).asInstanceOf[{scala_type}]")
@@ -351,11 +349,12 @@ fn scala_json_lookup_code_for_token(element: &Element, config: &ScalaAstGenConfi
 
 fn scala_json_lookup_code_for_trait_node(element: &Element, config: &ScalaAstGenConfig) -> String {
     let create_fn = format!("create{}", config.base_node_trait);
+    let name = element.name.as_str();
     let kinds_name = format!(
         "_{}Kinds",
-        (config.node_name_to_scala_name)(&element.node_or_token_name).to_lower_camel_case()
+        (config.node_name_to_scala_name)(name).to_lower_camel_case()
     );
-    let scala_type = (config.node_name_to_scala_name)(&element.node_or_token_name);
+    let scala_type = (config.node_name_to_scala_name)(name);
     match element.cardinality {
         Cardinality::One => format!(
             "{create_fn}(_children.find(child => {kinds_name}.contains(child(\"nodeKind\").str)).get).asInstanceOf[{scala_type}]"
@@ -374,8 +373,9 @@ fn scala_json_lookup_code_for_non_trait_node(
     config: &ScalaAstGenConfig,
 ) -> String {
     let create_fn = format!("create{}", config.base_node_trait);
-    let kind = (config.node_name_to_json_kind)(&element.node_or_token_name);
-    let scala_type = (config.node_name_to_scala_name)(&element.node_or_token_name);
+    let name = element.name.as_str();
+    let kind = (config.node_name_to_json_kind)(name);
+    let scala_type = (config.node_name_to_scala_name)(name);
 
     match element.cardinality {
         Cardinality::One => {
@@ -390,13 +390,13 @@ fn scala_json_lookup_code_for_non_trait_node(
     }
 }
 
-fn scala_json_lookup_code(element: &Element, model: &Model, config: &ScalaAstGenConfig) -> String {
-    if model.tokens.contains(&element.node_or_token_name) {
-        scala_json_lookup_code_for_token(element, config)
-    } else if config.trait_nodes.contains(&element.node_or_token_name) {
-        scala_json_lookup_code_for_trait_node(element, config)
-    } else {
-        scala_json_lookup_code_for_non_trait_node(element, config)
+fn scala_json_lookup_code(element: &Element, config: &ScalaAstGenConfig) -> String {
+    match &element.name {
+        ElementName::Token(_) => scala_json_lookup_code_for_token(element, config),
+        ElementName::Node(node) if config.trait_nodes.iter().any(|name| name == node.as_str()) => {
+            scala_json_lookup_code_for_trait_node(element, config)
+        }
+        ElementName::Node(_) => scala_json_lookup_code_for_non_trait_node(element, config),
     }
 }
 

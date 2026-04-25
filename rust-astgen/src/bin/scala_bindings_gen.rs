@@ -75,7 +75,7 @@ struct ScalaBindingsGenArgs {
 }
 
 fn node_name_to_scala_name(node: &str) -> String {
-    format!("{}", node)
+    node.to_string()
 }
 
 /// This one is important, as it MUST match the nodeKind in the JSON representation.
