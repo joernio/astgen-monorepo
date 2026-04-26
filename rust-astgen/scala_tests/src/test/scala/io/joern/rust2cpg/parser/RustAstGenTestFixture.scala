@@ -32,7 +32,6 @@ trait RustAstGenTestFixture {
           "cargo",
           "run",
           "--quiet",
-          "--release",
           "--bin",
           "rust_ast_gen",
           "--",
