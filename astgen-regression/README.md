@@ -320,4 +320,4 @@ Contributions welcome! Please:
 ## Support
 
 For issues, questions, or contributions, visit:
-https://github.com/joernio/astgen-regression
+https://github.com/joernio/astgen-monorepo
