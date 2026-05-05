@@ -125,6 +125,7 @@ astgen-linux-arm64~
 astgen-macos-arm
 astgen-macos
 astgen-win.exe
+build/
 
 # Git worktrees
 .worktrees/

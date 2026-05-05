@@ -48,7 +48,6 @@ describe("astgen basic functionality", () => {
             const resultTypes = fs.readFileSync(path.join(tmpDir, "ast_out", "main.js.typemap")).toString()
             expect(resultTypes).toEqual(
                 "{" +
-                "\"17:24\":\"Require\"," +
                 "\"25:45\":\"string\"," +
                 "\"64:67\":\"string\"," +
                 "\"70:81\":\"string\"," +
@@ -83,8 +82,8 @@ describe("astgen basic functionality", () => {
             expect(resultTypes).toEqual(
                 "{" +
                 "\"0:7\":\"Console\"," +
-                "\"8:11\":\"{ (...data: any[]): void; (message?: any, ...optionalParams: any[]): void; }\"," +
-                "\"0:11\":\"{ (...data: any[]): void; (message?: any, ...optionalParams: any[]): void; }\"," +
+                "\"8:11\":\"(...data: any[]) => void\"," +
+                "\"0:11\":\"(...data: any[]) => void\"," +
                 "\"12:27\":\"string\",\"0:28\":\"void\"" +
                 "}"
             )
