@@ -15,6 +15,10 @@ pub(crate) struct RustAstGenJsonFile {
     pub(crate) relative_file_path: String,
     pub(crate) full_file_path: String,
     pub(crate) content: String,
+    // NB: we may scan a project with multiple crates, so we attach it to the file.
+    // In joern this shall give us the namespace_block for this file.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(crate) crate_name: Option<String>,
     pub(crate) loc: u32,
     pub(crate) children: Vec<RustAstGenJsonNode>,
 }
@@ -187,10 +191,12 @@ fn process_file(
         .strip_prefix(&config.input_dir_full_path)
         .with_context(|| format!("failed to strip prefix: {:?}", input_file_path))?;
 
+    let crate_name = crate_name_for_file(syntax_tree, semantics);
     let envelope = RustAstGenJsonFile {
         relative_file_path: relative_path.to_string_lossy().to_string(),
         full_file_path: input_file_path.to_string_lossy().to_string(),
         content: contents,
+        crate_name,
         loc,
         children: vec![json_root],
     };
@@ -203,4 +209,16 @@ fn process_file(
     write_json_to_file(&json_tree, &output_file)?;
 
     Ok(())
+}
+
+fn crate_name_for_file(
+    syntax_tree: &SyntaxNode,
+    semantics: &Semantics<RootDatabase>,
+) -> Option<String> {
+    semantics
+        .scope(syntax_tree)?
+        .module()
+        .krate(semantics.db)
+        .display_name(semantics.db)
+        .map(|name| name.to_string())
 }
