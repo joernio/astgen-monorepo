@@ -33,6 +33,14 @@ jobs:
         run: |
           echo "RELEASE_TAG=${{ github.ref_name }}" >> $GITHUB_ENV
         working-directory: .
+      - name: Verify tag resolved
+        run: |
+          if [ -z "$RELEASE_TAG" ]; then
+            echo "::error::No abap-astgen/v* tag found. Push a tag first, e.g. 'git tag abap-astgen/v0.1.0 && git push origin abap-astgen/v0.1.0'"
+            exit 1
+          fi
+          echo "Releasing tag: $RELEASE_TAG"
+        working-directory: .
       - name: Install node
         uses: actions/setup-node@v6
         with:
