@@ -6,7 +6,7 @@ A monorepo containing language-specific AST generation tools for the [Joern](htt
 
 | Language        | Directory                                  | Parser / Backend    | Status   | Latest Release |
 | --------------- | ------------------------------------------ | ------------------- | -------- | -------------- |
-| ABAP            | [`abap-astgen/`](./abap-astgen/)           | —                   | Deferred | —              |
+| ABAP            | [`abap-astgen/`](./abap-astgen/)           | @abaplint/core      | Active   | —              |
 | C# / .NET       | [`dotnet-astgen/`](./dotnet-astgen/)       | Roslyn              | Active   | [![Release](https://img.shields.io/github/v/release/joernio/astgen-monorepo?filter=dotnet-astgen%2F*&label=)](https://github.com/joernio/astgen-monorepo/releases?q=dotnet-astgen) |
 | Go              | [`go-astgen/`](./go-astgen/)               | Go standard library | Active   | [![Release](https://img.shields.io/github/v/release/joernio/astgen-monorepo?filter=go-astgen%2F*&label=)](https://github.com/joernio/astgen-monorepo/releases?q=go-astgen) |
 | JavaScript / TS | [`javascript-astgen/`](./javascript-astgen/) | Babel + tsc       | Active   | [![Release](https://img.shields.io/github/v/release/joernio/astgen-monorepo?filter=javascript-astgen%2F*&label=)](https://github.com/joernio/astgen-monorepo/releases?q=javascript-astgen) |

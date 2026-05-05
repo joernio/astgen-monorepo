@@ -1,0 +1,39 @@
+{
+  "name": "@joernio/abapgen",
+  "version": "0.1.0",
+  "description": "ABAP AST generator producing JSON output via @abaplint/core",
+  "main": "parse-abap.js",
+  "bin": {
+    "abapgen": "./parse-abap.js"
+  },
+  "repository": "https://github.com/joernio/astgen-monorepo",
+  "license": "Apache-2.0",
+  "scripts": {
+    "binary": "pkg . --targets node18-linux-x64,node18-linux-arm64,node18-macos-x64,node18-macos-arm64,node18-win-x64 --out-path .",
+    "binary:current": "pkg . --targets node18-macos-arm64 -o abapgen-macos-arm64",
+    "test": "jest --config=jest.config.js"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "@abaplint/core": "^2.116.0"
+  },
+  "devDependencies": {
+    "jest": "^30.0.4",
+    "pkg": "^5.8.1"
+  },
+  "directories": {
+    "test": "./test/"
+  },
+  "pkg": {
+    "assets": [],
+    "targets": [
+      "node18-linux-x64",
+      "node18-linux-arm64",
+      "node18-macos-x64",
+      "node18-macos-arm64",
+      "node18-win-x64"
+    ]
+  }
+}

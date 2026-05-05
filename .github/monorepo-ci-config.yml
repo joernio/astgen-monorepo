@@ -36,6 +36,12 @@ languages:
       - 'swift-astgen/**'
       - '.github/workflows/swift-astgen-ci.yml'
 
+  - name: abap
+    workflow: .github/workflows/abap-astgen-ci.yml
+    paths:
+      - 'abap-astgen/**'
+      - '.github/workflows/abap-astgen-ci.yml'
+
   - name: regression
     workflow: .github/workflows/astgen-regression-ci.yml
     paths:
