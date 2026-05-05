@@ -10,6 +10,17 @@ abapgen-macos-x64
 abapgen-macos-arm64
 abapgen-win-x64.exe
 
+# CI-renamed + gzexe backups
+abapgen-linux
+abapgen-linux-arm
+abapgen-macos
+abapgen-macos-arm
+abapgen-win.exe
+abapgen-linux~
+abapgen-linux-arm~
+abapgen-macos~
+abapgen-macos-arm~
+
 # editor/IDE
 .idea/
 .vscode/

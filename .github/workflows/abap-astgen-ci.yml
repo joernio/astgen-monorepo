@@ -28,6 +28,8 @@ jobs:
           tag: v2.1.5-procursus6
       - name: Install dependencies
         run: npm install
+      - name: Run tests
+        run: npm test
       - name: Create binaries
         run: npm run binary
       - name: Rename
