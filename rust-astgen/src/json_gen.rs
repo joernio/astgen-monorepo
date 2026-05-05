@@ -1,3 +1,4 @@
+use crate::names::{method_full_name_for_node, type_full_name_for_node};
 use crate::{cargo, config};
 use anyhow::Context;
 use log::{error, info};
@@ -29,6 +30,10 @@ pub(crate) struct RustAstGenJsonFile {
 pub(crate) struct RustAstGenJsonNode {
     pub(crate) node_kind: String,
     pub(crate) range: RustAstGenJsonNodeRange,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(crate) method_full_name: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(crate) type_full_name: Option<String>,
     pub(crate) children: Vec<RustAstGenJsonNode>,
 }
 
@@ -73,14 +78,22 @@ impl RustAstGenJsonNodeRange {
 }
 
 impl RustAstGenJsonNode {
-    pub(crate) fn from_node(node: &SyntaxNode, line_index: &LineIndex) -> Self {
+    pub(crate) fn from_node(
+        node: &SyntaxNode,
+        line_index: &LineIndex,
+        semantics: &Semantics<RootDatabase>,
+    ) -> Self {
         let node_kind = format!("{:?}", node.kind());
         let range = RustAstGenJsonNodeRange::from_node(node, line_index);
+        let method_full_name = method_full_name_for_node(node, semantics);
+        let type_full_name = type_full_name_for_node(node, semantics);
         let children = node
             .children_with_tokens()
             .filter(|child| !child.kind().is_trivia())
             .map(|node_or_token| match node_or_token {
-                NodeOrToken::Node(child_node) => Self::from_node(&child_node, line_index),
+                NodeOrToken::Node(child_node) => {
+                    Self::from_node(&child_node, line_index, semantics)
+                }
                 NodeOrToken::Token(child_token) => Self::from_token(&child_token, line_index),
             })
             .collect();
@@ -88,6 +101,8 @@ impl RustAstGenJsonNode {
         Self {
             node_kind,
             range,
+            method_full_name,
+            type_full_name,
             children,
         }
     }
@@ -101,6 +116,8 @@ impl RustAstGenJsonNode {
             node_kind,
             range,
             children,
+            method_full_name: None,
+            type_full_name: None,
         }
     }
 }
@@ -181,7 +198,7 @@ fn process_file(
 
     info!("building the JSON tree: {}", input_file_path.display());
 
-    let json_root = RustAstGenJsonNode::from_node(syntax_tree, &file_line_index);
+    let json_root = RustAstGenJsonNode::from_node(syntax_tree, &file_line_index, semantics);
     let contents = syntax_tree.text().to_string();
     let loc = file_line_index
         .line_col(syntax_tree.text_range().end())
