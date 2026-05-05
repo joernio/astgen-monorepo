@@ -11,7 +11,8 @@ pub(crate) fn load_workspace(config: &RustAstGenConfig) -> Result<(RootDatabase,
     let load_cargo_config = LoadCargoConfig {
         load_out_dirs_from_check: false,
         with_proc_macro_server: ProcMacroServerChoice::None,
-        prefill_caches: true,
+        // doesn't seem necessary? slight runtime performance improvement by disabling it
+        prefill_caches: false,
         proc_macro_processes: 0,
         num_worker_threads: config.cargo_worker_threads,
     };
