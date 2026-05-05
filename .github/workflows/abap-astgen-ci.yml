@@ -1,0 +1,51 @@
+name: ABAP AST Generator CI
+
+on:
+  workflow_call:  # Called by monorepo-ci.yml
+  workflow_dispatch:  # Manual runs for testing
+
+defaults:
+  run:
+    working-directory: abap-astgen
+
+jobs:
+  abap-ci:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: '0'
+      - name: Install node
+        uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+          cache: 'npm'
+          cache-dependency-path: 'abap-astgen/package-lock.json'
+      - name: Install ldid
+        uses: MOZGIII/install-ldid-action@v1
+        with:
+          tag: v2.1.5-procursus6
+      - name: Install dependencies
+        run: npm install
+      - name: Create binaries
+        run: npm run binary
+      - name: Rename
+        run: |
+          mv abapgen-linux-x64 abapgen-linux
+          mv abapgen-linux-arm64 abapgen-linux-arm
+          mv abapgen-macos-x64 abapgen-macos
+          mv abapgen-macos-arm64 abapgen-macos-arm
+          mv abapgen-win-x64.exe abapgen-win.exe
+      - name: Run gzexe
+        run: |
+          gzexe abapgen-linux
+          rm abapgen-linux~
+          gzexe abapgen-linux-arm
+          rm abapgen-linux-arm~
+      - name: Print size and version
+        run: |
+          ls -lh ./abapgen*
+          ABAPGEN_VERSION=$(node -p "require('./package.json').version")
+          echo "ABAPGEN_VERSION=$ABAPGEN_VERSION" >> $GITHUB_ENV
+          echo "abapgen version is: $ABAPGEN_VERSION"

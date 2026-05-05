@@ -73,6 +73,12 @@ jobs:
     if: contains(fromJSON(needs.detect-changes.outputs.workflows), 'swift')
     uses: ./.github/workflows/swift-astgen-ci.yml
 
+  call-abap-ci:
+    name: ABAP CI
+    needs: detect-changes
+    if: contains(fromJSON(needs.detect-changes.outputs.workflows), 'abap')
+    uses: ./.github/workflows/abap-astgen-ci.yml
+
   call-regression-ci:
     name: Regression CI
     needs: detect-changes
@@ -90,6 +96,7 @@ jobs:
       - call-go-ci
       - call-ruby-ci
       - call-swift-ci
+      - call-abap-ci
       - call-regression-ci
     if: always()
     steps:
@@ -105,6 +112,7 @@ jobs:
           GO_RESULT="${{ needs.call-go-ci.result }}"
           RUBY_RESULT="${{ needs.call-ruby-ci.result }}"
           SWIFT_RESULT="${{ needs.call-swift-ci.result }}"
+          ABAP_RESULT="${{ needs.call-abap-ci.result }}"
           REGRESSION_RESULT="${{ needs.call-regression-ci.result }}"
 
           echo "| Language | Status |" >> $GITHUB_STEP_SUMMARY
@@ -116,6 +124,7 @@ jobs:
           [[ "$GO_RESULT" != "skipped" ]] && echo "| Go | $GO_RESULT |" >> $GITHUB_STEP_SUMMARY
           [[ "$RUBY_RESULT" != "skipped" ]] && echo "| Ruby | $RUBY_RESULT |" >> $GITHUB_STEP_SUMMARY
           [[ "$SWIFT_RESULT" != "skipped" ]] && echo "| Swift | $SWIFT_RESULT |" >> $GITHUB_STEP_SUMMARY
+          [[ "$ABAP_RESULT" != "skipped" ]] && echo "| ABAP | $ABAP_RESULT |" >> $GITHUB_STEP_SUMMARY
           [[ "$REGRESSION_RESULT" != "skipped" ]] && echo "| Regression | $REGRESSION_RESULT |" >> $GITHUB_STEP_SUMMARY
 
           # Fail if any job failed
@@ -125,6 +134,7 @@ jobs:
              [[ "$GO_RESULT" == "failure" ]] || \
              [[ "$RUBY_RESULT" == "failure" ]] || \
              [[ "$SWIFT_RESULT" == "failure" ]] || \
+             [[ "$ABAP_RESULT" == "failure" ]] || \
              [[ "$REGRESSION_RESULT" == "failure" ]]; then
             echo "" >> $GITHUB_STEP_SUMMARY
             echo "❌ One or more workflows failed" >> $GITHUB_STEP_SUMMARY
