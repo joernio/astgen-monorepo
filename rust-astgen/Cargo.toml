@@ -23,3 +23,7 @@ heck = "0.5.0"
 [build-dependencies]
 serde = { version = "1.0", features = ["derive"] }
 toml = "1.1"
+
+[dev-dependencies]
+# used by the integration tests
+temp-dir = "0.1.16"
