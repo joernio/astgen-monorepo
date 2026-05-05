@@ -146,6 +146,56 @@ WRITE 'x'.
         expect(result.stderr).toMatch(/Usage/);
     });
 
+    it('should exit non-zero when called with input but no output dir', () => {
+        const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'abapgen-tests-'));
+        try {
+            const result = spawnSync('node', [parser, tmpDir], { encoding: 'utf8' });
+            expect(result.status).not.toBe(0);
+            expect(result.stderr).toMatch(/Usage/);
+        } finally {
+            fs.rmSync(tmpDir, { recursive: true, force: true });
+        }
+    });
+
+    it('should fail (non-zero exit) when the input path does not exist', () => {
+        const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'abapgen-tests-'));
+        const missing = path.join(tmpDir, 'does-not-exist');
+        const outDir = path.join(tmpDir, 'out');
+        try {
+            const result = spawnSync('node', [parser, missing, outDir], { encoding: 'utf8' });
+            expect(result.status).not.toBe(0);
+            expect(result.stderr).toMatch(/ENOENT/);
+        } finally {
+            fs.rmSync(tmpDir, { recursive: true, force: true });
+        }
+    });
+
+    it('should not crash on an empty .abap file', () => {
+        runFixture('', 'z_empty.prog.abap', ({ outDir, result }) => {
+            expect(result.status).toBe(0);
+            expect(result.stderr).not.toMatch(/TypeError|SyntaxError|ReferenceError/);
+            // Either OK (empty statements array) or ERR (no object) — both fine.
+            expect(result.stdout).toMatch(/^(OK|ERR) /m);
+        });
+    });
+
+    it('should exit cleanly when the input dir only contains non-.abap files', () => {
+        const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'abapgen-tests-'));
+        const srcDir = path.join(tmpDir, 'src');
+        const outDir = path.join(tmpDir, 'out');
+        fs.mkdirSync(srcDir, { recursive: true });
+        fs.writeFileSync(path.join(srcDir, 'readme.md'), '# not abap');
+        fs.writeFileSync(path.join(srcDir, 'config.yaml'), 'key: value');
+
+        try {
+            const result = spawnSync('node', [parser, srcDir, outDir], { encoding: 'utf8' });
+            expect(result.status).toBe(0);
+            expect(fs.readdirSync(outDir)).toEqual([]);
+        } finally {
+            fs.rmSync(tmpDir, { recursive: true, force: true });
+        }
+    });
+
     it('should parse FORM routines', () => {
         const code = `REPORT z_form.
 FORM greet USING iv_name TYPE string.
@@ -157,6 +207,65 @@ ENDFORM.
             const types = ast.statements.map(s => s.type);
             expect(types).toContain('Form');
             expect(types).toContain('EndForm');
+        });
+    });
+
+    it('should exit cleanly and emit no JSON when the input directory has no .abap files', () => {
+        const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'abapgen-tests-'));
+        const srcDir = path.join(tmpDir, 'src');
+        const outDir = path.join(tmpDir, 'out');
+        fs.mkdirSync(srcDir, { recursive: true });
+
+        try {
+            const result = spawnSync('node', [parser, srcDir, outDir], { encoding: 'utf8' });
+            expect(result.status).toBe(0);
+            expect(fs.existsSync(outDir)).toBe(true);
+            expect(fs.readdirSync(outDir)).toEqual([]);
+        } finally {
+            fs.rmSync(tmpDir, { recursive: true, force: true });
+        }
+    });
+
+    it('should not crash when given a filename that does not map to an ABAP object', () => {
+        // @abaplint identifies object types from the filename suffix (.prog.abap,
+        // .clas.abap, .intf.abap, etc). A bare `.abap` without a recognized
+        // suffix exercises the !obj/!file branch in the parser, which should
+        // print ERR and keep going rather than crash.
+        const code = `REPORT z_x.\n`;
+        runFixture(code, 'random_name.abap', ({ outDir, result }) => {
+            expect(result.status).toBe(0);
+            // Either ERR (fell through no-object branch) or OK (abaplint inferred
+            // it as a program) — both are acceptable, what matters is: no crash,
+            // no output in the broken-object case.
+            expect(result.stdout).toMatch(/^(OK|ERR) /m);
+            expect(result.stderr).not.toMatch(/TypeError|SyntaxError|ReferenceError/);
+        });
+    });
+
+    it('should preserve UTF-8 characters in token strings', () => {
+        const code = `REPORT z_utf8.
+WRITE 'héllo wörld — €'.
+`;
+        runFixture(code, 'z_utf8.prog.abap', ({ outDir }) => {
+            const ast = readJsonOutput(outDir, 'z_utf8.prog.abap');
+            const write = ast.statements.find(s => s.type === 'Write');
+            expect(write).toBeDefined();
+            const literal = write.tokens.map(t => t.str).find(s => s.startsWith("'"));
+            expect(literal).toBe("'héllo wörld — €'");
+        });
+    });
+
+    it('should set objectType to INTF for interface definitions', () => {
+        const code = `INTERFACE zif_thing PUBLIC.
+  METHODS do_it.
+ENDINTERFACE.
+`;
+        runFixture(code, 'zif_thing.intf.abap', ({ outDir }) => {
+            const ast = readJsonOutput(outDir, 'zif_thing.intf.abap');
+            expect(ast.objectType).toBe('INTF');
+            const types = ast.statements.map(s => s.type);
+            expect(types).toContain('Interface');
+            expect(types).toContain('EndInterface');
         });
     });
 
