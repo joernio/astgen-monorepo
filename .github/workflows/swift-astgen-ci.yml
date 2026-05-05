@@ -51,7 +51,7 @@ jobs:
           .\SwiftAstGen-win.exe -s
       - name: Run UPX for Windows Build
         if: matrix.os == 'windows-latest'
-        uses: crazy-max/ghaction-upx@v3
+        uses: crazy-max/ghaction-upx@v4
         with:
           version: latest
           files: |
