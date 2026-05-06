@@ -1,9 +1,10 @@
 //! Test fixture that runs `rust_ast_gen` (via cargo) against a temporary directory and
 //! parses back the generated JSON. Currently only one crate is supported.
+#![allow(dead_code)]
 
 use serde_json::Value;
 use std::fs;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use std::process::Command;
 use temp_dir::TempDir;
 
@@ -46,4 +47,149 @@ edition = "2021"
     Ok(serde_json::from_str(&fs::read_to_string(
         output_dir.join("src").join("main.rs.json"),
     )?)?)
+}
+
+fn nodes_by_kind<'a>(json: &'a Value, kind: &str) -> Vec<&'a Value> {
+    let mut result = Vec::new();
+    if let Some(children) = json.get("children").and_then(Value::as_array) {
+        for child in children {
+            collect_nodes_by_kind(child, kind, &mut result);
+        }
+    }
+    result
+}
+
+fn collect_nodes_by_kind<'a>(node: &'a Value, kind: &str, result: &mut Vec<&'a Value>) {
+    if node.get("nodeKind").and_then(Value::as_str) == Some(kind) {
+        result.push(node);
+    }
+
+    if let Some(children) = node.get("children").and_then(Value::as_array) {
+        for child in children {
+            collect_nodes_by_kind(child, kind, result);
+        }
+    }
+}
+
+fn node_text<'a>(json: &'a Value, node: &Value) -> Option<&'a str> {
+    let content = json.get("content")?.as_str()?;
+    let range = node.get("range")?;
+    let start = range.get("startOffset")?.as_u64()? as usize;
+    let end = range.get("endOffset")?.as_u64()? as usize;
+    content.get(start..end)
+}
+
+#[derive(Clone, Copy)]
+pub struct NodeSelector<'a> {
+    json: &'a Value,
+    kind: &'static str,
+    text: &'static str,
+    line: Option<&'static str>,
+}
+
+impl<'a> NodeSelector<'a> {
+    pub fn on_line(mut self, line: &'static str) -> Self {
+        self.line = Some(line);
+        self
+    }
+
+    pub fn type_full_name(self) -> String {
+        self.field("typeFullName")
+    }
+
+    pub fn method_full_name(self) -> String {
+        self.field("methodFullName")
+    }
+
+    fn field(self, field: &str) -> String {
+        self.one_node()
+            .get(field)
+            .and_then(Value::as_str)
+            .unwrap_or_else(|| panic!("expected {field} on {}", self.description()))
+            .to_owned()
+    }
+
+    fn one_node(self) -> &'a Value {
+        let nodes = self.nodes();
+        assert_eq!(
+            nodes.len(),
+            1,
+            "expected exactly one {}, found {}: {:?}",
+            self.description(),
+            nodes.len(),
+            nodes
+                .iter()
+                .map(|node| node_text(self.json, node))
+                .collect::<Vec<_>>()
+        );
+        nodes[0]
+    }
+
+    fn nodes(self) -> Vec<&'a Value> {
+        nodes_by_kind(self.json, self.kind)
+            .into_iter()
+            .filter(|node| self.matches_line(node) && node_text(self.json, node) == Some(self.text))
+            .collect()
+    }
+
+    fn matches_line(self, node: &Value) -> bool {
+        self.line.is_none_or(|expected| {
+            node_start_line(self.json, node).is_some_and(|line| line.trim() == expected.trim())
+        })
+    }
+
+    fn description(self) -> String {
+        let mut parts = vec![format!("{} `{}`", self.kind, self.text)];
+        if let Some(line) = self.line {
+            parts.push(format!("on line `{}`", line.trim()));
+        }
+        parts.join(" ")
+    }
+}
+
+fn node<'a>(json: &'a Value, kind: &'static str, text: &'static str) -> NodeSelector<'a> {
+    NodeSelector {
+        json,
+        kind,
+        text,
+        line: None,
+    }
+}
+
+pub fn call_expr<'a>(json: &'a Value, text: &'static str) -> NodeSelector<'a> {
+    node(json, "CALL_EXPR", text)
+}
+
+pub fn method_call_expr<'a>(json: &'a Value, text: &'static str) -> NodeSelector<'a> {
+    node(json, "METHOD_CALL_EXPR", text)
+}
+
+pub fn name_ref<'a>(json: &'a Value, text: &'static str) -> NodeSelector<'a> {
+    node(json, "NAME_REF", text)
+}
+
+pub fn ident_pat<'a>(json: &'a Value, text: &'static str) -> NodeSelector<'a> {
+    node(json, "IDENT_PAT", text)
+}
+
+pub fn self_param<'a>(json: &'a Value, text: &'static str) -> NodeSelector<'a> {
+    node(json, "SELF_PARAM", text)
+}
+
+pub fn literal<'a>(json: &'a Value, text: &'static str) -> NodeSelector<'a> {
+    node(json, "LITERAL", text)
+}
+
+pub fn bin_expr<'a>(json: &'a Value, text: &'static str) -> NodeSelector<'a> {
+    node(json, "BIN_EXPR", text)
+}
+
+fn node_start_line<'a>(json: &'a Value, node: &Value) -> Option<&'a str> {
+    let content = json.get("content")?.as_str()?;
+    let start_line = node
+        .get("range")?
+        .get("startLine")?
+        .as_u64()
+        .and_then(|line| usize::try_from(line).ok())?;
+    content.lines().nth(start_line)
 }
