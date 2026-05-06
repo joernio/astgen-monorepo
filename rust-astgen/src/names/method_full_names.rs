@@ -18,7 +18,6 @@ pub(crate) fn method_full_name_for_node(
     node: &SyntaxNode,
     semantics: &Semantics<RootDatabase>,
 ) -> Option<String> {
-    let node = node.clone();
     match_ast! {
         match node {
             ast::CallExpr(call_expr) => resolve_call_expr_full_name(&call_expr, semantics),
