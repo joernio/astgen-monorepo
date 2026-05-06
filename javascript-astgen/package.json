@@ -22,8 +22,8 @@
   "scripts": {
     "test": "NODE_OPTIONS='--experimental-vm-modules' jest --silent --config=jest.config.js",
     "build": "tsc --build",
-    "bundle": "esbuild dist/astgen.js --bundle --platform=node --target=node24 --minify --outfile=build/astgen.js --external:typescript",
-    "binary": "yarn build && yarn bundle && pkg build/astgen.js --options max-old-space-size=8192 --compress GZip --fallback-to-source --targets node24-linux-x64,node24-linux-arm64,node24-macos-x64,node24-win-x64,node24-macos-arm64",
+    "bundle": "esbuild dist/astgen.js --bundle --platform=node --target=node24 --minify --outfile=build/astgen.js",
+    "binary": "yarn build && yarn bundle && pkg . --sea --compress GZip --options max-old-space-size=8192 --targets node24-linux-x64,node24-linux-arm64,node24-macos-x64,node24-win-x64,node24-macos-arm64",
     "regression": "astgen-regression local"
   },
   "engines": {
