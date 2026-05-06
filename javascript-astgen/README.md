@@ -14,7 +14,7 @@ Generates JSON Abstract Syntax Trees (ASTs) for JavaScript, TypeScript, Vue, JSX
 
 ## Requirements
 
-- Node.js >= 18.0.0 (for development/testing)
+- Node.js >= 24.0.0 (for development/testing)
 - No Node.js required for standalone binaries
 
 ## Key Dependencies
