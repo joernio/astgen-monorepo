@@ -27,28 +27,8 @@ fn resolve_expr_type_full_name(
     expr: &ast::Expr,
     semantics: &Semantics<RootDatabase>,
 ) -> Option<String> {
-    if let Some(type_name) = semantics
-        .type_of_expr(expr)
-        .and_then(|typ| format_node_type_full_name(typ.adjusted(), expr.syntax(), semantics))
-    {
-        return Some(type_name);
-    }
-
-    if let ast::Expr::MethodCallExpr(method_call_expr) = expr {
-        resolve_method_call_return_type_full_name(method_call_expr, semantics)
-    } else {
-        None
-    }
-}
-
-fn resolve_method_call_return_type_full_name<'db>(
-    method_call_expr: &ast::MethodCallExpr,
-    semantics: &Semantics<'db, RootDatabase>,
-) -> Option<String> {
-    let typ = semantics
-        .resolve_method_call_as_callable(method_call_expr)?
-        .return_type();
-    format_node_type_full_name(typ, method_call_expr.syntax(), semantics)
+    let typ = semantics.type_of_expr(expr)?.adjusted();
+    format_node_type_full_name(typ, expr.syntax(), semantics)
 }
 
 fn resolve_ident_pat_type_full_name(
