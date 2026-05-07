@@ -15,11 +15,24 @@ if (!inputArg || !outputDir) {
 
 fs.mkdirSync(outputDir, { recursive: true });
 
+function* walkAbap(dir, relPrefix = '') {
+  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+    const abs = path.join(dir, entry.name);
+    const rel = relPrefix ? path.join(relPrefix, entry.name) : entry.name;
+    if (entry.isDirectory()) {
+      yield* walkAbap(abs, rel);
+    } else if (entry.isFile() && entry.name.endsWith('.abap')) {
+      yield [abs, rel];
+    }
+  }
+}
+
 const pairs = fs.statSync(inputArg).isDirectory()
-  ? fs.readdirSync(inputArg).filter(f => f.endsWith('.abap')).map(f => [path.join(inputArg, f), f])
+  ? [...walkAbap(inputArg)]
   : [[inputArg, path.basename(inputArg)]];
 
-for (const [absPath, relName] of pairs) {
+for (const [absPath, relPath] of pairs) {
+  const relName = path.basename(relPath);
   try {
     const reg = new Registry();
     reg.addFile(new MemoryFile(relName, fs.readFileSync(absPath, 'utf8')));
@@ -36,7 +49,8 @@ for (const [absPath, relName] of pairs) {
       end:    { row: s.getEnd().getRow(),   col: s.getEnd().getCol() }
     }));
 
-    const outPath = path.join(outputDir, relName.replace(/\.abap$/, '.json'));
+    const outPath = path.join(outputDir, relPath.replace(/\.abap$/, '.json'));
+    fs.mkdirSync(path.dirname(outPath), { recursive: true });
     fs.writeFileSync(outPath, JSON.stringify({ file: relName, objectType: obj.getType(), statements }));
     process.stdout.write(`OK ${outPath}\n`);
   } catch (e) {

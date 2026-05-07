@@ -11,6 +11,7 @@
   "scripts": {
     "binary": "pkg . --targets node18-linux-x64,node18-linux-arm64,node18-macos-x64,node18-macos-arm64,node18-win-x64 --out-path .",
     "binary:current": "pkg . --targets node18-macos-arm64 -o abapgen-macos-arm64",
+    "clean": "rm -f abapgen-linux-x64 abapgen-linux-arm64 abapgen-macos-x64 abapgen-macos-arm64 abapgen-win-x64.exe abapgen-linux abapgen-linux-arm abapgen-macos abapgen-macos-arm abapgen-win.exe abapgen-linux~ abapgen-linux-arm~ abapgen-macos~ abapgen-macos-arm~",
     "test": "jest --config=jest.config.js"
   },
   "engines": {
