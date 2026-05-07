@@ -6,51 +6,66 @@ import * as path from "node:path"
 
 export type FileEntry = { path: string; content: string }
 
-function dirIsInIgnorePath(options: Options, fullPath: string, ignorePath: string): boolean {
-    if (path.isAbsolute(ignorePath)) {
-        return fullPath.startsWith(ignorePath)
-    } else {
-        const absIgnorePath = path.join(options.src, ignorePath)
-        return fullPath.startsWith(absIgnorePath)
-    }
+type ExcludeRules = {
+    dirPaths: string[]
+    exactPaths: Set<string>
+    regex?: RegExp
 }
 
-function fileIsInIgnorePath(options: Options, fullPath: string, ignorePath: string): boolean {
-    if (path.isAbsolute(ignorePath)) {
-        return fullPath == ignorePath
-    } else {
-        const absIgnorePath = path.join(options.src, ignorePath)
-        return fullPath == absIgnorePath
-    }
+// Cached at module load. Defaults.IGNORE_DIRS is a constant; safe to memoize.
+const IGNORE_DIRS_SET = new Set(Defaults.IGNORE_DIRS.map((d) => d.toLowerCase()))
+
+function resolveExcludePath(srcDir: string, excludePath: string): string {
+    return path.resolve(path.isAbsolute(excludePath) ? excludePath : path.join(srcDir, excludePath))
 }
 
-function ignoreDirectory(options: Options, dirName: string, fullPath: string): boolean {
+function buildExcludeRules(options: Options): ExcludeRules {
+    const srcDir = path.resolve(options.src)
+    const dirPaths: string[] = []
+    const exactPaths = new Set<string>()
+    for (const excludePath of options["exclude-file"]) {
+        const resolved = resolveExcludePath(srcDir, excludePath)
+        dirPaths.push(resolved)
+        exactPaths.add(resolved)
+    }
+    return {dirPaths, exactPaths, regex: options["exclude-regex"]}
+}
+
+// Note: path comparison is case-sensitive. On macOS/Windows (case-insensitive
+// filesystems) an exclude path with a different case than the on-disk path
+// will not match. Accept this trade-off rather than per-OS lowercasing.
+function pathIsInDirectory(candidatePath: string, directoryPath: string): boolean {
+    const relativePath = path.relative(directoryPath, candidatePath)
+    return relativePath === "" || (!relativePath.startsWith("..") && !path.isAbsolute(relativePath))
+}
+
+function ignoreDirectory(rules: ExcludeRules, dirName: string, fullPath: string): boolean {
     return dirName.startsWith(".") ||
         dirName.startsWith("__") ||
-        options["exclude-file"].some((e: string) => dirIsInIgnorePath(options, fullPath, e)) ||
-        options["exclude-regex"]?.test(fullPath) ||
-        Defaults.IGNORE_DIRS.includes(dirName.toLowerCase())
+        rules.dirPaths.some((ignoredDir) => pathIsInDirectory(fullPath, ignoredDir)) ||
+        rules.regex?.test(fullPath) ||
+        IGNORE_DIRS_SET.has(dirName.toLowerCase())
 }
 
-function ignoreFileByName(options: Options, fileName: string, fullPath: string, extensions: string[]): boolean {
+function ignoreFileByName(
+    rules: ExcludeRules,
+    fileName: string,
+    fullPath: string,
+    extensions: string[],
+): boolean {
     return !extensions.some((e: string) => fileName.endsWith(e)) ||
         fileName.startsWith(".") ||
         fileName.startsWith("__") ||
         Defaults.IGNORE_FILE_PATTERN.test(fileName) ||
-        options["exclude-file"].some((e: string) => fileIsInIgnorePath(options, fullPath, e)) ||
-        (options["exclude-regex"]?.test(fullPath) ?? false)
+        rules.exactPaths.has(fullPath) ||
+        (rules.regex?.test(fullPath) ?? false)
 }
 
-// Reads the file content if it passes all size/content guards, or returns null with a warning.
-// Uses the stats object already populated by readdirp (lstat: true) to avoid a redundant stat call.
-// Files that pass the size check are read once here; the content is returned to avoid a second
-// read during parsing.
-function readFileIfValid(fileWithDir: string, stats: fs.Stats): string | null {
-    if (stats.size > Defaults.MAX_FILE_SIZE_BYTES) {
-        console.warn(fileWithDir, "exceeds maximum file size of", Defaults.MAX_FILE_SIZE_BYTES, "bytes")
-        return null
-    }
-    const content = fs.readFileSync(fileWithDir, "utf-8")
+// Validates a file's content (EMSCRIPTEN marker, line length, total LOC) after it
+// has been read. The size guard is performed earlier from stats to avoid reading
+// oversized files. Returns the content if valid, or null with a warning otherwise.
+async function readAndValidateContent(fileWithDir: string): Promise<string | null> {
+    const content = await fs.promises.readFile(fileWithDir, "utf-8")
     if (content.includes("// EMSCRIPTEN_START_ASM")) {
         console.warn("Parsing", fileWithDir, ":", "File skipped as it contains EMSCRIPTEN code")
         return null
@@ -63,7 +78,7 @@ function readFileIfValid(fileWithDir: string, stats: fs.Stats): string | null {
                 console.warn(fileWithDir, "line", lineCount + 1, "exceeds", Defaults.MAX_LINE_LENGTH, "bytes")
                 return null
             }
-            if (++lineCount >= Defaults.MAX_LOC_IN_FILE) {
+            if (++lineCount > Defaults.MAX_LOC_IN_FILE) {
                 console.warn(fileWithDir, "more than", Defaults.MAX_LOC_IN_FILE, "lines of code")
                 return null
             }
@@ -73,36 +88,51 @@ function readFileIfValid(fileWithDir: string, stats: fs.Stats): string | null {
     return content
 }
 
+// Cheap shared iterator used by filesWithExtensions. Applies name-based filters
+// during the readdirp walk and the size guard from stats before content reads.
+//
+// `options.src` is normalized via path.resolve so the invariant "fullPath is
+// absolute" is explicit and doesn't depend on readdirp's internal behavior.
+async function* iterateMatchingEntries(
+    options: Options,
+    extensions: string[],
+): AsyncGenerator<{ path: string }> {
+    const dir = path.resolve(options.src)
+    const excludeRules = buildExcludeRules(options)
+    // Dynamic import for ESM-only package.
+    const {readdirp} = await import('readdirp')
+    const stream = readdirp(dir, {
+        root: dir,
+        fileFilter: (f) => !ignoreFileByName(excludeRules, f.basename, f.fullPath, extensions),
+        directoryFilter: (d) => !ignoreDirectory(excludeRules, d.basename, d.fullPath),
+        lstat: true,
+        alwaysStat: true,
+        depth: options.recurse ? undefined : 0,
+    })
+    for await (const entry of stream) {
+        const stats = entry.stats as fs.Stats
+        if (stats.size > Defaults.MAX_FILE_SIZE_BYTES) {
+            console.warn(entry.fullPath, "exceeds maximum file size of", Defaults.MAX_FILE_SIZE_BYTES, "bytes")
+            continue
+        }
+        yield {path: entry.fullPath}
+    }
+}
+
 /**
- * Asynchronously retrieves all files with the specified extensions from the source directory,
- * applying exclusion rules defined in the provided options.
- *
- * Uses the streaming readdirp API so that entry objects can be GC'd incrementally.
- * Cheap name-based filters run during traversal; expensive I/O checks (file size,
- * line scanning) run per-entry as entries stream in. The file content is read once and
- * returned with each entry to avoid a second read during parsing.
- * When `options.recurse` is false, only files in the top-level source directory are returned.
+ * Asynchronously yields source file entries (path + content) matching the
+ * given extensions and passing every exclusion and content-validation rule.
+ * Reads each file once and yields immediately.
  *
  * @param options - The options object containing source directory and exclusion patterns.
  * @param extensions - An array of file extensions to include (e.g., ['.js', '.ts']).
  * @returns An async generator that yields FileEntry objects for matching files.
  */
 export async function* filesWithExtensions(options: Options, extensions: string[]): AsyncGenerator<FileEntry> {
-    const dir = options.src
-    // Dynamic import for ESM-only package
-    const {readdirp} = await import('readdirp')
-    const stream = readdirp(dir, {
-        root: dir,
-        fileFilter: (f) => !ignoreFileByName(options, f.basename, f.fullPath, extensions),
-        directoryFilter: (d) => !ignoreDirectory(options, d.basename, d.fullPath),
-        lstat: true,
-        alwaysStat: true,
-        depth: options.recurse ? undefined : 0,
-    })
-    for await (const entry of stream) {
-        const content = readFileIfValid(entry.fullPath, entry.stats as fs.Stats)
+    for await (const entry of iterateMatchingEntries(options, extensions)) {
+        const content = await readAndValidateContent(entry.path)
         if (content !== null) {
-            yield { path: entry.fullPath, content }
+            yield {path: entry.path, content}
         }
     }
 }

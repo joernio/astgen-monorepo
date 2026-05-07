@@ -1,7 +1,7 @@
 import babelParser from "@babel/parser"
 import tsc from "typescript"
 
-export const JS_EXTENSIONS: string[] = [
+export const JS_TS_EXTENSIONS: string[] = [
     ".js",
     ".jsx",
     ".cjs",
