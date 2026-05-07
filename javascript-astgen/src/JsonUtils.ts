@@ -1,42 +1,62 @@
 import * as fs from "node:fs"
-import { decodePos } from "./TscUtils"
+import {decodePos} from "./TscUtils"
 
 const STREAM_BUFFER_SIZE = 64 * 1024
 
+/**
+ * Opens `filePath`, streams UTF-8 via a rolling ~64KB buffer and `writeSync` (fast path
+ * like main), and closes the fd. Does not build one giant string per flush (avoids
+ * `chunks.join` over many fragments at each threshold).
+ *
+ * On failure after the file was created, unlinks it best-effort so partial JSON is not left behind.
+ */
 function withBufferedWriter(filePath: string, fn: (write: (s: string) => void) => void): void {
-    const fd = fs.openSync(filePath, "w")
-    const chunks: string[] = []
-    let length = 0
-
-    function flush(): void {
-        if (chunks.length > 0) {
-            fs.writeSync(fd, chunks.join(""))
-            chunks.length = 0
-            length = 0
-        }
-    }
-
-    function write(s: string): void {
-        chunks.push(s)
-        length += s.length
-        if (length >= STREAM_BUFFER_SIZE) flush()
-    }
-
+    let fd: number | undefined
     try {
+        fd = fs.openSync(filePath, "w")
+        let buf = ""
+
+        function flush(): void {
+            if (buf.length > 0) {
+                fs.writeSync(fd as number, buf)
+                buf = ""
+            }
+        }
+
+        function write(s: string): void {
+            buf += s
+            if (buf.length >= STREAM_BUFFER_SIZE) flush()
+        }
+
         fn(write)
         flush()
+    } catch (err) {
+        try {
+            if (fd !== undefined) {
+                fs.closeSync(fd)
+                fd = undefined
+            }
+        } catch {
+            /* ignore close errors while handling failure */
+        }
+        try {
+            fs.unlinkSync(filePath)
+        } catch {
+            /* ignore missing file */
+        }
+        const msg = err instanceof Error ? err.message : String(err)
+        throw new Error(`Failed to write ${filePath}: ${msg}`)
     } finally {
-        fs.closeSync(fd)
+        if (fd !== undefined) {
+            fs.closeSync(fd)
+        }
     }
 }
 
 /**
- * Writes a Map<number, string> as a JSON object directly to a file using buffered I/O,
+ * Writes a Map<number, string> as a JSON object directly to a file using buffered streaming,
  * avoiding both the intermediate plain object from Object.fromEntries and the full JSON string.
  * Keys are decoded from packed (start, end) positions to "start:end" strings in the output.
- *
- * @param filePath The file path to write to.
- * @param map The map to serialize.
  */
 export function writeMapToJsonFile(filePath: string, map: Map<number, string>): void {
     withBufferedWriter(filePath, (write) => {
@@ -60,9 +80,6 @@ export function writeMapToJsonFile(filePath: string, map: Map<number, string>): 
  * Semantics match JSON.stringify with getCircularReplacer:
  * - Circular/duplicate object references are omitted (skipped in objects, null in arrays)
  * - undefined, functions, and symbols are omitted in objects and become null in arrays
- *
- * @param filePath The file path to write to.
- * @param data The value to serialize.
  */
 export function writeJsonStreamCircular(filePath: string, data: any): void {
     const seen = new WeakSet<object>()

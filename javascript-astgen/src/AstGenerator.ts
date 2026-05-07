@@ -10,16 +10,17 @@ import * as path from "node:path"
 import * as fs from "node:fs"
 
 /**
- * Executes a void function and catches any exceptions.
- * In case of an error, logs a warning with the error message and argument.
+ * Executes an async function and swallows any exception, logging it as a
+ * warning instead of propagating. Used at the per-file boundary so that one
+ * file's failure does not abort the entire AST generation run.
  *
- * @param errMessage - The error message to be logged when an exception occurs.
- * @param arg - An argument that provides better identification in the log.
- * @param f - The void function to execute.
+ * @param errMessage - The error message prefix logged when an exception occurs.
+ * @param arg - An argument that provides better identification in the log (typically the file path).
+ * @param f - The async function to execute.
  */
-function VoidWithTry(errMessage: string, arg: string, f: () => void): void {
+async function runOrLogWarning(errMessage: string, arg: string, f: () => Promise<void>): Promise<void> {
     try {
-        f()
+        await f()
     } catch (err) {
         if (err instanceof Error) {
             console.warn(errMessage, arg, ":", err.message)
@@ -92,39 +93,28 @@ function buildTscUtils(files: string[], options: Options): TscUtils | undefined 
 /**
  * Generates Abstract Syntax Trees (ASTs) for JavaScript and TypeScript source files.
  *
- * This function collects all source files with JavaScript or TypeScript extensions,
- * optionally builds a TscUtils instance for type extraction, and processes each file:
- * - Parses the file into an AST and writes it to a JSON file.
- * - If type extraction is enabled, retrieves and writes type information for each file.
+ * Walks matching sources sequentially (`for await`). Each file's contents are parsed
+ * and written and then discarded; they are never held for all files at once.
+ * Paths are appended to `filePaths` during that pass — when the `tsTypes` option is
+ * off the list is unused afterward; when on it feeds a second sequential phase that
+ * loads typemaps from disk (`tsc`) without rereading file bodies through this traversal.
  *
- * All operations are wrapped with error handling to log warnings without interrupting the process.
+ * Peak memory stays bounded primarily by single-file buffering, the JSON writer backlog
+ * cap, and (when enabled) incremental type generation rather than buffering every source string.
  *
  * @param options - Configuration options controlling source location, output, and type extraction.
- * @returns A Promise that resolves when all files have been processed.
  */
 async function createJSAst(options: Options): Promise<void> {
     try {
-        const filePaths: string[] = []
-        const fileContents = new Map<string, string>()
-        for await (const file of FileUtils.filesWithExtensions(options, Defaults.JS_EXTENSIONS)) {
-            filePaths.push(file.path)
-            fileContents.set(file.path, file.content)
-        }
+        const dirCache = new DirCache()
+        const filePaths = await processAstFiles(
+            FileUtils.filesWithExtensions(options, Defaults.JS_TS_EXTENSIONS),
+            options,
+            dirCache,
+        )
         const tscUtils = buildTscUtils(filePaths, options)
-        const createdDirs = new Set<string>()
-        for (const [filePath, content] of fileContents) {
-            VoidWithTry("Parsing", filePath, () => {
-                const ast: babelParser.ParseResult = codeToJsAst(content)
-                writeAstFile(filePath, ast, options, createdDirs)
-                if (tscUtils) {
-                    VoidWithTry("Retrieving types", filePath, () => {
-                        const typeMap = tscUtils.typeMapForFile(filePath)
-                        if (typeMap.size !== 0) {
-                            writeTypesFile(filePath, typeMap, options, createdDirs)
-                        }
-                    })
-                }
-            })
+        if (tscUtils) {
+            await processTypeFiles(filePaths, options, dirCache, tscUtils)
         }
     } catch (err) {
         console.error(err)
@@ -134,18 +124,14 @@ async function createJSAst(options: Options): Promise<void> {
 /**
  * Generates Abstract Syntax Trees (ASTs) for all `.vue` files in the specified source directory.
  *
- * This function collects all Vue files, processes each file by extracting and cleaning the script section,
- * parses the cleaned code into an AST, and writes the resulting AST to a JSON file in the output directory.
- * All operations are wrapped with error handling to log warnings without interrupting the process.
- *
  * @param options - Configuration options controlling source location and output directory.
  * @returns A Promise that resolves when all Vue files have been processed.
  */
 async function createVueAst(options: Options): Promise<void> {
-    const createdDirs = new Set<string>()
+    const dirCache = new DirCache()
     for await (const file of FileUtils.filesWithExtensions(options, [".vue"])) {
-        VoidWithTry("", file.path, () => {
-            writeAstFile(file.path, toVueAst(file.content), options, createdDirs)
+        await runOrLogWarning("Parsing", file.path, async () => {
+            await writeAstFile(file.path, toVueAst(file.content), options, dirCache)
         })
     }
 }
@@ -156,14 +142,19 @@ async function createVueAst(options: Options): Promise<void> {
  * The output file is created in the output directory specified in the options,
  * preserving the relative path structure from the source directory. The AST data
  * is serialized using a utility that handles circular references.
- * Output directories are created at most once per unique path via `createdDirs`.
+ * Output directories are created at most once per unique path via `dirCache`.
  *
  * @param file - The absolute path to the source file.
  * @param ast - The Babel ParseResult object representing the AST of the file.
  * @param options - Configuration options containing source and output directories.
- * @param createdDirs - Set tracking already-created output directories to avoid redundant mkdirSync calls.
+ * @param dirCache - Cache that deduplicates concurrent mkdir calls for the same directory.
  */
-function writeAstFile(file: string, ast: babelParser.ParseResult, options: Options, createdDirs: Set<string>): void {
+async function writeAstFile(
+    file: string,
+    ast: babelParser.ParseResult,
+    options: Options,
+    dirCache: DirCache,
+): Promise<void> {
     const relativePath: string = path.relative(options.src, file)
     const outAstFile: string = path.join(options.output, relativePath + ".json")
     const data = {
@@ -171,11 +162,7 @@ function writeAstFile(file: string, ast: babelParser.ParseResult, options: Optio
         relativeName: relativePath,
         ast: ast,
     }
-    const dir = path.dirname(outAstFile)
-    if (!createdDirs.has(dir)) {
-        fs.mkdirSync(dir, {recursive: true})
-        createdDirs.add(dir)
-    }
+    await dirCache.ensure(path.dirname(outAstFile))
     JsonUtils.writeJsonStreamCircular(outAstFile, data)
     console.log("Converted AST for", relativePath, "to", outAstFile)
 }
@@ -183,25 +170,80 @@ function writeAstFile(file: string, ast: babelParser.ParseResult, options: Optio
 /**
  * Writes TypeScript type information to a JSON file.
  *
- * The function serializes the provided `TypeMap` and writes it to a `.typemap` file
- * in the output directory, preserving the relative path structure from the source directory.
- * Output directories are created at most once per unique path via `createdDirs`.
- *
  * @param file - The absolute path to the source file.
  * @param seenTypes - The `TypeMap` containing type information to be written.
  * @param options - Configuration options containing source and output directories.
- * @param createdDirs - Set tracking already-created output directories to avoid redundant mkdirSync calls.
+ * @param dirCache - Cache that deduplicates concurrent mkdir calls for the same directory.
  */
-function writeTypesFile(file: string, seenTypes: TypeMap, options: Options, createdDirs: Set<string>): void {
+async function writeTypesFile(
+    file: string,
+    seenTypes: TypeMap,
+    options: Options,
+    dirCache: DirCache,
+): Promise<void> {
     const relativePath: string = path.relative(options.src, file)
     const outTypeFile: string = path.join(options.output, relativePath + ".typemap")
-    const dir = path.dirname(outTypeFile)
-    if (!createdDirs.has(dir)) {
-        fs.mkdirSync(dir, {recursive: true})
-        createdDirs.add(dir)
-    }
+    await dirCache.ensure(path.dirname(outTypeFile))
     JsonUtils.writeMapToJsonFile(outTypeFile, seenTypes)
     console.log("Converted types for", relativePath, "to", outTypeFile)
+}
+
+/**
+ * Tracks which output directories have been created and deduplicates concurrent
+ * mkdir requests. Without this, two concurrent file writes targeting the same
+ * directory would each issue a redundant (idempotent) `mkdir -p` syscall.
+ *
+ * On mkdir failure the inflight slot is cleared (via `.finally`) so a transient
+ * error (e.g. EMFILE under high concurrency) does not poison the cache and
+ * permanently fail every subsequent write to the same directory.
+ */
+class DirCache {
+    private readonly created = new Set<string>()
+    private readonly inflight = new Map<string, Promise<void>>()
+
+    async ensure(dir: string): Promise<void> {
+        if (this.created.has(dir)) return
+        let pending = this.inflight.get(dir)
+        if (!pending) {
+            pending = fs.promises.mkdir(dir, {recursive: true})
+                .then(() => { this.created.add(dir) })
+                .finally(() => { this.inflight.delete(dir) })
+            this.inflight.set(dir, pending)
+        }
+        await pending
+    }
+}
+
+async function processAstFiles(
+    source: AsyncIterable<FileUtils.FileEntry>,
+    options: Options,
+    dirCache: DirCache,
+): Promise<string[]> {
+    const filePaths: string[] = []
+    for await (const file of source) {
+        filePaths.push(file.path)
+        await runOrLogWarning("Parsing", file.path, async () => {
+            const ast: babelParser.ParseResult = codeToJsAst(file.content)
+            await writeAstFile(file.path, ast, options, dirCache)
+        })
+    }
+    return filePaths
+}
+
+async function processTypeFiles(
+    filePaths: string[],
+    options: Options,
+    dirCache: DirCache,
+    tscUtils: TscUtils,
+): Promise<void> {
+    for (const filePath of filePaths) {
+        await runOrLogWarning("Retrieving types", filePath, async () => {
+            const typeMap = tscUtils.typeMapForFile(filePath)
+            if (typeMap.size !== 0) {
+                await writeTypesFile(filePath, typeMap, options, dirCache)
+            }
+        })
+    }
 }
 
 /**
@@ -227,12 +269,6 @@ async function createXAst(options: Options): Promise<void> {
 
 /**
  * Entry point for starting the AST generation process based on the provided options.
- *
- * This function determines the type of project or files to process by inspecting the `type` property
- * in the options object. Depending on the type, it delegates to the appropriate AST generation function:
- * - For Node.js, JavaScript, or TypeScript projects, it calls `createJSAst`.
- * - For Vue projects, it calls `createVueAst`.
- * - For any other or unspecified type, it calls `createXAst` to auto-detect the project type.
  *
  * @param options - Configuration options and CLI arguments controlling source location, output, and processing type.
  * @returns A Promise that resolves when the AST generation process is complete.

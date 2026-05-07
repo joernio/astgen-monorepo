@@ -12,23 +12,26 @@ async function setupTestFixture(
     excludeFiles: (dir: string, testFile: string) => string[] = () => [],
 ) {
     const tmpDir: string = fs.mkdtempSync(path.join(os.tmpdir(), "astgen-tests"))
-    const testFile: string = path.join(tmpDir, filename)
-    if (!fs.existsSync(path.dirname(testFile))) {
-        fs.mkdirSync(path.dirname(testFile), { recursive: true })
-    }
-    fs.writeFileSync(testFile, code)
+    try {
+        const testFile: string = path.join(tmpDir, filename)
+        if (!fs.existsSync(path.dirname(testFile))) {
+            fs.mkdirSync(path.dirname(testFile), { recursive: true })
+        }
+        fs.writeFileSync(testFile, code)
 
-    const defaultOptions: Options = {
-        src: tmpDir,
-        type: "js",
-        output: path.join(tmpDir, "ast_out"),
-        recurse: true,
-        tsTypes: true,
-        "exclude-file": excludeFiles(tmpDir, testFile),
+        const defaultOptions: Options = {
+            src: tmpDir,
+            type: "js",
+            output: path.join(tmpDir, "ast_out"),
+            recurse: true,
+            tsTypes: true,
+            "exclude-file": excludeFiles(tmpDir, testFile),
+        }
+        await start({ ...defaultOptions, ...options })
+        testFunc(tmpDir, testFile)
+    } finally {
+        fs.rmSync(tmpDir, { recursive: true })
     }
-    await start({ ...defaultOptions, ...options })
-    testFunc(tmpDir, testFile)
-    fs.rmSync(tmpDir, { recursive: true })
 }
 
 describe("astgen basic functionality", () => {
@@ -119,6 +122,79 @@ describe("astgen basic functionality", () => {
         }, (tmpDir, _) => [path.join(tmpDir, "src")])
     })
 
+    it("should not exclude sibling paths when excluding a directory prefix", async () => {
+        const tmpDir: string = fs.mkdtempSync(path.join(os.tmpdir(), "astgen-tests"))
+        try {
+            const appDir = path.join(tmpDir, "src", "app")
+            const applicationDir = path.join(tmpDir, "src", "application")
+            fs.mkdirSync(appDir, {recursive: true})
+            fs.mkdirSync(applicationDir, {recursive: true})
+            fs.writeFileSync(path.join(appDir, "main.js"), "const x = 1;")
+            fs.writeFileSync(path.join(applicationDir, "main.js"), "const y = 2;")
+
+            const options: Options = {
+                src: tmpDir,
+                type: "js",
+                output: path.join(tmpDir, "ast_out"),
+                recurse: true,
+                tsTypes: false,
+                "exclude-file": [path.join("src", "app")],
+            }
+            await start(options)
+
+            expect(fs.existsSync(path.join(tmpDir, "ast_out", "src", "app", "main.js.json"))).toBe(false)
+            expect(fs.existsSync(path.join(tmpDir, "ast_out", "src", "application", "main.js.json"))).toBe(true)
+        } finally {
+            fs.rmSync(tmpDir, {recursive: true})
+        }
+    })
+
+    it("should treat a trailing-separator exclude path the same as a bare path", async () => {
+        const tmpDir: string = fs.mkdtempSync(path.join(os.tmpdir(), "astgen-tests"))
+        try {
+            const appDir = path.join(tmpDir, "src", "app")
+            fs.mkdirSync(appDir, {recursive: true})
+            fs.writeFileSync(path.join(appDir, "main.js"), "const x = 1;")
+
+            const options: Options = {
+                src: tmpDir,
+                type: "js",
+                output: path.join(tmpDir, "ast_out"),
+                recurse: true,
+                tsTypes: false,
+                "exclude-file": [path.join("src", "app") + path.sep],
+            }
+            await start(options)
+
+            expect(fs.existsSync(path.join(tmpDir, "ast_out", "src", "app", "main.js.json"))).toBe(false)
+        } finally {
+            fs.rmSync(tmpDir, {recursive: true})
+        }
+    })
+
+    it("should not match anything when an exclude path resolves outside the source root", async () => {
+        const tmpDir: string = fs.mkdtempSync(path.join(os.tmpdir(), "astgen-tests"))
+        try {
+            const srcDir = path.join(tmpDir, "src")
+            fs.mkdirSync(srcDir, {recursive: true})
+            fs.writeFileSync(path.join(srcDir, "main.js"), "const x = 1;")
+
+            const options: Options = {
+                src: tmpDir,
+                type: "js",
+                output: path.join(tmpDir, "ast_out"),
+                recurse: true,
+                tsTypes: false,
+                "exclude-file": [path.join("..", "elsewhere")],
+            }
+            await start(options)
+
+            expect(fs.existsSync(path.join(tmpDir, "ast_out", "src", "main.js.json"))).toBe(true)
+        } finally {
+            fs.rmSync(tmpDir, {recursive: true})
+        }
+    })
+
     it("should exclude files by regex correctly", async () => {
         const code = "console.log(\"Hello, world!\");"
         const config = { tsTypes: false, "exclude-file": [], "exclude-regex": /.*main.*/i }
@@ -135,6 +211,14 @@ describe("astgen basic functionality", () => {
             expect(fs.existsSync(path.join(tmpDir, "ast_out", "huge.ts.json"))).toBe(false)
         })
     })
+
+    it("should process files with exactly 50000 lines", async () => {
+        const code = Array(50000).fill("const x = 1;").join("\n")
+
+        await setupTestFixture(code, "exact-limit.ts", {tsTypes: false}, (tmpDir: string, _) => {
+            expect(fs.existsSync(path.join(tmpDir, "ast_out", "exact-limit.ts.json"))).toBe(true)
+        })
+    }, 20000)
 
     it("should skip files with a line longer than 10000 bytes", async () => {
         const longLine = "const x = \"" + "a".repeat(10001) + "\";"
@@ -181,5 +265,81 @@ describe("astgen basic functionality", () => {
             const values = Object.values(parsed) as string[]
             expect(values.every(v => v.length <= 500)).toBe(true)
         })
+    })
+
+    it("should generate AST and typemap outputs for multiple files with tsTypes enabled", async () => {
+        const tmpDir: string = fs.mkdtempSync(path.join(os.tmpdir(), "astgen-tests"))
+        try {
+            const files = [
+                {name: "src/a.ts", code: "const a: string = 'x';"},
+                {name: "src/b.ts", code: "const b: number = 42;"},
+                {name: "src/c.ts", code: "const c: boolean = true;"},
+                {name: "src/d.ts", code: "const d: string = 'y';"},
+                {name: "src/e.ts", code: "const e: number = 7;"},
+            ]
+            for (const file of files) {
+                const absPath = path.join(tmpDir, file.name)
+                fs.mkdirSync(path.dirname(absPath), {recursive: true})
+                fs.writeFileSync(absPath, file.code)
+            }
+
+            const options: Options = {
+                src: tmpDir,
+                type: "ts",
+                output: path.join(tmpDir, "ast_out"),
+                recurse: true,
+                tsTypes: true,
+                "exclude-file": [],
+            }
+            await start(options)
+
+            for (const file of files) {
+                const baseName = path.basename(file.name)
+                const jsonPath = path.join(tmpDir, "ast_out", "src", `${baseName}.json`)
+                const typemapPath = path.join(tmpDir, "ast_out", "src", `${baseName}.typemap`)
+                expect(fs.existsSync(jsonPath)).toBe(true)
+                expect(fs.existsSync(typemapPath)).toBe(true)
+
+                const ast = JSON.parse(fs.readFileSync(jsonPath, "utf-8"))
+                expect(ast.relativeName).toBe(path.join("src", baseName))
+                expect(ast.ast?.program?.body?.length).toBeGreaterThan(0)
+
+                const typemap = JSON.parse(fs.readFileSync(typemapPath, "utf-8"))
+                expect(Object.keys(typemap).length).toBeGreaterThan(0)
+            }
+        } finally {
+            fs.rmSync(tmpDir, {recursive: true})
+        }
+    })
+
+    it("should emit outputs for many files in a single run", async () => {
+        const tmpDir: string = fs.mkdtempSync(path.join(os.tmpdir(), "astgen-tests"))
+        try {
+            const srcDir = path.join(tmpDir, "src")
+            fs.mkdirSync(srcDir, {recursive: true})
+            for (let i = 0; i < 150; i++) {
+                fs.writeFileSync(path.join(srcDir, `file-${i}.js`), `const value${i} = ${i};`)
+            }
+
+            const options: Options = {
+                src: tmpDir,
+                type: "js",
+                output: path.join(tmpDir, "ast_out"),
+                recurse: true,
+                tsTypes: false,
+                "exclude-file": [],
+            }
+            await start(options)
+
+            let outputCount = 0
+            for (let i = 0; i < 150; i++) {
+                if (fs.existsSync(path.join(tmpDir, "ast_out", "src", `file-${i}.js.json`))) {
+                    outputCount++
+                }
+            }
+            expect(outputCount).toBe(150)
+        } finally {
+            fs.rmSync(tmpDir, {recursive: true})
+        }
     })
 })
