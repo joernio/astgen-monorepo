@@ -31,7 +31,7 @@ yarn install
 yarn build
 ```
 
-Platform-specific standalone binaries can be built using [esbuild](https://esbuild.github.io/) and [pkg](https://github.com/yao-pkg/pkg):
+Platform-specific standalone binaries ([cross-platform SEAs](https://nodejs.org/api/single-executable-applications.html)) can be built using [pkg](https://github.com/yao-pkg/pkg):
 
 ```bash
 yarn binary
