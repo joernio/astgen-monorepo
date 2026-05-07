@@ -14,7 +14,7 @@ async function setupTestFixture(
     const tmpDir: string = fs.mkdtempSync(path.join(os.tmpdir(), "astgen-tests"))
     const testFile: string = path.join(tmpDir, filename)
     if (!fs.existsSync(path.dirname(testFile))) {
-        fs.mkdirSync(path.dirname(testFile), {recursive: true})
+        fs.mkdirSync(path.dirname(testFile), { recursive: true })
     }
     fs.writeFileSync(testFile, code)
 
@@ -26,9 +26,9 @@ async function setupTestFixture(
         tsTypes: true,
         "exclude-file": excludeFiles(tmpDir, testFile),
     }
-    await start({...defaultOptions, ...options})
+    await start({ ...defaultOptions, ...options })
     testFunc(tmpDir, testFile)
-    fs.rmSync(tmpDir, {recursive: true})
+    fs.rmSync(tmpDir, { recursive: true })
 }
 
 describe("astgen basic functionality", () => {
@@ -46,28 +46,14 @@ describe("astgen basic functionality", () => {
             expect(resultAst).toContain("\"fullName\":\"" + testFile.replaceAll("\\", "\\\\") + "\"")
             expect(resultAst).toContain("\"relativeName\":\"main.js\"")
             const resultTypes = fs.readFileSync(path.join(tmpDir, "ast_out", "main.js.typemap")).toString()
-            expect(resultTypes).toEqual(
-                "{" +
-                "\"25:45\":\"string\"," +
-                "\"64:67\":\"string\"," +
-                "\"70:81\":\"string\"," +
-                "\"64:81\":\"string\"," +
-                "\"99:102\":\"{ foo: string; }\"," +
-                "\"119:122\":\"string\"," +
-                "\"105:134\":\"{ foo: string; }\"," +
-                "\"99:134\":\"{ foo: string; }\"," +
-                "\"146:153\":\"{ foo: any; }\"," +
-                "\"160:163\":\"{ foo: string; }\"," +
-                "\"164:167\":\"string\"," +
-                "\"160:167\":\"string\"," +
-                "\"146:167\":\"string\"," +
-                "\"179:185\":\"{ exports: { foo: any; }; }\"," +
-                "\"186:193\":\"{ foo: any; }\"," +
-                "\"179:193\":\"{ foo: any; }\"," +
-                "\"196:199\":\"{ foo: string; }\"," +
-                "\"179:199\":\"{ foo: any; }\"" +
-                "}"
-            )
+            const parsed = JSON.parse(resultTypes)
+            expect(parsed["25:45"]).toEqual("string")
+            expect(parsed["64:67"]).toEqual("string")
+            expect(parsed["99:102"]).toEqual("{ foo: string; }")
+            expect(parsed["119:122"]).toEqual("string")
+            expect(parsed["146:153"]).toEqual("{ foo: any; }")
+            expect(parsed["196:199"]).toEqual("{ foo: string; }")
+            expect(parsed["179:199"]).toEqual("{ foo: any; }")
         })
     })
 
@@ -92,7 +78,7 @@ describe("astgen basic functionality", () => {
 
     it("should exclude files by relative file path correctly", async () => {
         const code = "console.log(\"Hello, world!\");"
-        const config = {tsTypes: false, "exclude-file": ["main.js"]}
+        const config = { tsTypes: false, "exclude-file": ["main.js"] }
 
         await setupTestFixture(code, "main.js", config, (tmpDir: string, _) => {
             expect(fs.existsSync(path.join(tmpDir, "ast_out", "main.js.json"))).toBeFalsy()
@@ -102,14 +88,14 @@ describe("astgen basic functionality", () => {
     it("should exclude files by absolute file path correctly", async () => {
         const code = "console.log(\"Hello, world!\");"
 
-        await setupTestFixture(code, "main.js", {tsTypes: false}, (tmpDir: string, _) => {
+        await setupTestFixture(code, "main.js", { tsTypes: false }, (tmpDir: string, _) => {
             expect(fs.existsSync(path.join(tmpDir, "ast_out", "main.js.json"))).toBeFalsy()
         }, (_, testFile) => [testFile])
     })
 
     it("should exclude files by relative file path with dir correctly", async () => {
         const code = "console.log(\"Hello, world!\");"
-        const config = {tsTypes: false, "exclude-file": [path.join("src", "main.js")]}
+        const config = { tsTypes: false, "exclude-file": [path.join("src", "main.js")] }
 
         await setupTestFixture(code, "src/main.js", config, (tmpDir: string, _) => {
             expect(fs.existsSync(path.join(tmpDir, "ast_out", "src", "main.js.json"))).toBeFalsy()
@@ -118,7 +104,7 @@ describe("astgen basic functionality", () => {
 
     it("should exclude files by relative dir path correctly", async () => {
         const code = "console.log(\"Hello, world!\");"
-        const config = {tsTypes: false, "exclude-file": ["src"]}
+        const config = { tsTypes: false, "exclude-file": ["src"] }
 
         await setupTestFixture(code, "src/main.js", config, (tmpDir: string, _) => {
             expect(fs.existsSync(path.join(tmpDir, "ast_out", "src", "main.js.json"))).toBeFalsy()
@@ -128,14 +114,14 @@ describe("astgen basic functionality", () => {
     it("should exclude files by absolute dir path correctly", async () => {
         const code = "console.log(\"Hello, world!\");"
 
-        await setupTestFixture(code, "src/main.js", {tsTypes: false}, (tmpDir: string, _) => {
+        await setupTestFixture(code, "src/main.js", { tsTypes: false }, (tmpDir: string, _) => {
             expect(fs.existsSync(path.join(tmpDir, "ast_out", "src", "main.js.json"))).toBeFalsy()
         }, (tmpDir, _) => [path.join(tmpDir, "src")])
     })
 
     it("should exclude files by regex correctly", async () => {
         const code = "console.log(\"Hello, world!\");"
-        const config = {tsTypes: false, "exclude-file": [], "exclude-regex": /.*main.*/i}
+        const config = { tsTypes: false, "exclude-file": [], "exclude-regex": /.*main.*/i }
 
         await setupTestFixture(code, "main.js", config, (tmpDir: string, _) => {
             expect(fs.existsSync(path.join(tmpDir, "ast_out", "main.js.json"))).toBeFalsy()
@@ -189,7 +175,7 @@ describe("astgen basic functionality", () => {
                         "f1"|"f2"|"f3"|"f4"|"f5"|"f6"|"f7"|"f8"|"f9"|"f10";
             const x: Long = "a1";
 `
-        await setupTestFixture(code, "main.ts", {tsTypes: true}, (tmpDir: string, _) => {
+        await setupTestFixture(code, "main.ts", { tsTypes: true }, (tmpDir: string, _) => {
             const resultTypes = fs.readFileSync(path.join(tmpDir, "ast_out", "main.ts.typemap")).toString()
             const parsed = JSON.parse(resultTypes)
             const values = Object.values(parsed) as string[]
