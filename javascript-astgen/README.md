@@ -12,6 +12,18 @@ Generates JSON Abstract Syntax Trees (ASTs) for JavaScript, TypeScript, Vue, JSX
 | JSX        | Babel     |               |
 | TSX        | Babel     |               |
 
+## Requirements
+
+- Node.js >= 24.0.0 (for development/testing)
+- No Node.js required for standalone binaries
+
+## Key Dependencies
+
+- **@babel/parser** 7.29.x - JavaScript/TypeScript parsing
+- **TypeScript** 6.0.x - Type checking and analysis
+- **readdirp** 5.0.x - Recursive directory traversal
+- **yargs** 17.7.x - Command-line argument parsing
+
 ## Building
 
 ```bash
@@ -19,11 +31,18 @@ yarn install
 yarn build
 ```
 
-Platform-specific standalone binaries can be built using [pkg](https://github.com/yao-pkg/pkg):
+Platform-specific standalone binaries can be built using [esbuild](https://esbuild.github.io/) and [pkg](https://github.com/yao-pkg/pkg):
 
 ```bash
 yarn binary
 ```
+
+This creates standalone executables with embedded Node.js runtime for:
+- Linux (x64, arm64)
+- macOS (x64, arm64) 
+- Windows (x64)
+
+**Note:** During the build process, you may see warnings about dynamic `require()` calls. These are harmless and do not affect the functionality of the binaries.
 
 ## Testing
 
@@ -34,6 +53,8 @@ yarn test
 ```
 
 This uses `jest` with `ts-jest` to run the tests in `test/`.
+
+**Note:** Tests require Node.js with experimental VM modules support to handle ES module dynamic imports.
 
 ## Usage
 

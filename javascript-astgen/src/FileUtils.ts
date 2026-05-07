@@ -1,7 +1,6 @@
 import Options from "./Options"
 import * as Defaults from "./Defaults"
 
-import {readdirp} from 'readdirp'
 import * as fs from "node:fs"
 import * as path from "node:path"
 
@@ -90,7 +89,10 @@ function readFileIfValid(fileWithDir: string, stats: fs.Stats): string | null {
  */
 export async function* filesWithExtensions(options: Options, extensions: string[]): AsyncGenerator<FileEntry> {
     const dir = options.src
+    // Dynamic import for ESM-only package
+    const {readdirp} = await import('readdirp')
     const stream = readdirp(dir, {
+        root: dir,
         fileFilter: (f) => !ignoreFileByName(options, f.basename, f.fullPath, extensions),
         directoryFilter: (d) => !ignoreDirectory(options, d.basename, d.fullPath),
         lstat: true,
