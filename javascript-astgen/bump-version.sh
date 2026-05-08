@@ -32,21 +32,20 @@ fi
 echo -e "${YELLOW}Bumping version: ${CURRENT_VERSION} → ${NEW_VERSION}${NC}"
 echo ""
 
-# Update package.json
+# Update package.json (the single source of truth)
 sed -i.bak -E "s/\"version\": \"$CURRENT_VERSION\"/\"version\": \"$NEW_VERSION\"/" package.json
 rm package.json.bak
 
-# Update src/astgen.ts
-sed -i.bak -E "s/const VERSION = \"$CURRENT_VERSION\"/const VERSION = \"$NEW_VERSION\"/" src/astgen.ts
-rm src/astgen.ts.bak
+# Regenerate src/version.ts from package.json
+node scripts/sync-version.mjs
 
 echo -e "${GREEN}✓ Updated package.json${NC}"
-echo -e "${GREEN}✓ Updated src/astgen.ts${NC}"
+echo -e "${GREEN}✓ Regenerated src/version.ts${NC}"
 echo ""
 
 # Show diff
 echo "Changes:"
-git diff --no-ext-diff package.json src/astgen.ts
+git diff --no-ext-diff package.json src/version.ts
 
 echo ""
 echo -e "${GREEN}Version bumped successfully!${NC}"
@@ -54,7 +53,7 @@ echo ""
 echo "Next steps:"
 echo "  1. Review the changes above"
 echo "  2. Run: yarn install  (to update yarn.lock)"
-echo "  3. Run: git add package.json src/astgen.ts yarn.lock"
+echo "  3. Run: git add package.json src/version.ts yarn.lock"
 echo "  4. Run: git commit -m \"[javascript-astgen] Bump version to ${NEW_VERSION}\""
 echo "  5. Run: git tag javascript-astgen/v${NEW_VERSION}"
 echo "  6. Run: git push && git push --tags"

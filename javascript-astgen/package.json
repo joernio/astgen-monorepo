@@ -1,8 +1,7 @@
 {
   "name": "@joernio/astgen",
-  "version": "3.43.0",
-  "description": "Generate JavaScript/TypeScript AST in JSON format with Babel",
-  "exports": "./index.js",
+  "version": "3.44.0",
+  "description": "Generate JavaScript/TypeScript AST in JSON format with Babel. CLI-only — invoke via the `astgen` binary; programmatic imports are not supported.",
   "keywords": [
     "AST",
     "Static Analysis"
@@ -21,6 +20,8 @@
   },
   "scripts": {
     "test": "NODE_OPTIONS='--experimental-vm-modules' jest --silent --config=jest.config.js",
+    "sync-version": "node scripts/sync-version.mjs",
+    "prebuild": "node scripts/sync-version.mjs",
     "build": "tsc --build",
     "binary": "yarn build && pkg . --sea --options max-old-space-size=8192 --compress GZip --targets node24-linux-x64,node24-linux-arm64,node24-macos-x64,node24-win-x64,node24-macos-arm64",
     "regression": "astgen-regression local"

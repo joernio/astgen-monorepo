@@ -1,13 +1,25 @@
 import Options from "./Options"
 import * as Defaults from "./Defaults"
+import * as Logger from "./Logger"
 
 import * as fs from "node:fs"
 import * as path from "node:path"
 
 export type FileEntry = { path: string; content: string }
 
+/**
+ * Compiled exclusion rules for a single AST generation run.
+ *
+ * - `prefixPaths` are matched as **directory prefixes** (i.e. any candidate that
+ *   resolves under one of these is excluded). Used by {@link ignoreDirectory}.
+ * - `exactPaths` are matched **only as exact-equal absolute paths** by
+ *   {@link ignoreFileByName}. A path can appear in both sets — files added via
+ *   `--exclude-file` populate both so a single rule can exclude either a file
+ *   or a directory tree without forcing the user to disambiguate.
+ * - `regex` is applied to absolute paths of both files and directories.
+ */
 type ExcludeRules = {
-    dirPaths: string[]
+    prefixPaths: string[]
     exactPaths: Set<string>
     regex?: RegExp
 }
@@ -21,14 +33,14 @@ function resolveExcludePath(srcDir: string, excludePath: string): string {
 
 function buildExcludeRules(options: Options): ExcludeRules {
     const srcDir = path.resolve(options.src)
-    const dirPaths: string[] = []
+    const prefixPaths: string[] = []
     const exactPaths = new Set<string>()
     for (const excludePath of options["exclude-file"]) {
         const resolved = resolveExcludePath(srcDir, excludePath)
-        dirPaths.push(resolved)
+        prefixPaths.push(resolved)
         exactPaths.add(resolved)
     }
-    return {dirPaths, exactPaths, regex: options["exclude-regex"]}
+    return {prefixPaths, exactPaths, regex: options["exclude-regex"]}
 }
 
 // Note: path comparison is case-sensitive. On macOS/Windows (case-insensitive
@@ -42,7 +54,7 @@ function pathIsInDirectory(candidatePath: string, directoryPath: string): boolea
 function ignoreDirectory(rules: ExcludeRules, dirName: string, fullPath: string): boolean {
     return dirName.startsWith(".") ||
         dirName.startsWith("__") ||
-        rules.dirPaths.some((ignoredDir) => pathIsInDirectory(fullPath, ignoredDir)) ||
+        rules.prefixPaths.some((ignoredDir) => pathIsInDirectory(fullPath, ignoredDir)) ||
         rules.regex?.test(fullPath) ||
         IGNORE_DIRS_SET.has(dirName.toLowerCase())
 }
@@ -67,7 +79,7 @@ function ignoreFileByName(
 async function readAndValidateContent(fileWithDir: string): Promise<string | null> {
     const content = await fs.promises.readFile(fileWithDir, "utf-8")
     if (content.includes("// EMSCRIPTEN_START_ASM")) {
-        console.warn("Parsing", fileWithDir, ":", "File skipped as it contains EMSCRIPTEN code")
+        Logger.warn("Parsing", fileWithDir, ":", "File skipped as it contains EMSCRIPTEN code")
         return null
     }
     let lineStart = 0
@@ -75,11 +87,11 @@ async function readAndValidateContent(fileWithDir: string): Promise<string | nul
     for (let i = 0; i <= content.length; i++) {
         if (i === content.length || content[i] === "\n") {
             if (i - lineStart > Defaults.MAX_LINE_LENGTH) {
-                console.warn(fileWithDir, "line", lineCount + 1, "exceeds", Defaults.MAX_LINE_LENGTH, "bytes")
+                Logger.warn(fileWithDir, "line", lineCount + 1, "exceeds", Defaults.MAX_LINE_LENGTH, "bytes")
                 return null
             }
             if (++lineCount > Defaults.MAX_LOC_IN_FILE) {
-                console.warn(fileWithDir, "more than", Defaults.MAX_LOC_IN_FILE, "lines of code")
+                Logger.warn(fileWithDir, "more than", Defaults.MAX_LOC_IN_FILE, "lines of code")
                 return null
             }
             lineStart = i + 1
@@ -112,7 +124,7 @@ async function* iterateMatchingEntries(
     for await (const entry of stream) {
         const stats = entry.stats as fs.Stats
         if (stats.size > Defaults.MAX_FILE_SIZE_BYTES) {
-            console.warn(entry.fullPath, "exceeds maximum file size of", Defaults.MAX_FILE_SIZE_BYTES, "bytes")
+            Logger.warn(entry.fullPath, "exceeds maximum file size of", Defaults.MAX_FILE_SIZE_BYTES, "bytes")
             continue
         }
         yield {path: entry.fullPath}

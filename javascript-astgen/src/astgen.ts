@@ -1,16 +1,17 @@
 #!/usr/bin/env node
 
-import start from "./AstGenerator"
+import start from "./Pipeline"
 import Options from "./Options"
+import * as Defaults from "./Defaults"
+import * as Logger from "./Logger"
+import {VERSION} from "./version"
 
 import * as path from "node:path"
 import yargs from "yargs"
 import {hideBin} from "yargs/helpers"
 
-const VERSION = "3.43.0"
-
 async function main(argv: string[]) {
-    const args: Options = yargs(hideBin(argv))
+    const parsed = yargs(hideBin(argv))
         .option("src", {
             alias: "i",
             default: ".",
@@ -21,8 +22,9 @@ async function main(argv: string[]) {
         })
         .option("output", {
             alias: "o",
-            default: "ast_out",
-            description: "Output directory for generated AST json files",
+            type: "string",
+            description:
+                `Output directory for generated AST json files (default: <src>/${Defaults.DEFAULT_OUTPUT_DIR})`,
         })
         .option("type", {
             alias: "t",
@@ -51,6 +53,8 @@ async function main(argv: string[]) {
                 try {
                     return new RegExp(arg.toString(), "i")
                 } catch (err) {
+                    const msg = err instanceof Error ? err.message : String(err)
+                    Logger.warn(`--exclude-regex: ignoring invalid regex ${JSON.stringify(arg)}: ${msg}`)
                     return undefined
                 }
             },
@@ -59,13 +63,20 @@ async function main(argv: string[]) {
         .version(VERSION)
         .help("h").parseSync()
 
+    const args: Options = {
+        src: parsed.src,
+        output: parsed.output ?? path.join(parsed.src, Defaults.DEFAULT_OUTPUT_DIR),
+        type: parsed.type,
+        recurse: parsed.recurse,
+        tsTypes: parsed.tsTypes,
+        "exclude-file": parsed["exclude-file"],
+        "exclude-regex": parsed["exclude-regex"],
+    }
+
     try {
-        if (args.output === "ast_out") {
-            args.output = path.join(args.src, args.output)
-        }
         await start(args)
     } catch (e) {
-        console.error(e)
+        Logger.error(e)
         process.exit(1)
     }
 }
