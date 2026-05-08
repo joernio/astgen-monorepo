@@ -11,8 +11,17 @@ export type TypeMap = Map<number, string>
 // nested Map<number, Map<number, string>>.
 //
 // POS_SHIFT = 2^26: supports positions up to 64MB per file.
-// The 5MB file size guard (MAX_FILE_SIZE_BYTES) ensures this assumption holds.
+// The MAX_FILE_SIZE_BYTES guard in FileUtils ensures this assumption holds; the
+// invariant check below catches future drift if either constant is bumped.
 const POS_SHIFT = 0x4000000
+
+if (Defaults.MAX_FILE_SIZE_BYTES >= POS_SHIFT) {
+    throw new Error(
+        `Invariant violated: MAX_FILE_SIZE_BYTES (${Defaults.MAX_FILE_SIZE_BYTES}) must be < POS_SHIFT (${POS_SHIFT})`
+        + ` so that encodePos/decodePos round-trip correctly`,
+    )
+}
+
 export function encodePos(start: number, end: number): number {
     return start * POS_SHIFT + end
 }
@@ -53,9 +62,11 @@ export default class TscUtils {
      * @returns A `TypeMap` mapping node positions to their inferred type strings.
      */
     typeMapForFile(file: string): TypeMap {
-        const addType: (node: tsc.Node) => void = (node: tsc.Node): void => {
+        const seenTypes = new Map<number, string>()
+
+        const addType = (node: tsc.Node): void => {
             if (!this.shouldResolveType(node)) return
-            let typeStr
+            let typeStr: string | null
             if (this.isSignatureDeclaration(node)) {
                 const signature = this.typeChecker.getSignatureFromDeclaration(node)
                 if (signature) {
@@ -73,13 +84,16 @@ export default class TscUtils {
             } else {
                 typeStr = this.safeTypeToString(this.typeChecker.getTypeAtLocation(node))
             }
-            if (typeStr !== Defaults.ANY) {
+            if (typeStr !== null) {
                 seenTypes.set(encodePos(node.getStart(), node.getEnd()), typeStr)
             }
         }
 
-        const seenTypes = new Map<number, string>()
-        this.forEachNode(this.program.getSourceFile(file)!, addType)
+        const sourceFile = this.program.getSourceFile(file)
+        if (!sourceFile) {
+            throw new Error(`TscUtils: source file not present in program: ${file}`)
+        }
+        this.forEachNode(sourceFile, addType)
         return seenTypes
     }
 
@@ -92,18 +106,28 @@ export default class TscUtils {
         visit(ast)
     }
 
-    private safeTypeToString(node: tsc.Type): string {
+    /**
+     * Renders a TS type to a Joern-friendly type string. Returns `null` when
+     * the type is unhelpful (`any`-equivalent, unresolved, too long, or
+     * `unknown`); the caller filters those out of the resulting `TypeMap`.
+     *
+     * Specific transforms (intentional Joern conventions):
+     * - quoted literal types (`"foo"`, `` `bar` ``) → `string`
+     * - array suffix types (`Foo[]`) → `__ecma.Array`
+     */
+    private safeTypeToString(node: tsc.Type): string | null {
         try {
             const tpe: string = this.typeChecker.typeToString(node, undefined, Defaults.DEFAULT_TSC_TYPE_OPTIONS)
-            if (tpe.length === 0) return Defaults.ANY
-            if (tpe.length > Defaults.MAX_TYPE_STRING_LENGTH) return Defaults.ANY
-            if (tpe == Defaults.UNKNOWN) return Defaults.ANY
-            if (tpe.startsWith(Defaults.UNRESOLVED)) return Defaults.ANY
+            if (tpe.length === 0) return null
+            if (tpe.length > Defaults.MAX_TYPE_STRING_LENGTH) return null
+            if (tpe === Defaults.UNKNOWN) return null
+            if (tpe === Defaults.ANY) return null
+            if (tpe.startsWith(Defaults.UNRESOLVED)) return null
             if (Defaults.STRING_REGEX.test(tpe)) return "string"
             if (Defaults.ARRAY_REGEX.test(tpe)) return "__ecma.Array"
             return tpe
-        } catch (err) {
-            return Defaults.ANY
+        } catch {
+            return null
         }
     }
 

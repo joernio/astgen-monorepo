@@ -6,14 +6,29 @@ const vuePropRegex = /\s([.:@])(\S*?=)/ig
 const vueOpenImgTag = /(<img)((?!>)[\s\S]+?)( [^\/]>)/ig
 
 /**
- * Cleans and normalizes Vue single-file component (SFC) code.
+ * Cleans and normalizes Vue single-file component (SFC) code so the resulting
+ * string parses as plain JavaScript. The output preserves byte offsets where
+ * possible (non-source markup is replaced with whitespace of the same length)
+ * which keeps Babel's reported positions usable against the original file.
  *
- * This function performs the following operations on the input code:
- * - Removes Vue comments, replacing their content with spaces.
- * - Replaces `<script>`, `<style>`, and `<br>` tags with spaces and a semicolon.
- * - Normalizes dynamic bindings and props syntax.
- * - Adjusts template content, including property names and image tags.
- * - Replaces double curly braces with spaced versions.
+ * Operations performed (in order):
+ * - **Comments** (`<!-- ... -->`): non-whitespace replaced with spaces.
+ * - **`<script>` / `<style>` / `<br>` tags**: replaced with spaces; a `;` is
+ *   appended so the script body stays separable.
+ * - **Dynamic bindings** (`:[name]="x"`): brackets and colon spaced out, the
+ *   inner identifier survives.
+ * - **Templates**: prop prefixes (`:`, `@`, `.`) become spaces, dotted prop
+ *   names (`foo.bar`) become hyphenated (`foo-bar`), `<img ... X >` is
+ *   self-closed to `<img ... />`, and `{{ x }}` interpolation becomes
+ *   `{ x  }`.
+ *
+ * @example
+ * cleanVueCode("<!-- secret -->\nlet x = 1;")
+ * //=> "                \nlet x = 1;"
+ *
+ * @example
+ * cleanVueCode("<template>\n<div :foo.bar=\"x\">{{ msg }}</div>\n</template>")
+ * //=> "<template>\n<div  foo-bar=\"x\">{ msg  }</div>\n</template>"
  *
  * @param code The raw Vue SFC code as a string.
  * @returns The cleaned and normalized code as a string.
