@@ -5,10 +5,10 @@ use log::{error, info};
 use ra_ap_hir::{Semantics, attach_db};
 use ra_ap_ide::{Analysis, AnalysisHost, RootDatabase};
 use ra_ap_syntax::{AstNode, SyntaxNode};
-use ra_ap_vfs::FileId;
+use ra_ap_vfs::{FileId, VfsPath};
 use std::path::Path;
 
-pub(crate) fn write_json_to_file(json_tree: &str, output_file: &Path) -> anyhow::Result<()> {
+fn write_json_to_file(json_tree: &str, output_file: &Path) -> anyhow::Result<()> {
     let output_parent = output_file.parent().with_context(|| {
         format!(
             "failed to get parent directory of output file: {}",
@@ -28,17 +28,28 @@ pub(crate) fn write_json_to_file(json_tree: &str, output_file: &Path) -> anyhow:
 }
 
 pub fn run(config: &config::RustAstGenConfig) -> anyhow::Result<()> {
-    // Load the workspace
-    let (root_db, vfs) = cargo::load_workspace(config)?;
+    let (analysis_host, input_rust_files) = load_inputs(config)?;
+    process_inputs(&analysis_host, input_rust_files, config);
+    Ok(())
+}
 
-    // Load the project model
+fn load_inputs(
+    config: &config::RustAstGenConfig,
+) -> anyhow::Result<(AnalysisHost, Vec<(FileId, VfsPath)>)> {
+    let (root_db, vfs) = cargo::load_workspace(config)?;
     let analysis_host = AnalysisHost::with_database(root_db);
+    let input_rust_files = cargo::collect_input_files(config, &vfs)?;
+    Ok((analysis_host, input_rust_files))
+}
+
+fn process_inputs(
+    analysis_host: &AnalysisHost,
+    input_rust_files: Vec<(FileId, VfsPath)>,
+    config: &config::RustAstGenConfig,
+) {
     let analysis = analysis_host.analysis();
     let root_db = analysis_host.raw_database();
     let semantics = Semantics::new(root_db);
-
-    // Pick only the relevant files: those inside the input directory
-    let input_rust_files = cargo::collect_input_files(config, &vfs)?;
 
     // Process each file
     attach_db(semantics.db, || {
@@ -66,8 +77,6 @@ pub fn run(config: &config::RustAstGenConfig) -> anyhow::Result<()> {
             }
         }
     });
-
-    Ok(())
 }
 
 fn process_file(
