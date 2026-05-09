@@ -1,3 +1,4 @@
+mod json_ast;
 mod cargo;
 pub mod config;
 pub mod grammar;
