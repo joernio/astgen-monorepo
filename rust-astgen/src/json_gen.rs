@@ -203,10 +203,7 @@ fn process_file(
     let loc = file_line_index
         .line_col(syntax_tree.text_range().end())
         .line;
-    // TODO: we already have similar in config. Refactor
-    let relative_path = input_file_path
-        .strip_prefix(&config.input_dir_full_path)
-        .with_context(|| format!("failed to strip prefix: {:?}", input_file_path))?;
+    let relative_path = config.make_output_path_for_input_file(input_file_path)?;
 
     let crate_name = crate_name_for_file(syntax_tree, semantics);
     let envelope = RustAstGenJsonFile {
