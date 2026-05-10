@@ -42,11 +42,8 @@ impl RustAstGenConfig {
         Ok(())
     }
 
-    pub(crate) fn make_output_path_for_input_file(
-        &self,
-        input_file_path: &Path,
-    ) -> Result<PathBuf> {
-        let relative_to_input_path = input_file_path
+    pub(crate) fn relativize_input_file<'a>(&self, input_file_path: &'a Path) -> Result<&'a Path> {
+        input_file_path
             .strip_prefix(&self.input_dir_full_path)
             .with_context(|| {
                 format!(
@@ -54,7 +51,14 @@ impl RustAstGenConfig {
                     input_file_path.display(),
                     self.input_dir_full_path.display()
                 )
-            })?;
+            })
+    }
+
+    pub(crate) fn make_output_path_for_input_file(
+        &self,
+        input_file_path: &Path,
+    ) -> Result<PathBuf> {
+        let relative_to_input_path = self.relativize_input_file(input_file_path)?;
 
         let output_file_full_path = self
             .output_dir_full_path

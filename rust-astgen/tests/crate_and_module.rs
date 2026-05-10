@@ -1,4 +1,5 @@
 use crate::common::{TestResult, no_sysroot_ast_json};
+use std::path::Path;
 
 mod common;
 
@@ -68,6 +69,28 @@ pub fn hello() {}
     let json = no_sysroot_ast_json("my_crate", &files, "src/main.rs")?;
     assert_eq!(json["crateName"].as_str(), Some("my_crate"));
     assert_eq!(json["modulePath"].as_str(), None);
+
+    Ok(())
+}
+
+#[test]
+fn emits_relative_file_path() -> TestResult<()> {
+    let files = [
+        ("src/main.rs", "mod foo;\nfn main() {}\n"),
+        ("src/foo.rs", "pub fn bar() {}\n"),
+    ];
+
+    let json = no_sysroot_ast_json("my_crate", &files, "src/main.rs")?;
+    assert_eq!(
+        json["relativeFilePath"].as_str().map(Path::new),
+        Some(Path::new("src/main.rs")),
+    );
+
+    let json = no_sysroot_ast_json("my_crate", &files, "src/foo.rs")?;
+    assert_eq!(
+        json["relativeFilePath"].as_str().map(Path::new),
+        Some(Path::new("src/foo.rs")),
+    );
 
     Ok(())
 }
