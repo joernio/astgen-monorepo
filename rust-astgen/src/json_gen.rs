@@ -1,128 +1,14 @@
-use crate::names::{method_full_name_for_node, type_full_name_for_node};
+use crate::json_ast::{RustAstGenJsonFile, RustAstGenJsonNode};
 use crate::{cargo, config};
 use anyhow::Context;
 use log::{error, info};
 use ra_ap_hir::{Semantics, attach_db};
-use ra_ap_ide::{Analysis, AnalysisHost, LineIndex, RootDatabase};
-use ra_ap_syntax::{AstNode, NodeOrToken, SyntaxNode, SyntaxToken};
-use ra_ap_vfs::FileId;
-use serde::Serialize;
+use ra_ap_ide::{Analysis, AnalysisHost, RootDatabase};
+use ra_ap_syntax::{AstNode, SyntaxNode};
+use ra_ap_vfs::{FileId, VfsPath};
 use std::path::Path;
 
-/// Per-file envelope wrapping the AST.
-#[derive(Serialize)]
-#[serde(rename_all = "camelCase")]
-pub(crate) struct RustAstGenJsonFile {
-    pub(crate) relative_file_path: String,
-    pub(crate) full_file_path: String,
-    pub(crate) content: String,
-    // NB: we may scan a project with multiple crates, so we attach it to the file.
-    // In joern this shall give us the namespace_block for this file.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub(crate) crate_name: Option<String>,
-    pub(crate) loc: u32,
-    pub(crate) children: Vec<RustAstGenJsonNode>,
-}
-
-/// A single node or token in the AST.
-#[derive(Serialize)]
-#[serde(rename_all = "camelCase")]
-pub(crate) struct RustAstGenJsonNode {
-    pub(crate) node_kind: String,
-    pub(crate) range: RustAstGenJsonNodeRange,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub(crate) method_full_name: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub(crate) type_full_name: Option<String>,
-    pub(crate) children: Vec<RustAstGenJsonNode>,
-}
-
-/// Source location range for a node/token.
-#[derive(Serialize)]
-#[serde(rename_all = "camelCase")]
-pub(crate) struct RustAstGenJsonNodeRange {
-    pub(crate) start_offset: u32,
-    pub(crate) end_offset: u32,
-    pub(crate) start_line: u32,
-    pub(crate) start_column: u32,
-}
-
-impl RustAstGenJsonNodeRange {
-    pub(crate) fn from_node(node: &SyntaxNode, line_index: &LineIndex) -> Self {
-        let text_range = node.text_range();
-        let start = text_range.start();
-        let end = text_range.end();
-        let start_line_col = line_index.line_col(start);
-
-        Self {
-            start_offset: u32::from(start),
-            end_offset: u32::from(end),
-            start_line: start_line_col.line,
-            start_column: start_line_col.col,
-        }
-    }
-
-    pub(crate) fn from_token(token: &SyntaxToken, line_index: &LineIndex) -> Self {
-        let text_range = token.text_range();
-        let start = text_range.start();
-        let end = text_range.end();
-        let start_line_col = line_index.line_col(start);
-
-        Self {
-            start_offset: u32::from(start),
-            end_offset: u32::from(end),
-            start_line: start_line_col.line,
-            start_column: start_line_col.col,
-        }
-    }
-}
-
-impl RustAstGenJsonNode {
-    pub(crate) fn from_node(
-        node: &SyntaxNode,
-        line_index: &LineIndex,
-        semantics: &Semantics<RootDatabase>,
-    ) -> Self {
-        let node_kind = format!("{:?}", node.kind());
-        let range = RustAstGenJsonNodeRange::from_node(node, line_index);
-        let method_full_name = method_full_name_for_node(node, semantics);
-        let type_full_name = type_full_name_for_node(node, semantics);
-        let children = node
-            .children_with_tokens()
-            .filter(|child| !child.kind().is_trivia())
-            .map(|node_or_token| match node_or_token {
-                NodeOrToken::Node(child_node) => {
-                    Self::from_node(&child_node, line_index, semantics)
-                }
-                NodeOrToken::Token(child_token) => Self::from_token(&child_token, line_index),
-            })
-            .collect();
-
-        Self {
-            node_kind,
-            range,
-            method_full_name,
-            type_full_name,
-            children,
-        }
-    }
-
-    pub(crate) fn from_token(token: &SyntaxToken, line_index: &LineIndex) -> Self {
-        let node_kind = format!("{:?}", token.kind());
-        let range = RustAstGenJsonNodeRange::from_token(token, line_index);
-        let children = vec![];
-
-        Self {
-            node_kind,
-            range,
-            children,
-            method_full_name: None,
-            type_full_name: None,
-        }
-    }
-}
-
-pub(crate) fn write_json_to_file(json_tree: &str, output_file: &Path) -> anyhow::Result<()> {
+fn write_json_to_file(json_tree: &str, output_file: &Path) -> anyhow::Result<()> {
     let output_parent = output_file.parent().with_context(|| {
         format!(
             "failed to get parent directory of output file: {}",
@@ -142,17 +28,28 @@ pub(crate) fn write_json_to_file(json_tree: &str, output_file: &Path) -> anyhow:
 }
 
 pub fn run(config: &config::RustAstGenConfig) -> anyhow::Result<()> {
-    // Load the workspace
-    let (root_db, vfs) = cargo::load_workspace(config)?;
+    let (analysis_host, input_rust_files) = load_inputs(config)?;
+    process_inputs(&analysis_host, input_rust_files, config);
+    Ok(())
+}
 
-    // Load the project model
+fn load_inputs(
+    config: &config::RustAstGenConfig,
+) -> anyhow::Result<(AnalysisHost, Vec<(FileId, VfsPath)>)> {
+    let (root_db, vfs) = cargo::load_workspace(config)?;
     let analysis_host = AnalysisHost::with_database(root_db);
+    let input_rust_files = cargo::collect_input_files(config, &vfs)?;
+    Ok((analysis_host, input_rust_files))
+}
+
+fn process_inputs(
+    analysis_host: &AnalysisHost,
+    input_rust_files: Vec<(FileId, VfsPath)>,
+    config: &config::RustAstGenConfig,
+) {
     let analysis = analysis_host.analysis();
     let root_db = analysis_host.raw_database();
     let semantics = Semantics::new(root_db);
-
-    // Pick only the relevant files: those inside the input directory
-    let input_rust_files = cargo::collect_input_files(config, &vfs)?;
 
     // Process each file
     attach_db(semantics.db, || {
@@ -180,8 +77,6 @@ pub fn run(config: &config::RustAstGenConfig) -> anyhow::Result<()> {
             }
         }
     });
-
-    Ok(())
 }
 
 fn process_file(
@@ -203,10 +98,7 @@ fn process_file(
     let loc = file_line_index
         .line_col(syntax_tree.text_range().end())
         .line;
-    // TODO: we already have similar in config. Refactor
-    let relative_path = input_file_path
-        .strip_prefix(&config.input_dir_full_path)
-        .with_context(|| format!("failed to strip prefix: {:?}", input_file_path))?;
+    let relative_path = config.make_output_path_for_input_file(input_file_path)?;
 
     let crate_name = crate_name_for_file(syntax_tree, semantics);
     let envelope = RustAstGenJsonFile {
