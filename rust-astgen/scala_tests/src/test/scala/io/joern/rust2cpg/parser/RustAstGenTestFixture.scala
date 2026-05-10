@@ -38,7 +38,8 @@ trait RustAstGenTestFixture {
           "-i",
           projectDir.toString,
           "-o",
-          outputDir.toString
+          outputDir.toString,
+          "--no-sysroot"
         ),
         repoRoot.toFile
       ).!

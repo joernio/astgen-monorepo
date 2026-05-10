@@ -18,7 +18,11 @@ pub(crate) fn load_workspace(config: &RustAstGenConfig) -> Result<(RootDatabase,
     };
 
     let cargo_config = CargoConfig {
-        sysroot: RustLibSource::Discover.into(),
+        sysroot: if config.load_sysroot {
+            RustLibSource::Discover.into()
+        } else {
+            None
+        },
         ..CargoConfig::default()
     };
 

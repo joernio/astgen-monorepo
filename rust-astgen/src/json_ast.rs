@@ -14,9 +14,15 @@ pub(crate) struct RustAstGenJsonFile {
     pub(crate) full_file_path: String,
     pub(crate) content: String,
     // NB: we may scan a project with multiple crates, so we attach it to the file.
-    // In joern this shall give us the namespace_block for this file.
+    // In joern this, together with `module_path`, shall give us the namespace_block
+    // for this file.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub(crate) crate_name: Option<String>,
+    // The canonical module path for this file, excluding the crate name.
+    // So, it's `None` when the file is the crate root module, or if it's
+    // unresolvable.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(crate) module_path: Option<String>,
     pub(crate) loc: u32,
     pub(crate) children: Vec<RustAstGenJsonNode>,
 }

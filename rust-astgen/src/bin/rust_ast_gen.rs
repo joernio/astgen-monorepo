@@ -29,6 +29,10 @@ struct RustAstGenCliArgs {
     #[arg(help = "Output directory where generated files will be written to")]
     #[arg(short = 'o', long = "output-dir")]
     output_dir: PathBuf,
+
+    #[arg(help = "Skip sysroot loading. Faster, but will not resolve std symbols")]
+    #[arg(long = "no-sysroot", default_value_t = false)]
+    no_sysroot: bool,
 }
 
 impl RustAstGenCliArgs {
@@ -78,6 +82,11 @@ impl TryFrom<RustAstGenCliArgs> for RustAstGenConfig {
         let output_dir_full_path = args.output_dir.canonicalize()?;
         let available_threads = available_parallelism().map(NonZero::get).unwrap_or(1);
 
-        RustAstGenConfig::new(input_dir_full_path, output_dir_full_path, available_threads)
+        RustAstGenConfig::new(
+            input_dir_full_path,
+            output_dir_full_path,
+            available_threads,
+            !args.no_sysroot,
+        )
     }
 }
