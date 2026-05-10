@@ -101,11 +101,13 @@ fn process_file(
     let relative_path = config.make_output_path_for_input_file(input_file_path)?;
 
     let crate_name = crate_name_for_file(syntax_tree, semantics);
+    let module_path = module_path_for_file(syntax_tree, semantics);
     let envelope = RustAstGenJsonFile {
         relative_file_path: relative_path.to_string_lossy().to_string(),
         full_file_path: input_file_path.to_string_lossy().to_string(),
         content: contents,
         crate_name,
+        module_path,
         loc,
         children: vec![json_root],
     };
@@ -130,4 +132,25 @@ fn crate_name_for_file(
         .krate(semantics.db)
         .display_name(semantics.db)
         .map(|name| name.to_string())
+}
+
+fn module_path_for_file(
+    syntax_tree: &SyntaxNode,
+    semantics: &Semantics<RootDatabase>,
+) -> Option<String> {
+    let module = semantics.scope(syntax_tree)?.module();
+    let edition = module.krate(semantics.db).edition(semantics.db);
+    let segments = module
+        .path_to_root(semantics.db)
+        .into_iter()
+        .rev()
+        .filter_map(|m| m.name(semantics.db))
+        .map(|name| name.display(semantics.db, edition).to_string())
+        .collect::<Vec<String>>();
+
+    if segments.is_empty() {
+        None
+    } else {
+        Some(segments.join("::"))
+    }
 }

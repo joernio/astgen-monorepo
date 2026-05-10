@@ -1,15 +1,17 @@
 mod common;
 
 use crate::common::{
-    TestResult, ast_json, bin_expr, call_expr, ident_pat, literal, method_call_expr, name_ref,
-    self_param,
+    TestResult, bin_expr, call_expr, ident_pat, literal, method_call_expr, name_ref,
+    no_sysroot_ast_json, self_param,
 };
 
 #[test]
 fn emits_names_for_calls_receivers_and_values() -> TestResult<()> {
-    let json = ast_json(
+    let json = no_sysroot_ast_json(
         "rust2cpg",
-        r#"
+        &[(
+            "src/main.rs",
+            r#"
 fn foo() -> u32 {
     1
 }
@@ -66,7 +68,12 @@ fn main() {
     let sum = 1u32 + 2u32;
 }
 "#,
+        )],
+        "src/main.rs",
     )?;
+
+    assert_eq!(json["modulePath"].as_str(), None);
+    assert_eq!(json["crateName"].as_str(), Some("rust2cpg"));
 
     let foo_call = call_expr(&json, "foo()");
     assert_eq!(foo_call.type_full_name(), "u32");
