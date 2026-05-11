@@ -2,6 +2,8 @@ import ArgumentParser
 import Foundation
 import SwiftAstGenLib
 
+/// test PR for the latest astgen-regression changes
+
 /// Default source directory used when `--src` is omitted.
 private let defaultSrcDir = "."
 
