@@ -32,7 +32,8 @@ let package = Package(
       dependencies: [
         .product(name: "SwiftSyntax", package: "swift-syntax"),
         .product(name: "SwiftSyntaxBuilder", package: "swift-syntax"),
-      ]
+      ],
+      exclude: ["README.md"]
     ),
     .executableTarget(
       name: "SwiftAstGen",
@@ -41,7 +42,8 @@ let package = Package(
         "SwiftAstGenLib",
       ],
       swiftSettings: [
-        .unsafeFlags(["-cross-module-optimization"], .when(configuration: .release))
+        .unsafeFlags(["-warnings-as-errors"]),
+        .unsafeFlags(["-cross-module-optimization"], .when(configuration: .release)),
       ],
       linkerSettings: [
         // 2M stack size, as swift-linux-musl provides a default thread stack size of only 128k.
