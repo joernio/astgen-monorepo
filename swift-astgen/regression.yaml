@@ -4,8 +4,8 @@ project:
   language: "swift"
 
 build:
-  build_command: "swift build -c release"
-  dist_dir: ".build/release"
+  build_command: "swift build"
+  dist_dir: ".build/debug"
 
 execute:
   command: "{dist_dir}/SwiftAstGen --src {input_dir} --output {output_dir}"
