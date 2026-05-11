@@ -1,7 +1,19 @@
 import Foundation
 
-public class SwiftAstGenerator {
+/// Walks a Swift project on disk, parses every `.swift` source file with ``SyntaxParser``,
+/// and writes one JSON document per file to a mirrored directory tree under `outputDir`.
+///
+/// Files inside common test/spec directories are skipped, as are any directories matching
+/// `testTarget(...)` paths declared in the project's root `Package.swift` (see
+/// ``PackageTestTargetParser``).
+///
+/// Per-file failures are logged to stderr and never abort the run; ``generate()`` always
+/// completes normally as long as the output directory can be created.
+public final class SwiftAstGenerator {
 
+    /// Lower-cased path substrings (matched against `/<relative-path>`) that cause a file
+    /// to be skipped. Substring matching is intentionally permissive: any directory whose
+    /// lower-cased name matches one of these will be ignored along with all its contents.
     private static let ignoredPathSubstrings: [String] = [
         "/.", "/__", "/tests/", "/specs/", "/test/", "/spec/",
     ]
@@ -12,19 +24,33 @@ public class SwiftAstGenerator {
     private let ignorePathsFromPackageSwift: [String]
     private let availableProcessors: Int = ProcessInfo.processInfo.activeProcessorCount
 
-    public init(srcDir: URL, outputDir: URL, prettyPrint: Bool) throws {
+    /// Creates a new generator.
+    ///
+    /// - Parameters:
+    ///   - srcDir: Project root to scan for `.swift` files.
+    ///   - outputDir: Directory under which JSON files will be written. Created lazily by
+    ///     ``generate()``; the initializer performs no I/O.
+    ///   - prettyPrint: If `true`, JSON output is pretty-printed.
+    public init(srcDir: URL, outputDir: URL, prettyPrint: Bool) {
         self.srcDir = srcDir
         self.outputDir = outputDir
         self.prettyPrint = prettyPrint
         self.ignorePathsFromPackageSwift = PackageTestTargetParser(srcDir: srcDir)
             .getTestTargetPaths()
             .map { $0.lowercased() }
+    }
 
+    /// Walks the source tree and writes one `<relative-path>.json` file per `.swift` source.
+    ///
+    /// - Throws: Only if the output directory itself cannot be created. Per-file parse and
+    ///   write failures are logged to stderr and do not propagate.
+    public func generate() throws {
         try FileManager.default.createDirectory(
             atPath: outputDir.path,
             withIntermediateDirectories: true,
             attributes: nil
         )
+        iterateSwiftFiles(at: srcDir)
     }
 
     private func shouldIgnore(path: String) -> Bool {
@@ -56,9 +82,9 @@ public class SwiftAstGenerator {
             )
 
             try astJsonData.write(to: outFileUrl, options: .atomic)
-            print("Generated AST for file: `\(fileUrl.path)`")
+            Log.info("Generated AST for file: `\(fileUrl.path)`")
         } catch {
-            print("Parsing failed for file: `\(fileUrl.path)` (\(error))")
+            Log.warn("Parsing failed for file: `\(fileUrl.path)` (\(error))")
         }
     }
 
@@ -68,28 +94,32 @@ public class SwiftAstGenerator {
         queue.qualityOfService = .userInitiated
         queue.maxConcurrentOperationCount = availableProcessors
 
-        if let enumerator = FileManager.default.enumerator(
-            at: url,
-            includingPropertiesForKeys: [.isRegularFileKey],
-            options: [.skipsHiddenFiles, .skipsPackageDescendants]
-        ) {
-            for case let fileURL as URL in enumerator {
-                let fileAttributes = try! fileURL.resourceValues(forKeys: [.isRegularFileKey])
-                if fileAttributes.isRegularFile! && fileURL.pathExtension == "swift" {
-                    let relativeFilePath = fileURL.relativePath(from: srcDir)!
-                    if !shouldIgnore(path: "/\(relativeFilePath)") {
-                        queue.addOperation {
-                            self.parseFile(fileUrl: fileURL, relativeFilePath: relativeFilePath)
-                        }
-                    }
-                }
+        guard
+            let enumerator = FileManager.default.enumerator(
+                at: url,
+                includingPropertiesForKeys: [.isRegularFileKey],
+                options: [.skipsHiddenFiles, .skipsPackageDescendants]
+            )
+        else {
+            return
+        }
+
+        for case let fileURL as URL in enumerator {
+            guard
+                let resourceValues = try? fileURL.resourceValues(forKeys: [.isRegularFileKey]),
+                resourceValues.isRegularFile == true,
+                fileURL.pathExtension == "swift",
+                let relativeFilePath = fileURL.pathRelative(to: srcDir)
+            else {
+                continue
+            }
+            if shouldIgnore(path: "/\(relativeFilePath)") {
+                continue
+            }
+            queue.addOperation { [self] in
+                parseFile(fileUrl: fileURL, relativeFilePath: relativeFilePath)
             }
         }
         queue.waitUntilAllOperationsAreFinished()
     }
-
-    public func generate() throws {
-        iterateSwiftFiles(at: srcDir)
-    }
-
 }

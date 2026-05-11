@@ -1,268 +1,200 @@
+import Foundation
 import XCTest
 
 @testable import class SwiftAstGenLib.SwiftAstGenerator
 
 final class SwiftAstGenTests: XCTestCase, TestUtils {
 
-    static var allTests = [
-        ("testJsonSourceFileSyntax", testJsonSourceFileSyntax),
-        ("testJsonFilePaths", testJsonFilePaths),
-        ("testJsonLoc", testJsonLoc),
-        ("testIgnoresTestTargetPathsFromPackageSwift", testIgnoresTestTargetPathsFromPackageSwift),
-        ("testIgnoresMultipleTestTargetPaths", testIgnoresMultipleTestTargetPaths),
-        ("testIgnoresCustomTestTargetPath", testIgnoresCustomTestTargetPath),
-        ("testCustomOperatorDoesNotFailParsing", testCustomOperatorDoesNotFailParsing),
-    ]
-
     func testJsonSourceFileSyntax() throws {
-        try withCode(
-            code: """
-                print("Hello World!")
-                """
-        ) { srcDir, outputDir, jsonFile in
-
-            try SwiftAstGenerator(
-                srcDir: srcDir,
-                outputDir: outputDir,
-                prettyPrint: false
-            ).generate()
+        try withCode(code: #"print("Hello World!")"#) { srcDir, outputDir, jsonFile in
+            try SwiftAstGenerator(srcDir: srcDir, outputDir: outputDir, prettyPrint: false).generate()
 
             XCTAssertTrue(FileManager.default.fileExists(atPath: jsonFile.path))
-            if let treeNode = loadJson(file: jsonFile) {
-                XCTAssertEqual(treeNode.nodeType, "SourceFileSyntax")
-            } else {
-                XCTFail("Could not create the JSON containing the Swift AST.")
-            }
+            let treeNode = try loadJson(file: jsonFile)
+            XCTAssertEqual(treeNode.nodeType, "SourceFileSyntax")
         }
     }
 
     func testJsonFilePaths() throws {
-        try withCode(
-            code: """
-                print("Hello World!")
-                """
-        ) { srcDir, outputDir, jsonFile in
+        try withCode(code: #"print("Hello World!")"#) { srcDir, outputDir, jsonFile in
+            try SwiftAstGenerator(srcDir: srcDir, outputDir: outputDir, prettyPrint: false).generate()
 
-            try SwiftAstGenerator(
-                srcDir: srcDir,
-                outputDir: outputDir,
-                prettyPrint: false
-            ).generate()
+            let treeNode = try loadJson(file: jsonFile)
+            let projectFullPath = try XCTUnwrap(treeNode.projectFullPath)
+            let relativeFilePath = try XCTUnwrap(treeNode.relativeFilePath)
+            let fullFilePath = try XCTUnwrap(treeNode.fullFilePath)
 
-            XCTAssertTrue(FileManager.default.fileExists(atPath: jsonFile.path))
-            if let treeNode = loadJson(file: jsonFile) {
-                let projectFullPath = treeNode.projectFullPath!
-                let relativeFilePath = treeNode.relativeFilePath!
-                let fullFilePath = treeNode.fullFilePath!
-
-                XCTAssertEqual(relativeFilePath, "source.swift")
-                XCTAssertEqual(fullFilePath, "\(projectFullPath)/\(relativeFilePath)")
-            } else {
-                XCTFail("Could not create the JSON containing the Swift AST.")
-            }
+            XCTAssertEqual(relativeFilePath, "source.swift")
+            XCTAssertEqual(fullFilePath, "\(projectFullPath)/\(relativeFilePath)")
         }
     }
 
     func testJsonLoc() throws {
-        try withCode(
-            code: """
-                print("1")
-                print("2")
-                print("3")
-                """
-        ) { srcDir, outputDir, jsonFile in
+        let code = """
+            print("1")
+            print("2")
+            print("3")
+            """
+        try withCode(code: code) { srcDir, outputDir, jsonFile in
+            try SwiftAstGenerator(srcDir: srcDir, outputDir: outputDir, prettyPrint: false).generate()
 
-            try SwiftAstGenerator(
-                srcDir: srcDir,
-                outputDir: outputDir,
-                prettyPrint: false
-            ).generate()
+            let treeNode = try loadJson(file: jsonFile)
+            XCTAssertEqual(treeNode.loc, 3)
+        }
+    }
 
-            XCTAssertTrue(FileManager.default.fileExists(atPath: jsonFile.path))
-            if let treeNode = loadJson(file: jsonFile) {
-                let loc = treeNode.loc!
-                XCTAssertEqual(loc, 3)
-            } else {
-                XCTFail("Could not create the JSON containing the Swift AST.")
-            }
+    func testPrettyPrintProducesIndentedJson() throws {
+        try withCode(code: #"let x = 1"#) { srcDir, outputDir, jsonFile in
+            try SwiftAstGenerator(srcDir: srcDir, outputDir: outputDir, prettyPrint: true).generate()
+
+            let raw = try String(contentsOf: jsonFile, encoding: .utf8)
+            XCTAssertTrue(raw.contains("\n  "), "Pretty-printed JSON should contain indentation")
+        }
+    }
+
+    func testCustomOperatorDoesNotFailParsing() throws {
+        let code = """
+            infix operator <<<: AdditionPrecedence
+            func <<< (lhs: Int, rhs: Int) -> Int { lhs + rhs }
+            let result = 1 <<< 2
+            """
+        try withCode(code: code) { srcDir, outputDir, jsonFile in
+            try SwiftAstGenerator(srcDir: srcDir, outputDir: outputDir, prettyPrint: false).generate()
+
+            let treeNode = try loadJson(file: jsonFile)
+            XCTAssertEqual(treeNode.nodeType, "SourceFileSyntax")
+        }
+    }
+
+    func testMalformedSourceIsLoggedNotFatal() throws {
+        try withCode(code: "let x = ") { srcDir, outputDir, _ in
+            // Generation must not throw even if the file is unparseable; the error is logged
+            // to stderr and the run continues.
+            XCTAssertNoThrow(
+                try SwiftAstGenerator(srcDir: srcDir, outputDir: outputDir, prettyPrint: false).generate()
+            )
         }
     }
 
     func testIgnoresTestTargetPathsFromPackageSwift() throws {
-        let tempDir = createTemporaryDirectory()
+        let tempDir = try createTemporaryDirectory()
         defer { cleanup(directory: tempDir) }
-        
-        // Create Package.swift with a test target
+
         let packageContent = """
-        // swift-tools-version: 5.10
-        import PackageDescription
-        
-        let package = Package(
-            name: "TestProject",
-            targets: [
-                .target(name: "TestProject"),
-                .testTarget(
-                    name: "TestProjectTests",
-                    dependencies: ["TestProject"]
-                ),
-            ]
-        )
-        """
-        createFile(at: tempDir, path: "Package.swift", content: packageContent)
-        
-        // Create a Swift file in the main source
-        let sourceCode = "print(\"Main source\")"
-        createFile(at: tempDir, path: "Sources/main.swift", content: sourceCode)
-        
-        // Create a Swift file in the test target path
-        let testCode = "print(\"Test code\")"
-        createFile(at: tempDir, path: "Tests/TestProjectTests/TestFile.swift", content: testCode)
-        
+            // swift-tools-version: 5.10
+            import PackageDescription
+
+            let package = Package(
+                name: "TestProject",
+                targets: [
+                    .target(name: "TestProject"),
+                    .testTarget(
+                        name: "TestProjectTests",
+                        dependencies: ["TestProject"]
+                    ),
+                ]
+            )
+            """
+        try createFile(at: tempDir, path: "Package.swift", content: packageContent)
+        try createFile(at: tempDir, path: "Sources/main.swift", content: #"print("Main source")"#)
+        try createFile(at: tempDir, path: "Tests/TestProjectTests/TestFile.swift", content: #"print("Test code")"#)
+
         let outputDir = tempDir.appendingPathComponent("output")
-        
-        try SwiftAstGenerator(
-            srcDir: tempDir,
-            outputDir: outputDir,
-            prettyPrint: false
-        ).generate()
-        
-        // Main source file should be processed
-        let mainJsonPath = outputDir.appendingPathComponent("Sources/main.swift.json")
+        try SwiftAstGenerator(srcDir: tempDir, outputDir: outputDir, prettyPrint: false).generate()
+
         XCTAssertTrue(
-            FileManager.default.fileExists(atPath: mainJsonPath.path),
+            FileManager.default.fileExists(atPath: outputDir.appendingPathComponent("Sources/main.swift.json").path),
             "Main source file should be processed"
         )
-        
-        // Test file should be ignored
-        let testJsonPath = outputDir.appendingPathComponent("Tests/TestProjectTests/TestFile.swift.json")
         XCTAssertFalse(
-            FileManager.default.fileExists(atPath: testJsonPath.path),
+            FileManager.default.fileExists(
+                atPath: outputDir.appendingPathComponent("Tests/TestProjectTests/TestFile.swift.json").path
+            ),
             "Test target file should be ignored"
         )
     }
-    
+
     func testIgnoresMultipleTestTargetPaths() throws {
-        let tempDir = createTemporaryDirectory()
+        let tempDir = try createTemporaryDirectory()
         defer { cleanup(directory: tempDir) }
-        
-        // Create Package.swift with multiple test targets
+
         let packageContent = """
-        // swift-tools-version: 5.10
-        import PackageDescription
-        
-        let package = Package(
-            name: "TestProject",
-            targets: [
-                .target(name: "TestProject"),
-                .testTarget(name: "UnitTests", dependencies: ["TestProject"]),
-                .testTarget(name: "IntegrationTests", dependencies: ["TestProject"]),
-            ]
+            // swift-tools-version: 5.10
+            import PackageDescription
+
+            let package = Package(
+                name: "TestProject",
+                targets: [
+                    .target(name: "TestProject"),
+                    .testTarget(name: "UnitTests", dependencies: ["TestProject"]),
+                    .testTarget(name: "IntegrationTests", dependencies: ["TestProject"]),
+                ]
+            )
+            """
+        try createFile(at: tempDir, path: "Package.swift", content: packageContent)
+        try createFile(at: tempDir, path: "Sources/main.swift", content: #"print("main")"#)
+        try createFile(at: tempDir, path: "Tests/UnitTests/UnitTest.swift", content: #"print("unit")"#)
+        try createFile(
+            at: tempDir,
+            path: "Tests/IntegrationTests/IntegrationTest.swift",
+            content: #"print("integration")"#
         )
-        """
-        createFile(at: tempDir, path: "Package.swift", content: packageContent)
-        
-        // Create source file
-        createFile(at: tempDir, path: "Sources/main.swift", content: "print(\"main\")")
-        
-        // Create test files in different test targets
-        createFile(at: tempDir, path: "Tests/UnitTests/UnitTest.swift", content: "print(\"unit\")")
-        createFile(at: tempDir, path: "Tests/IntegrationTests/IntegrationTest.swift", content: "print(\"integration\")")
-        
+
         let outputDir = tempDir.appendingPathComponent("output")
-        
-        try SwiftAstGenerator(
-            srcDir: tempDir,
-            outputDir: outputDir,
-            prettyPrint: false
-        ).generate()
-        
-        // Main source should be processed
+        try SwiftAstGenerator(srcDir: tempDir, outputDir: outputDir, prettyPrint: false).generate()
+
         XCTAssertTrue(
             FileManager.default.fileExists(atPath: outputDir.appendingPathComponent("Sources/main.swift.json").path)
         )
-        
-        // Both test files should be ignored
         XCTAssertFalse(
-            FileManager.default.fileExists(atPath: outputDir.appendingPathComponent("Tests/UnitTests/UnitTest.swift.json").path),
+            FileManager.default.fileExists(
+                atPath: outputDir.appendingPathComponent("Tests/UnitTests/UnitTest.swift.json").path
+            ),
             "UnitTests should be ignored"
         )
         XCTAssertFalse(
-            FileManager.default.fileExists(atPath: outputDir.appendingPathComponent("Tests/IntegrationTests/IntegrationTest.swift.json").path),
+            FileManager.default.fileExists(
+                atPath: outputDir.appendingPathComponent("Tests/IntegrationTests/IntegrationTest.swift.json").path
+            ),
             "IntegrationTests should be ignored"
         )
     }
-    
-    func testCustomOperatorDoesNotFailParsing() throws {
-        try withCode(
-            code: """
-                infix operator <<<: AdditionPrecedence
-                func <<< (lhs: Int, rhs: Int) -> Int { lhs + rhs }
-                let result = 1 <<< 2
-                """
-        ) { srcDir, outputDir, jsonFile in
-
-            try SwiftAstGenerator(
-                srcDir: srcDir,
-                outputDir: outputDir,
-                prettyPrint: false
-            ).generate()
-
-            XCTAssertTrue(FileManager.default.fileExists(atPath: jsonFile.path))
-            if let treeNode = loadJson(file: jsonFile) {
-                XCTAssertEqual(treeNode.nodeType, "SourceFileSyntax")
-            } else {
-                XCTFail("Could not create the JSON containing the Swift AST.")
-            }
-        }
-    }
 
     func testIgnoresCustomTestTargetPath() throws {
-        let tempDir = createTemporaryDirectory()
+        let tempDir = try createTemporaryDirectory()
         defer { cleanup(directory: tempDir) }
-        
-        // Create Package.swift with custom test path
+
         let packageContent = """
-        // swift-tools-version: 5.10
-        import PackageDescription
-        
-        let package = Package(
-            name: "TestProject",
-            targets: [
-                .target(name: "TestProject"),
-                .testTarget(
-                    name: "MyTests",
-                    dependencies: ["TestProject"],
-                    path: "CustomTestPath"
-                ),
-            ]
-        )
-        """
-        createFile(at: tempDir, path: "Package.swift", content: packageContent)
-        
-        // Create source file
-        createFile(at: tempDir, path: "Sources/main.swift", content: "print(\"main\")")
-        
-        // Create test file in custom path
-        createFile(at: tempDir, path: "CustomTestPath/MyTest.swift", content: "print(\"test\")")
-        
+            // swift-tools-version: 5.10
+            import PackageDescription
+
+            let package = Package(
+                name: "TestProject",
+                targets: [
+                    .target(name: "TestProject"),
+                    .testTarget(
+                        name: "MyTests",
+                        dependencies: ["TestProject"],
+                        path: "CustomTestPath"
+                    ),
+                ]
+            )
+            """
+        try createFile(at: tempDir, path: "Package.swift", content: packageContent)
+        try createFile(at: tempDir, path: "Sources/main.swift", content: #"print("main")"#)
+        try createFile(at: tempDir, path: "CustomTestPath/MyTest.swift", content: #"print("test")"#)
+
         let outputDir = tempDir.appendingPathComponent("output")
-        
-        try SwiftAstGenerator(
-            srcDir: tempDir,
-            outputDir: outputDir,
-            prettyPrint: false
-        ).generate()
-        
-        // Main source should be processed
+        try SwiftAstGenerator(srcDir: tempDir, outputDir: outputDir, prettyPrint: false).generate()
+
         XCTAssertTrue(
             FileManager.default.fileExists(atPath: outputDir.appendingPathComponent("Sources/main.swift.json").path)
         )
-        
-        // Custom test path should be ignored
         XCTAssertFalse(
-            FileManager.default.fileExists(atPath: outputDir.appendingPathComponent("CustomTestPath/MyTest.swift.json").path),
+            FileManager.default.fileExists(
+                atPath: outputDir.appendingPathComponent("CustomTestPath/MyTest.swift.json").path
+            ),
             "Custom test path should be ignored"
         )
     }
-
 }

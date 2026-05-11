@@ -25,6 +25,13 @@ jobs:
         uses: SwiftyLab/setup-swift@latest
         with:
           swift-version: "6.1"
+      - name: Run swift-format lint
+        if: matrix.os == 'macos-latest'
+        run: |
+          swift-format lint --strict --recursive \
+            Sources/SwiftAstGen \
+            Sources/SwiftAstGenLib \
+            Tests/SwiftAstGenTests
       - name: Run Linux Build
         if: matrix.os == 'ubuntu-latest'
         run: |
