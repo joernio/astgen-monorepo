@@ -4,12 +4,14 @@ project:
   language: "swift"
 
 build:
-  build_command: "swift build"
-  dist_dir: ".build/debug"
+  build_command: "swift build -c release"
+  dist_dir: ".build/release"
 
 execute:
   command: "{dist_dir}/SwiftAstGen --src {input_dir} --output {output_dir}"
   timeout: 600  # seconds
+  iterations: 5  # number of timed runs; reported wall-clock time is the median
+  warmup: 1      # untimed primer to avoid cold-cache effects in the first sample
 
 artifacts:
   - name: "AST"

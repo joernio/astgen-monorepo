@@ -37,7 +37,7 @@ jobs:
           pip install -e .
 
       - name: Build PR version
-        run: swift build
+        run: swift build -c release
 
       - name: Build base version
         run: |
@@ -46,7 +46,7 @@ jobs:
           git fetch origin "${BASE_BRANCH}"
           git worktree add ../swift-astgen-base "origin/${BASE_BRANCH}" --no-checkout
           (cd ../swift-astgen-base && git checkout "origin/${BASE_BRANCH}" -- swift-astgen)
-          (cd ../swift-astgen-base/swift-astgen && swift build)
+          (cd ../swift-astgen-base/swift-astgen && swift build -c release)
 
       - name: Run regression tests
         run: |
@@ -54,8 +54,8 @@ jobs:
           PR_SHA=$(git rev-parse --short HEAD)
           astgen-regression compare \
             --config regression.yaml \
-            --base-dist ../swift-astgen-base/swift-astgen/.build/debug \
-            --pr-dist .build/debug \
+            --base-dist ../swift-astgen-base/swift-astgen/.build/release \
+            --pr-dist .build/release \
             --pr-number "${{ github.event.pull_request.number }}" \
             --base-ref "${{ github.base_ref }} @ ${BASE_SHA}" \
             --pr-ref "${{ github.head_ref }} @ ${PR_SHA}" \

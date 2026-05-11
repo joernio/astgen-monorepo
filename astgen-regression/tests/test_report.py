@@ -95,6 +95,7 @@ def test_render_corpus_section():
         "pr_metrics": {"ast": {"file_count": 11, "total_size": 1048576}},
         "base_time": 5.5,
         "pr_time": 6.0,
+        "iterations": 5,
         "comparison": {
             "only_in_base": [],
             "only_in_pr": ["new.json"],
@@ -113,6 +114,28 @@ def test_render_corpus_section():
     assert "| Metric" in section
     assert "+1" in section  # file count delta
     assert "<details>" in section  # diff details
+    assert "median of 5" in section
+
+
+def test_render_corpus_section_single_iteration():
+    """When iterations <= 1 the wall-clock label has no median annotation."""
+    result_data = {
+        "name": "c",
+        "label": "x@1",
+        "base_metrics": {"ast": {"file_count": 1, "total_size": 1}},
+        "pr_metrics": {"ast": {"file_count": 1, "total_size": 1}},
+        "base_time": 1.0,
+        "pr_time": 1.0,
+        "iterations": 1,
+        "comparison": {"only_in_base": [], "only_in_pr": [], "diffs": {"ast": []}},
+    }
+
+    section = render_corpus_section(
+        "c", "x@1", result_data, [{"name": "ast", "pattern": "*.json"}], "PR"
+    )
+
+    assert "Wall-clock time" in section
+    assert "median of" not in section
 
 
 def test_render_report():
