@@ -182,6 +182,8 @@ Tests use `pytest` with mocking for external dependencies:
 
 This handles semantically identical JSON with different key orders.
 
+**Oversized diff guard**: For a single differing file, if the combined normalized line count (base + PR) exceeds `compare.MAX_DIFF_LINES` (default `20000`), the unified diff is skipped and replaced with an `@@ diff omitted: X vs Y lines exceeds 20000 @@` placeholder. The structural summary (`N added, N removed, N changed`) is still reported. This prevents pathological `SequenceMatcher` slowdowns on huge AST changes while keeping the report informative.
+
 ### Collapsible Diffs
 `report.py` uses `<details>` HTML tags for diff sections:
 - Default collapsed for readability
