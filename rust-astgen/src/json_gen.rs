@@ -98,7 +98,7 @@ fn process_file(
     let loc = file_line_index
         .line_col(syntax_tree.text_range().end())
         .line;
-    let relative_path = config.make_output_path_for_input_file(input_file_path)?;
+    let relative_path = config.relativize_input_file(input_file_path)?;
 
     let crate_name = crate_name_for_file(syntax_tree, semantics);
     let module_path = module_path_for_file(syntax_tree, semantics);

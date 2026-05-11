@@ -70,8 +70,8 @@ def test_cmd_compare_exits_with_code_1_on_regressions():
                 return_value=Path("/tmp/corpus"),
             ):
                 with patch(
-                    "astgen_regression.commands.compare.execute_astgen",
-                    return_value=(True, 1.0),
+                    "astgen_regression.commands.compare.execute_astgen_repeated",
+                    return_value=(True, 1.0, [1.0]),
                 ):
                     with patch(
                         "astgen_regression.commands.compare.collect_metrics",
@@ -152,8 +152,8 @@ def test_cmd_compare_exits_with_code_0_when_no_regressions():
                 return_value=Path("/tmp/corpus"),
             ):
                 with patch(
-                    "astgen_regression.commands.compare.execute_astgen",
-                    return_value=(True, 1.0),
+                    "astgen_regression.commands.compare.execute_astgen_repeated",
+                    return_value=(True, 1.0, [1.0]),
                 ):
                     with patch(
                         "astgen_regression.commands.compare.collect_metrics",

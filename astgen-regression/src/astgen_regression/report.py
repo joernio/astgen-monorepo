@@ -51,7 +51,9 @@ def signed_int(delta: int) -> str:
     return str(delta)
 
 
-def format_table_row(metric: str, base_val: str, pr_val: str, delta: str) -> str:
+def format_table_row(
+    metric: str, base_val: str, pr_val: str, delta: str, metric_width: int = 24
+) -> str:
     """Format a Markdown table row.
 
     Args:
@@ -59,11 +61,12 @@ def format_table_row(metric: str, base_val: str, pr_val: str, delta: str) -> str
         base_val: Base value string
         pr_val: PR value string
         delta: Delta value string
+        metric_width: Column width used for the metric label
 
     Returns:
         Formatted Markdown table row
     """
-    return f"| {metric:<24} | {base_val:>11} | {pr_val:>8} | {delta:>8} |"
+    return f"| {metric:<{metric_width}} | {base_val:>11} | {pr_val:>8} | {delta:>8} |"
 
 
 def build_diff_details(
@@ -136,10 +139,17 @@ def render_corpus_section(
     bt = result["base_time"]
     pt = result["pr_time"]
     cmp = result["comparison"]
+    iterations = result.get("iterations", 1)
+
+    if iterations and iterations > 1:
+        time_label = f"Wall-clock time (median of {iterations})"
+    else:
+        time_label = "Wall-clock time"
+
+    metric_width = max(24, len(time_label))
 
     rows = []
 
-    # Rows for each artifact type
     for artifact in artifacts_config:
         art_name = artifact["name"]
         art_label = artifact["name"].upper()
@@ -155,6 +165,7 @@ def render_corpus_section(
                 str(base_count),
                 str(pr_count),
                 signed_int(pr_count - base_count),
+                metric_width,
             )
         )
 
@@ -164,25 +175,35 @@ def render_corpus_section(
                 human_size(base_size),
                 human_size(pr_size),
                 pct_delta(base_size, pr_size),
+                metric_width,
             )
         )
 
         diff_count = len(cmp["diffs"].get(art_name, []))
         rows.append(
-            format_table_row(f"Files with {art_label} diffs", "—", str(diff_count), "")
+            format_table_row(
+                f"Files with {art_label} diffs",
+                "—",
+                str(diff_count),
+                "",
+                metric_width,
+            )
         )
 
-    # Wall-clock time row
     rows.append(
         format_table_row(
-            "Wall-clock time", f"{bt:.1f} s", f"{pt:.1f} s", pct_delta(bt, pt)
+            time_label,
+            f"{bt:.1f} s",
+            f"{pt:.1f} s",
+            pct_delta(bt, pt),
+            metric_width,
         )
     )
 
     header = (
         f"### {name} ({label})\n\n"
-        f"| {'Metric':<24} | {'base (main)':>11} | {pr_label:>8} | {'Delta':>8} |\n"
-        f"|{'-' * 26}|{'-' * 13}|{'-' * 10}|{'-' * 10}|"
+        f"| {'Metric':<{metric_width}} | {'base (main)':>11} | {pr_label:>8} | {'Delta':>8} |\n"
+        f"|{'-' * (metric_width + 2)}|{'-' * 13}|{'-' * 10}|{'-' * 10}|"
     )
 
     table = header + "\n" + "\n".join(rows) + "\n"

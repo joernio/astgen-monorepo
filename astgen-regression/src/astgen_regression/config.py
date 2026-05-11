@@ -60,7 +60,8 @@ def validate_config(config: dict[str, Any]) -> None:
         raise ConfigError("Missing required field: execute.command")
 
     # Validate command template
-    cmd = config.get("execute", {}).get("command", "")
+    execute_cfg = config.get("execute", {})
+    cmd = execute_cfg.get("command", "")
     if "{input_dir}" not in cmd or "{output_dir}" not in cmd:
         raise ConfigError(
             "Command template must contain {input_dir} and {output_dir} placeholders.\n"
@@ -68,6 +69,20 @@ def validate_config(config: dict[str, Any]) -> None:
             "Example:\n"
             '  command: "node {dist_dir}/astgen.js -i {input_dir} -o {output_dir}"'
         )
+
+    if "iterations" in execute_cfg:
+        iterations = execute_cfg["iterations"]
+        if not isinstance(iterations, int) or iterations < 1:
+            raise ConfigError(
+                f"execute.iterations must be a positive integer (got {iterations!r})"
+            )
+
+    if "warmup" in execute_cfg:
+        warmup = execute_cfg["warmup"]
+        if not isinstance(warmup, int) or warmup < 0:
+            raise ConfigError(
+                f"execute.warmup must be a non-negative integer (got {warmup!r})"
+            )
 
     if "corpora" not in config or not config["corpora"]:
         raise ConfigError(

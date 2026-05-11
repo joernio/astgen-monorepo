@@ -12,6 +12,11 @@ build:
 execute:
   command: "{{ exec_command }}"
   timeout: 600  # seconds
+  # Wall-clock timing is taken as the median of `iterations` timed runs, after
+  # `warmup` untimed runs. Output is wiped before every run so each iteration
+  # measures the same end-to-end work. Defaults: iterations=5, warmup=1.
+  # iterations: 5
+  # warmup: 1
 artifacts:
 {% for artifact in artifacts %}
   - name: "{{ artifact.name }}"
