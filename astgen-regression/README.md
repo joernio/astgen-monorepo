@@ -101,7 +101,7 @@ Options:
 Workflow:
 1. Clones and prepares corpora
 2. Runs astgen from both distributions (**repeated** runs per `execute.iterations` / `execute.warmup`; see **execute** section above)
-3. Compares outputs (JSON normalization, text diffs) using the last timed run’s artifacts
+3. Compares outputs (JSON normalization, text diffs) using the last timed run’s artifacts. For any single file whose combined normalized line count (base + PR) exceeds **20 000 lines**, the full unified diff is replaced with an `@@ diff omitted: … @@` placeholder; the structural summary (`N added, N removed, N changed`) is still reported.
 4. Generates Markdown report and optional diff files
 5. Exits with code 1 if regressions detected (useful for local validation; in CI the workflow catches this to allow PR comments)
 ### `local`

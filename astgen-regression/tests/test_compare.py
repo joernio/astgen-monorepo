@@ -2,7 +2,7 @@ import json
 import tempfile
 from pathlib import Path
 
-from astgen_regression.compare import compare_outputs, normalize_json, json_diff_summary
+from astgen_regression.compare import compare_outputs, json_diff_summary, normalize_json
 
 
 def test_normalize_json_valid():
@@ -212,3 +212,66 @@ def test_compare_outputs_multiple_artifacts():
 
         assert len(result["diffs"]["ast"]) == 1
         assert len(result["diffs"]["typemap"]) == 1
+
+
+def test_compare_outputs_deterministic_order_under_threading():
+    """Diffs must come back sorted by rel even though comparison is parallelized."""
+    artifacts_config = [{"name": "ast", "pattern": "*.json"}]
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        base_dir = Path(tmpdir) / "base"
+        pr_dir = Path(tmpdir) / "pr"
+        base_dir.mkdir()
+        pr_dir.mkdir()
+
+        # 50 identical files to give the thread pool real work to chew through.
+        for i in range(50):
+            payload = json.dumps({"id": i})
+            (base_dir / f"same_{i:02d}.json").write_text(payload)
+            (pr_dir / f"same_{i:02d}.json").write_text(payload)
+
+        # Differing files whose names sort non-trivially; intentionally created
+        # in an order that does not match their sorted order.
+        diff_names = ["zeta.json", "alpha.json", "mango.json", "beta.json", "kappa.json"]
+        for name in diff_names:
+            (base_dir / name).write_text(json.dumps({"v": "base"}))
+            (pr_dir / name).write_text(json.dumps({"v": "pr"}))
+
+        result = compare_outputs(base_dir, pr_dir, artifacts_config)
+
+        diff_rels = [rel for rel, _, _ in result["diffs"]["ast"]]
+        assert diff_rels == sorted(diff_names)
+        assert result["only_in_base"] == []
+        assert result["only_in_pr"] == []
+
+
+def test_compare_outputs_oversized_diff_guard(monkeypatch):
+    """Files whose normalized line count exceeds MAX_DIFF_LINES should skip the unified diff."""
+    artifacts_config = [{"name": "ast", "pattern": "*.json"}]
+
+    # Lower the threshold so the test stays fast and self-contained.
+    monkeypatch.setattr("astgen_regression.compare.MAX_DIFF_LINES", 20)
+
+    # 30 keys * (key line + value line patterns) easily clears 20 normalized lines per side.
+    big_base = {f"k{i:03d}": i for i in range(30)}
+    big_pr = {f"k{i:03d}": i + 1 for i in range(30)}
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        base_dir = Path(tmpdir) / "base"
+        pr_dir = Path(tmpdir) / "pr"
+        base_dir.mkdir()
+        pr_dir.mkdir()
+
+        (base_dir / "huge.json").write_text(json.dumps(big_base))
+        (pr_dir / "huge.json").write_text(json.dumps(big_pr))
+
+        result = compare_outputs(base_dir, pr_dir, artifacts_config)
+
+        assert len(result["diffs"]["ast"]) == 1
+        rel_path, diff_lines, summary = result["diffs"]["ast"][0]
+        assert rel_path == "huge.json"
+        joined = "".join(diff_lines)
+        assert "diff omitted" in joined
+        assert "exceeds 20" in joined
+        # Summary is still computed from the parsed objects.
+        assert "changed" in summary
