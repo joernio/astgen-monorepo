@@ -1,3 +1,4 @@
 # Core dependencies for astgen-regression
 PyYAML>=6.0
 Jinja2>=3.1
+deepdiff[optimize]>=9.0

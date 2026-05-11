@@ -81,7 +81,7 @@ def test_json_diff_summary_identical():
     try:
         summary = json_diff_summary(base_path, pr_path)
 
-        assert summary == "whitespace/ordering only"
+        assert summary == "no changes"
     finally:
         base_path.unlink()
         pr_path.unlink()
@@ -186,7 +186,8 @@ def test_compare_outputs_with_diffs():
         rel_path, diff_lines, summary = result["diffs"]["ast"][0]
         assert rel_path == "changed.json"
         assert len(diff_lines) > 0
-        assert "added" in summary or "removed" in summary
+        # DeepDiff sees this as a structural change (whole dict changed)
+        assert "changed" in summary
 
 
 def test_compare_outputs_multiple_artifacts():

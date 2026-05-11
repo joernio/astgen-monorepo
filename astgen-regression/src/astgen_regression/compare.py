@@ -10,6 +10,8 @@ import json
 import os
 import re
 
+from deepdiff import DeepDiff
+
 
 # Skip emitting a full unified diff once the combined normalized line count
 # exceeds this threshold. Prevents pathological SequenceMatcher slowdowns on
@@ -24,38 +26,39 @@ def _normalize_obj_to_lines(obj: Any) -> list[str]:
 
 
 def _diff_summary_from_objs(base_obj: Any, pr_obj: Any) -> str:
-    """Compute a human-readable summary of structural changes between two parsed objects."""
+    """Compute a human-readable summary of structural changes between two parsed objects.
+
+    Uses DeepDiff for structural comparison, providing accurate counts of
+    added, removed, and changed elements regardless of depth or complexity.
+    """
+    diff = DeepDiff(base_obj, pr_obj, ignore_order=False, verbose_level=2)
+
+    if not diff:
+        return "no changes"
+
     added = 0
     removed = 0
     changed = 0
 
-    def walk(b, p, depth: int = 0):
-        nonlocal added, removed, changed
+    # Count dictionary item changes
+    if "dictionary_item_added" in diff:
+        added += len(diff["dictionary_item_added"])
+    if "dictionary_item_removed" in diff:
+        removed += len(diff["dictionary_item_removed"])
 
-        if depth > 100:
-            return
+    # Count list item changes
+    if "iterable_item_added" in diff:
+        added += len(diff["iterable_item_added"])
+    if "iterable_item_removed" in diff:
+        removed += len(diff["iterable_item_removed"])
 
-        if isinstance(b, dict) and isinstance(p, dict):
-            for k in set(b) | set(p):
-                if k not in b:
-                    added += 1
-                elif k not in p:
-                    removed += 1
-                else:
-                    walk(b[k], p[k], depth + 1)
-        elif isinstance(b, list) and isinstance(p, list):
-            for i in range(min(len(b), len(p))):
-                walk(b[i], p[i], depth + 1)
-            extra = len(p) - len(b)
-            if extra > 0:
-                added += extra
-            elif extra < 0:
-                removed += -extra
-        else:
-            if b != p:
-                changed += 1
+    # Count value changes
+    if "values_changed" in diff:
+        changed += len(diff["values_changed"])
 
-    walk(base_obj, pr_obj)
+    # Count type changes as value changes
+    if "type_changes" in diff:
+        changed += len(diff["type_changes"])
 
     parts = []
     if added:
@@ -65,7 +68,7 @@ def _diff_summary_from_objs(base_obj: Any, pr_obj: Any) -> str:
     if changed:
         parts.append(f"{changed} changed")
 
-    return ", ".join(parts) if parts else "whitespace/ordering only"
+    return ", ".join(parts) if parts else "no structural changes"
 
 
 def normalize_json(path: Path) -> list[str]:
@@ -92,8 +95,8 @@ def json_diff_summary(base_path: Path, pr_path: Path) -> str:
         pr_path: Path to PR JSON file
 
     Returns:
-        Summary string like "3 added, 1 removed, 7 changed" or
-        "whitespace/ordering only" or "" on parse error
+        Summary string like "3 added, 1 removed, 7 changed",
+        "no changes" if identical, or "" on parse error
     """
     try:
         base_obj = json.loads(base_path.read_bytes())

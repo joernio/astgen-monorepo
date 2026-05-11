@@ -28,6 +28,12 @@ pip install -r requirements.txt
 pip install -e .
 ```
 
+**Dependencies:**
+- Python 3.12+
+- PyYAML - Configuration parsing
+- Jinja2 - Template rendering
+- deepdiff - Structural JSON comparison
+
 ## Quick Start
 
 1. **Initialize configuration**
@@ -278,7 +284,7 @@ astgen-regression/
 - `config.py`: Configuration loading and validation
 - `corpus.py`: Clone and prepare test corpora
 - `executor.py`: Run astgen (single run or warmup + median-of-N timed runs; wipes output between iterations)
-- `compare.py`: Compare outputs (JSON-aware, normalized text diffs)
+- `compare.py`: Compare outputs (JSON-aware structural comparison using deepdiff, normalized text diffs)
 - `metrics.py`: Collect and format performance statistics
 - `report.py`: Generate Markdown reports with collapsible details
 - `worktree.py`: Manage git worktrees for local testing

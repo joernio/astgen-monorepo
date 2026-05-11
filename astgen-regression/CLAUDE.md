@@ -87,7 +87,7 @@ astgen-regression compare \
 - `config.py` - Load and validate `regression.yaml` configuration
 - `corpus.py` - Clone and prepare test codebases at specific git tags
 - `executor.py` - Run astgen (`execute_astgen` for a single invocation; `execute_astgen_repeated` for warmup + median-of-N timed runs with a clean output tree each time)
-- `compare.py` - Compare outputs (JSON-aware normalization, unified text diffs)
+- `compare.py` - Compare outputs (deepdiff for structural analysis, JSON normalization, unified text diffs)
 - `metrics.py` - Collect file counts and size statistics from output directories
 - `report.py` - Generate Markdown reports with collapsible diff sections
 - `worktree.py` - Manage git worktrees for isolated builds
@@ -174,15 +174,24 @@ Tests use `pytest` with mocking for external dependencies:
 ## Key Design Patterns
 
 ### JSON Comparison
-`compare.py` normalizes JSON before comparison:
+`compare.py` uses a two-phase approach for JSON comparison:
+
+**Phase 1: Structural Analysis (deepdiff)**
+- Uses the `deepdiff` library to perform structural comparison of parsed JSON objects
+- Accurately counts added, removed, and changed elements at any depth
+- No depth limit (previous manual implementation had a 100-level cutoff)
+- Provides detailed paths to changes (e.g., `root['ast']['nodes'][3]['type']`)
+- Generates human-readable summaries: "5 added, 2 removed, 237 changed"
+
+**Phase 2: Textual Diff Generation**
 1. Parse JSON
-2. Sort all keys recursively
+2. Sort all keys recursively  
 3. Re-serialize with consistent formatting
 4. Compare as text with unified diff
 
-This handles semantically identical JSON with different key orders.
+This handles semantically identical JSON with different key orders and produces readable diff output.
 
-**Oversized diff guard**: For a single differing file, if the combined normalized line count (base + PR) exceeds `compare.MAX_DIFF_LINES` (default `20000`), the unified diff is skipped and replaced with an `@@ diff omitted: X vs Y lines exceeds 20000 @@` placeholder. The structural summary (`N added, N removed, N changed`) is still reported. This prevents pathological `SequenceMatcher` slowdowns on huge AST changes while keeping the report informative.
+**Oversized diff guard**: For a single differing file, if the combined normalized line count (base + PR) exceeds `compare.MAX_DIFF_LINES` (default `20000`), the unified diff is skipped and replaced with an `@@ diff omitted: X vs Y lines exceeds 20000 @@` placeholder. The structural summary from deepdiff (`N added, N removed, N changed`) is still reported. This prevents pathological `SequenceMatcher` slowdowns on huge AST changes while keeping the report informative.
 
 ### Collapsible Diffs
 `report.py` uses `<details>` HTML tags for diff sections:
