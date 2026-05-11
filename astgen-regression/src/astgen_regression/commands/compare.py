@@ -7,7 +7,7 @@ import sys
 
 from astgen_regression.config import load_config
 from astgen_regression.corpus import clone_corpus
-from astgen_regression.executor import execute_astgen
+from astgen_regression.executor import execute_astgen_repeated
 from astgen_regression.metrics import collect_metrics
 from astgen_regression.compare import compare_outputs
 from astgen_regression.report import render_report, write_diff_files
@@ -46,6 +46,10 @@ def cmd_compare(args) -> None:
             "artifacts", [{"name": "ast", "pattern": "*.json"}]
         )
 
+        execute_config = config["execute"]
+        iterations = int(execute_config.get("iterations", 5))
+        warmup = int(execute_config.get("warmup", 1))
+
         for corpus_config in config["corpora"]:
             name = corpus_config["name"]
             label = corpus_config["label"]
@@ -65,6 +69,7 @@ def cmd_compare(args) -> None:
                         "pr_metrics": {},
                         "base_time": 0.0,
                         "pr_time": 0.0,
+                        "iterations": iterations,
                         "comparison": {
                             "only_in_base": [],
                             "only_in_pr": [],
@@ -74,25 +79,34 @@ def cmd_compare(args) -> None:
                 )
                 continue
 
-            # Run base astgen
             base_output = Path(temp_dir) / f"out-base-{name}"
             print(f"[regression] Running base astgen on {name}...", file=sys.stderr)
-            base_success, base_time = execute_astgen(
-                config["execute"], base_dist, input_dir, base_output
+            _, base_time, _ = execute_astgen_repeated(
+                execute_config,
+                base_dist,
+                input_dir,
+                base_output,
+                iterations=iterations,
+                warmup=warmup,
+                label=f"{name}/base",
             )
 
-            # Run PR astgen
             pr_output = Path(temp_dir) / f"out-pr-{name}"
             print(f"[regression] Running PR astgen on {name}...", file=sys.stderr)
-            pr_success, pr_time = execute_astgen(
-                config["execute"], pr_dist, input_dir, pr_output
+            _, pr_time, _ = execute_astgen_repeated(
+                execute_config,
+                pr_dist,
+                input_dir,
+                pr_output,
+                iterations=iterations,
+                warmup=warmup,
+                label=f"{name}/pr",
             )
 
-            # Collect metrics
+            # Output of the last timed run is what we compare against.
             base_metrics = collect_metrics(base_output, artifacts_config)
             pr_metrics = collect_metrics(pr_output, artifacts_config)
 
-            # Compare outputs
             print(f"[regression] Comparing outputs for {name}...", file=sys.stderr)
             comparison = compare_outputs(base_output, pr_output, artifacts_config)
 
@@ -104,6 +118,7 @@ def cmd_compare(args) -> None:
                     "pr_metrics": pr_metrics,
                     "base_time": base_time,
                     "pr_time": pr_time,
+                    "iterations": iterations,
                     "comparison": comparison,
                 }
             )

@@ -94,3 +94,52 @@ def test_validate_config_invalid_command_template():
         ConfigError, match="Command template must contain.*input_dir.*output_dir"
     ):
         validate_config(config)
+
+
+def _minimal_valid_config(**execute_overrides):
+    cfg = {
+        "project": {"name": "test", "language": "js"},
+        "build": {"build_command": "build", "dist_dir": "dist"},
+        "execute": {
+            "command": "run -i {input_dir} -o {output_dir}",
+            "timeout": 600,
+        },
+        "artifacts": [{"name": "AST", "pattern": "*.json"}],
+        "corpora": [
+            {
+                "name": "test",
+                "label": "test@1.0",
+                "clone_url": "https://github.com/test/test.git",
+                "tag": "1.0",
+                "input_subdir": "",
+            }
+        ],
+    }
+    cfg["execute"].update(execute_overrides)
+    return cfg
+
+
+def test_validate_config_iterations_and_warmup_accepted():
+    """Positive iterations and non-negative warmup pass validation."""
+    from astgen_regression.config import validate_config
+
+    validate_config(_minimal_valid_config(iterations=5, warmup=1))
+    validate_config(_minimal_valid_config(iterations=1, warmup=0))
+
+
+def test_validate_config_iterations_must_be_positive():
+    from astgen_regression.config import validate_config
+
+    with pytest.raises(ConfigError, match="execute.iterations"):
+        validate_config(_minimal_valid_config(iterations=0))
+    with pytest.raises(ConfigError, match="execute.iterations"):
+        validate_config(_minimal_valid_config(iterations="five"))
+
+
+def test_validate_config_warmup_must_be_non_negative_int():
+    from astgen_regression.config import validate_config
+
+    with pytest.raises(ConfigError, match="execute.warmup"):
+        validate_config(_minimal_valid_config(warmup=-1))
+    with pytest.raises(ConfigError, match="execute.warmup"):
+        validate_config(_minimal_valid_config(warmup=1.5))
