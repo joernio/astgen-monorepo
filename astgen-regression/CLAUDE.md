@@ -86,7 +86,7 @@ astgen-regression compare \
 **Core modules** (single purpose, reusable):
 - `config.py` - Load and validate `regression.yaml` configuration
 - `corpus.py` - Clone and prepare test codebases at specific git tags
-- `executor.py` - Execute astgen commands with timeout and error handling
+- `executor.py` - Run astgen (`execute_astgen` for a single invocation; `execute_astgen_repeated` for warmup + median-of-N timed runs with a clean output tree each time)
 - `compare.py` - Compare outputs (JSON-aware normalization, unified text diffs)
 - `metrics.py` - Collect file counts and size statistics from output directories
 - `report.py` - Generate Markdown reports with collapsible diff sections
@@ -126,13 +126,27 @@ This dual behavior is intentional - same tool, different contexts.
 
 ## Configuration Structure
 
-The `regression.yaml` file has five sections:
+The `regression.yaml` file has these sections:
 
 1. **project**: Metadata (name, language)
 2. **build**: How to build the astgen (`install_command`, `build_command`, `dist_dir`)
-3. **execute**: How to run astgen (`command` template with `{dist_dir}`, `{input_dir}`, `{output_dir}` placeholders)
+3. **execute**: How to run astgen (`command` template with `{dist_dir}`, `{input_dir}`, `{output_dir}` placeholders; `timeout` in seconds; optional **`iterations`** and **`warmup`** for timing—see below)
 4. **artifacts**: What to compare (`name`, `pattern`, `description`)
 5. **corpora**: Test codebases (`name`, `label`, `clone_url`, `tag`, optional `input_subdir`)
+6. **github** (optional): `base_branch`, `python_version`, optional **`runs_on`** (e.g. `macos-latest` for Swift), optional **`setup_action`** mirror for generated workflows
+
+### Timing (`execute.iterations` / `execute.warmup`)
+
+The **`compare`** path (and therefore CI) measures wall-clock time using **`execute_astgen_repeated`** in `executor.py`:
+
+- Defaults: `iterations: 5`, `warmup: 1` (config may omit them; `commands/compare.py` applies these defaults).
+- **Warmup** runs are not included in the median; they still wipe the output directory and run astgen to prime caches.
+- Before **every** warmup and timed run, the corpus output directory is removed so each run does the same end-to-end work.
+- **Per-run** timings are printed to **stderr** (labeled with `{corpus}/base` or `{corpus}/pr`) so CI logs show variance.
+- **Artifact comparison** uses the output tree from the **last successful timed run** (not an average of outputs).
+- Reports label the row **`Wall-clock time (median of N)`** when `iterations > 1` (`report.py`).
+
+Use **`iterations: 1`** and **`warmup: 0`** only if you want a single timed run and lower CI cost. Release builds (e.g. Swift `-c release`) reduce noise versus debug binaries on shared runners.
 
 **Security note**: `execute.command` and `build.*_command` run with `shell=True`. Configuration files must be version-controlled and reviewed. This is documented in README.md.
 
@@ -155,7 +169,7 @@ Tests use `pytest` with mocking for external dependencies:
 - Test both success and failure paths
 - Validate specific behaviors (exit codes, file contents, error messages)
 
-**Current coverage**: ~85-90% of critical paths. Missing tests are for init command (simple template rendering) and local command (integration test).
+**Current coverage**: Core paths including config validation, compare, executor (single and repeated/median runs), report rendering, and metrics are well covered. Init remains mostly template-driven; `local` is lighter on integration tests.
 
 ## Key Design Patterns
 
@@ -200,6 +214,8 @@ This avoids switching branches and losing uncommitted changes.
 
 7. **Timeout handling**: Both corpus cloning (5 min) and astgen execution (configurable) have timeouts. Tests must mock `subprocess.run` to avoid actual timeouts.
 
+8. **Median timing cost**: Default `iterations: 5` and `warmup: 1` mean **12 astgen invocations per corpus** in `compare` (6 base + 6 PR). Large corpora or slow astgen binaries increase CI time proportionally.
+
 ## Error Handling Conventions
 
 - All ERROR messages prefix with `ERROR:` and write to stderr
@@ -213,7 +229,7 @@ This avoids switching branches and losing uncommitted changes.
 Currently supported languages (in `commands/init.py:LANGUAGE_DEFAULTS`):
 - javascript (Node.js/yarn setup)
 - rust (Rust toolchain)
-- swift (Swift Package Manager)
+- swift (Swift Package Manager; generated workflow defaults to `runs_on: macos-latest`)
 - dotnet (.NET SDK)
 - ruby (Ruby/Bundle setup)
 - go (Go toolchain)
@@ -224,10 +240,11 @@ To add new language: Update `LANGUAGE_DEFAULTS` dict in `commands/init.py` with:
 - `build_command`: Default build command
 - `install_command`: Optional dependency install command
 - `dist_dir`: Default distribution directory
+- `runs_on` (optional): Set if the generated job must not use Ubuntu (for example `macos-latest` for Swift)
 
 ## GitHub Actions Integration
 
-Generated workflow (`.github/workflows/regression.yml`) runs on pull requests:
+`astgen-regression init` writes **`.github/workflows/{language}-astgen-regression.yml`** (for example `javascript-astgen-regression.yml`). The generated job still uses the workflow `name: regression` in the YAML; only the **file path** is language-prefixed so multiple astgens in one org can each have their own workflow file.
 
 **Critical workflow steps**:
 1. Checkout PR branch with `fetch-depth: 0` (required for worktree support)

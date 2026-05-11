@@ -8,7 +8,7 @@ Config-driven regression testing framework for language-specific astgen variants
 
 - Clones real-world codebases (corpora) at specific versions
 - Builds your astgen from base and PR branches using git worktrees
-- Generates AST outputs from both versions
+- Generates AST outputs from both versions (**median wall-clock** timing with optional warmup and repeated runs—configurable under `execute`)
 - Compares outputs and produces detailed Markdown reports
 - Integrates with GitHub Actions for automated CI testing
 
@@ -100,11 +100,10 @@ Options:
 
 Workflow:
 1. Clones and prepares corpora
-2. Executes astgen from both distributions
-3. Compares outputs (JSON normalization, text diffs)
+2. Runs astgen from both distributions (**repeated** runs per `execute.iterations` / `execute.warmup`; see **execute** section above)
+3. Compares outputs (JSON normalization, text diffs) using the last timed run’s artifacts
 4. Generates Markdown report and optional diff files
 5. Exits with code 1 if regressions detected (useful for local validation; in CI the workflow catches this to allow PR comments)
-
 ### `local`
 
 Run regression testing locally using git worktrees.
@@ -118,11 +117,10 @@ Options:
 - `--config`: Config file path (default: `regression.yaml`)
 
 Workflow:
-1. Creates git worktrees for base and current branches
-2. Builds distributions in each worktree
-3. Runs compare workflow
-4. Cleans up worktrees
-5. Displays Markdown report
+1. Builds the current branch (PR) in your repo, then creates a git worktree for the base branch and builds there
+2. Runs `astgen-regression compare` with the two build output directories
+3. Cleans up the worktree
+4. Displays Markdown report
 
 ## Configuration File
 
@@ -141,6 +139,10 @@ build:
 execute:
   command: "node {dist_dir}/astgen.js -i {input_dir} -o {output_dir}"
   timeout: 600                       # Timeout in seconds
+  # Wall-clock timing: median of `iterations` timed runs after `warmup` untimed runs.
+  # Output is wiped before every run. Defaults: iterations=5, warmup=1.
+  # iterations: 5
+  # warmup: 1
 
 artifacts:
   - name: "AST"                      # Artifact type name
@@ -177,7 +179,13 @@ github:
   - `{dist_dir}`: Replaced with distribution directory path
   - `{input_dir}`: Replaced with corpus source directory
   - `{output_dir}`: Replaced with output directory for artifacts
-- `timeout`: Maximum execution time in seconds
+- `timeout`: Maximum execution time in seconds (each subprocess invocation)
+- `iterations` (optional): How many **timed** runs to use for wall-clock stats (default **5**). Set to `1` for a single timed run (lower CI cost).
+- `warmup` (optional): How many **untimed** runs to execute before timing (default **1**). Omitted from the median; use `0` to skip warmup. Warmup and timed runs each start from a **clean** output directory so every iteration measures the same work.
+
+**Timing behavior (compare / CI):** For each corpus, astgen runs for the base and PR distributions using `warmup + iterations` invocations per side. The report shows the **median** of the timed runs and labels the table row `Wall-clock time (median of N)` when `iterations > 1`. Per-run seconds are logged to **stderr** (for example `[corpus]/base run 2/5: …`) so you can see runner variance in CI logs. **Diffs** compare artifacts from the **last successful timed run** on each side.
+
+For noisy hosts (for example macOS GitHub runners) or debug builds, prefer **release** builds in `build_command` / `dist_dir` so timing deltas are meaningful; Swift projects often use `swift build -c release` and `.build/release`.
 
 #### `artifacts`
 List of artifact types to compare:
@@ -196,7 +204,7 @@ List of test codebases:
 #### `github`
 - `base_branch`: Default base branch for comparisons
 - `python_version`: Python version for GitHub Actions
-
+- `runs_on` (optional): GitHub-hosted runner label for the generated workflow (for example `macos-latest` for Swift; default in the template is `ubuntu-latest` when omitted)
 ## GitHub Actions Integration
 
 The generated workflow (`.github/workflows/{language}-astgen-regression.yml`) runs automatically on:
@@ -269,7 +277,7 @@ astgen-regression/
 **Modular Design**: Each module has a single responsibility:
 - `config.py`: Configuration loading and validation
 - `corpus.py`: Clone and prepare test corpora
-- `executor.py`: Execute astgen with timeouts and error handling
+- `executor.py`: Run astgen (single run or warmup + median-of-N timed runs; wipes output between iterations)
 - `compare.py`: Compare outputs (JSON-aware, normalized text diffs)
 - `metrics.py`: Collect and format performance statistics
 - `report.py`: Generate Markdown reports with collapsible details
