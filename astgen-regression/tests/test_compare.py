@@ -232,7 +232,13 @@ def test_compare_outputs_deterministic_order_under_threading():
 
         # Differing files whose names sort non-trivially; intentionally created
         # in an order that does not match their sorted order.
-        diff_names = ["zeta.json", "alpha.json", "mango.json", "beta.json", "kappa.json"]
+        diff_names = [
+            "zeta.json",
+            "alpha.json",
+            "mango.json",
+            "beta.json",
+            "kappa.json",
+        ]
         for name in diff_names:
             (base_dir / name).write_text(json.dumps({"v": "base"}))
             (pr_dir / name).write_text(json.dumps({"v": "pr"}))
