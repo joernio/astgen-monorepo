@@ -144,6 +144,13 @@ def _compare_one(
         pr_lines = pr_bytes.decode(errors="replace").splitlines(keepends=True)
         summary = ""
 
+    # Files that are byte-identical after JSON normalization (only key ordering
+    # or whitespace differs) should not be reported as diffs. The unified-diff
+    # path below would naturally return [] for them, but the oversized-diff
+    # shortcut would otherwise synthesize a placeholder for large files.
+    if base_lines == pr_lines:
+        return None
+
     if len(base_lines) + len(pr_lines) > MAX_DIFF_LINES:
         diff_lines = [
             f"--- out-base/{rel}\n",
