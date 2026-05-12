@@ -47,9 +47,22 @@ struct SwiftAstGen: ParsableCommand {
     )
     var scalaAstOnly: Bool = false
 
+    @Option(
+        name: .customLong("exclude-regex"),
+        help: "Exclude files whose absolute path matches this case-insensitive regex."
+    )
+    var excludeRegex: String?
+
     func validate() throws {
         guard FileManager.default.fileExists(atPath: src.path) else {
             throw ValidationError("Directory does not exist: `\(src.path)`")
+        }
+        if let pattern = excludeRegex {
+            do {
+                _ = try NSRegularExpression(pattern: pattern, options: .caseInsensitive)
+            } catch {
+                throw ValidationError("--exclude-regex: invalid pattern `\(pattern)`: \(error.localizedDescription)")
+            }
         }
     }
 
@@ -57,7 +70,15 @@ struct SwiftAstGen: ParsableCommand {
         if scalaAstOnly {
             try ScalaAstGenerator(outputUrl: URL(fileURLWithPath: defaultScalaOutPath)).generate()
         } else {
-            try SwiftAstGenerator(srcDir: src, outputDir: output, prettyPrint: prettyPrint).generate()
+            let compiledExcludeRegex = try excludeRegex.map {
+                try NSRegularExpression(pattern: $0, options: .caseInsensitive)
+            }
+            try SwiftAstGenerator(
+                srcDir: src,
+                outputDir: output,
+                prettyPrint: prettyPrint,
+                excludeRegex: compiledExcludeRegex
+            ).generate()
         }
     }
 }

@@ -251,6 +251,35 @@ def test_compare_outputs_deterministic_order_under_threading():
         assert result["only_in_pr"] == []
 
 
+def test_compare_outputs_skips_whitespace_only_changes_when_oversized(monkeypatch):
+    """Large files that only differ in JSON key ordering must not be reported as diffs."""
+    artifacts_config = [{"name": "ast", "pattern": "*.json"}]
+
+    monkeypatch.setattr("astgen_regression.compare.MAX_DIFF_LINES", 20)
+
+    base_payload = {f"k{i:03d}": i for i in range(30)}
+    # Same data, reverse insertion order — bytes differ, normalized JSON does not.
+    pr_payload = {f"k{i:03d}": i for i in reversed(range(30))}
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        base_dir = Path(tmpdir) / "base"
+        pr_dir = Path(tmpdir) / "pr"
+        base_dir.mkdir()
+        pr_dir.mkdir()
+
+        base_text = json.dumps(base_payload)
+        pr_text = json.dumps(pr_payload)
+        # Sanity: bytes really do differ so filecmp.cmp won't short-circuit.
+        assert base_text != pr_text
+
+        (base_dir / "huge.json").write_text(base_text)
+        (pr_dir / "huge.json").write_text(pr_text)
+
+        result = compare_outputs(base_dir, pr_dir, artifacts_config)
+
+        assert result["diffs"]["ast"] == []
+
+
 def test_compare_outputs_oversized_diff_guard(monkeypatch):
     """Files whose normalized line count exceeds MAX_DIFF_LINES should skip the unified diff."""
     artifacts_config = [{"name": "ast", "pattern": "*.json"}]
