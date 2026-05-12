@@ -21,6 +21,7 @@ public final class SwiftAstGenerator {
     private let srcDir: URL
     private let outputDir: URL
     private let prettyPrint: Bool
+    private let excludeRegex: NSRegularExpression?
     private let ignorePathsFromPackageSwift: [String]
     private let availableProcessors: Int = ProcessInfo.processInfo.activeProcessorCount
 
@@ -31,10 +32,13 @@ public final class SwiftAstGenerator {
     ///   - outputDir: Directory under which JSON files will be written. Created lazily by
     ///     ``generate()``; the initializer performs no I/O.
     ///   - prettyPrint: If `true`, JSON output is pretty-printed.
-    public init(srcDir: URL, outputDir: URL, prettyPrint: Bool) {
+    ///   - excludeRegex: Optional pre-compiled regex tested against each candidate file's
+    ///     absolute path; matching files are skipped.
+    public init(srcDir: URL, outputDir: URL, prettyPrint: Bool, excludeRegex: NSRegularExpression? = nil) {
         self.srcDir = srcDir
         self.outputDir = outputDir
         self.prettyPrint = prettyPrint
+        self.excludeRegex = excludeRegex
         self.ignorePathsFromPackageSwift = PackageTestTargetParser(srcDir: srcDir)
             .getTestTargetPaths()
             .map { $0.lowercased() }
@@ -53,12 +57,22 @@ public final class SwiftAstGenerator {
         iterateSwiftFiles(at: srcDir)
     }
 
-    private func shouldIgnore(path: String) -> Bool {
-        let pathLowercased = path.lowercased()
+    private func shouldIgnore(fileURL: URL, relativeFilePath: String) -> Bool {
+        let pathLowercased = "/\(relativeFilePath)".lowercased()
         for substring in Self.ignoredPathSubstrings where pathLowercased.contains(substring) {
             return true
         }
-        return ignorePathsFromPackageSwift.contains { pathLowercased.contains($0) }
+        if ignorePathsFromPackageSwift.contains(where: { pathLowercased.contains($0) }) {
+            return true
+        }
+        if let excludeRegex = excludeRegex {
+            let absolute = fileURL.path
+            let range = NSRange(absolute.startIndex..<absolute.endIndex, in: absolute)
+            if excludeRegex.firstMatch(in: absolute, options: [], range: range) != nil {
+                return true
+            }
+        }
+        return false
     }
 
     private func parseFile(fileUrl: URL, relativeFilePath: String) {
@@ -113,7 +127,7 @@ public final class SwiftAstGenerator {
             else {
                 continue
             }
-            if shouldIgnore(path: "/\(relativeFilePath)") {
+            if shouldIgnore(fileURL: fileURL, relativeFilePath: relativeFilePath) {
                 continue
             }
             queue.addOperation { [self] in

@@ -160,6 +160,65 @@ final class SwiftAstGenTests: XCTestCase, TestUtils {
         )
     }
 
+    func testExcludeRegexSkipsMatchingFiles() throws {
+        let tempDir = try createTemporaryDirectory()
+        defer { cleanup(directory: tempDir) }
+
+        try createFile(at: tempDir, path: "Sources/keep.swift", content: #"print("keep")"#)
+        try createFile(at: tempDir, path: "Sources/skip.swift", content: #"print("skip")"#)
+
+        let outputDir = tempDir.appendingPathComponent("output")
+        let regex = try NSRegularExpression(pattern: "skip\\.swift$", options: .caseInsensitive)
+        try SwiftAstGenerator(srcDir: tempDir, outputDir: outputDir, prettyPrint: false, excludeRegex: regex)
+            .generate()
+
+        XCTAssertTrue(
+            FileManager.default.fileExists(atPath: outputDir.appendingPathComponent("Sources/keep.swift.json").path)
+        )
+        XCTAssertFalse(
+            FileManager.default.fileExists(atPath: outputDir.appendingPathComponent("Sources/skip.swift.json").path),
+            "File matching --exclude-regex should be skipped"
+        )
+    }
+
+    func testExcludeRegexSkipsMatchingDirectories() throws {
+        let tempDir = try createTemporaryDirectory()
+        defer { cleanup(directory: tempDir) }
+
+        try createFile(at: tempDir, path: "Sources/main.swift", content: #"print("main")"#)
+        try createFile(at: tempDir, path: "Generated/api.swift", content: #"print("generated")"#)
+
+        let outputDir = tempDir.appendingPathComponent("output")
+        let regex = try NSRegularExpression(pattern: "/Generated/", options: .caseInsensitive)
+        try SwiftAstGenerator(srcDir: tempDir, outputDir: outputDir, prettyPrint: false, excludeRegex: regex)
+            .generate()
+
+        XCTAssertTrue(
+            FileManager.default.fileExists(atPath: outputDir.appendingPathComponent("Sources/main.swift.json").path)
+        )
+        XCTAssertFalse(
+            FileManager.default.fileExists(atPath: outputDir.appendingPathComponent("Generated/api.swift.json").path),
+            "Files inside a directory matching --exclude-regex should be skipped"
+        )
+    }
+
+    func testExcludeRegexIsCaseInsensitive() throws {
+        let tempDir = try createTemporaryDirectory()
+        defer { cleanup(directory: tempDir) }
+
+        try createFile(at: tempDir, path: "FOO/bar.swift", content: #"print("bar")"#)
+
+        let outputDir = tempDir.appendingPathComponent("output")
+        let regex = try NSRegularExpression(pattern: "foo", options: .caseInsensitive)
+        try SwiftAstGenerator(srcDir: tempDir, outputDir: outputDir, prettyPrint: false, excludeRegex: regex)
+            .generate()
+
+        XCTAssertFalse(
+            FileManager.default.fileExists(atPath: outputDir.appendingPathComponent("FOO/bar.swift.json").path),
+            "Case-insensitive --exclude-regex should match regardless of letter case"
+        )
+    }
+
     func testIgnoresCustomTestTargetPath() throws {
         let tempDir = try createTemporaryDirectory()
         defer { cleanup(directory: tempDir) }
