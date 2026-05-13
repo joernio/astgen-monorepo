@@ -25,13 +25,22 @@ fn main() -> Result<()> {
     let base_node_trait = "RustNode".to_string();
     let base_token_trait = "RustToken".to_string();
     let trait_nodes = vec![
-        // TODO: Add more as needed
+        "Adt".to_string(),
+        "AsmOperand".to_string(),
+        "AsmPiece".to_string(),
+        "AssocItem".to_string(),
+        "CfgPredicate".to_string(),
         "Expr".to_string(),
-        "Type".to_string(),
-        "Stmt".to_string(),
+        "ExternItem".to_string(),
+        "FieldList".to_string(),
+        "GenericArg".to_string(),
+        "GenericParam".to_string(),
         "Item".to_string(),
         "Meta".to_string(),
         "Pat".to_string(),
+        "Stmt".to_string(),
+        "Type".to_string(),
+        "VariantDef".to_string(),
     ];
     let config = ScalaAstGenConfig {
         package_name,
