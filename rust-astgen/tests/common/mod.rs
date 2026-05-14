@@ -17,7 +17,7 @@ pub fn no_sysroot_ast_json(
     run(crate_name, file_code_pairs, false, target_file)
 }
 
-pub fn ast_json(crate_name: &str, source: &str) -> TestResult<Value> {
+pub fn sysroot_ast_json(crate_name: &str, source: &str) -> TestResult<Value> {
     run(crate_name, &[("src/main.rs", source)], true, "src/main.rs")
 }
 
