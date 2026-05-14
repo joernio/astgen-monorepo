@@ -93,7 +93,7 @@ fn main() {
         name_ref(&json, "new")
             .on_line("let wrapped = Wrapper::<u32>::new(1);")
             .type_full_name(),
-        "fn new<u32>(u32) -> Wrapper<u32>"
+        "fn(u32) -> rust2cpg::Wrapper<u32>"
     );
     assert_eq!(
         ident_pat(&json, "wrapped").type_full_name(),
@@ -169,7 +169,7 @@ fn main() {
         name_ref(&json, "Wrapper")
             .on_line("Wrapper(value)")
             .type_full_name(),
-        "fn Wrapper<T>(T) -> Wrapper<T>"
+        "fn(T) -> rust2cpg::Wrapper<T>"
     );
     assert_eq!(
         name_ref(&json, "Wrapper")
@@ -210,7 +210,7 @@ fn main() {
         name_ref(&json, "new")
             .on_line("let numbers = Vec::<u32>::new();")
             .type_full_name(),
-        "fn new<u32>() -> Vec<u32, Global>"
+        "fn() -> alloc::vec::Vec<u32, alloc::alloc::Global>"
     );
     assert_eq!(
         ident_pat(&json, "numbers").type_full_name(),
