@@ -1,6 +1,8 @@
 mod common;
 
-use crate::common::{TestResult, sysroot_ast_json, call_expr, ident_pat, method_call_expr, name_ref};
+use crate::common::{
+    TestResult, call_expr, ident_pat, method_call_expr, name_ref, sysroot_ast_json,
+};
 
 #[test]
 fn emits_names_for_vec_and_dyn_trait() -> TestResult<()> {
