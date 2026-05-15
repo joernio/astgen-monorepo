@@ -5,7 +5,23 @@ import * as Logger from "./Logger"
 import * as fs from "node:fs"
 import * as path from "node:path"
 
-export type FileEntry = { path: string; content: string }
+/**
+ * Computes the per-file output path layout. Both `relativePath` (from `src`,
+ * for log messages) and `outputPath` (joined under `output`, with the extra
+ * suffix appended) are returned together so callers don't recompute either —
+ * a single source file flows through ensureDir, the writer, and the log line
+ * with one `path.relative` call.
+ */
+export function outputPathFor(
+    src: string,
+    output: string,
+    file: string,
+    suffix: string,
+): { relativePath: string; outputPath: string } {
+    const relativePath = path.relative(src, file)
+    const outputPath = path.join(output, relativePath + suffix)
+    return {relativePath, outputPath}
+}
 
 /**
  * Compiled exclusion rules for a single AST generation run.
@@ -73,79 +89,94 @@ function ignoreFileByName(
         (rules.regex?.test(fullPath) ?? false)
 }
 
-// Validates a file's content (EMSCRIPTEN marker, line length, total LOC) after it
-// has been read. The size guard is performed earlier from stats to avoid reading
-// oversized files. Returns the content if valid, or null with a warning otherwise.
-async function readAndValidateContent(fileWithDir: string): Promise<string | null> {
-    const content = await fs.promises.readFile(fileWithDir, "utf-8")
-    if (content.includes("// EMSCRIPTEN_START_ASM")) {
-        Logger.warn("Parsing", fileWithDir, ":", "File skipped as it contains EMSCRIPTEN code")
-        return null
+const NEWLINE_BYTE = 0x0a
+const EMSCRIPTEN_MARKER = Buffer.from("// EMSCRIPTEN_START_ASM")
+
+export type ValidationResult =
+    | { ok: true; content: string }
+    | { ok: false; reason: string }
+
+/**
+ * Validates a file's bytes (EMSCRIPTEN marker, line length, total LOC) before
+ * paying the UTF-8 decode cost. Files that fail validation (typically minified
+ * bundles that slipped past the size guard) never become a JS string, which
+ * avoids a multi-MB heap allocation in the rejection path.
+ *
+ * Pure and synchronous so it can run on the main thread or inside a worker
+ * (see [AstWorker.ts](./AstWorker.ts)) without dragging in Logger or fs.
+ * `reason` does not include the file path; callers should prefix that
+ * themselves when surfacing the message.
+ */
+export function validateBuffer(buf: Buffer): ValidationResult {
+    if (buf.indexOf(EMSCRIPTEN_MARKER) !== -1) {
+        return {ok: false, reason: "File skipped as it contains EMSCRIPTEN code"}
     }
     let lineStart = 0
     let lineCount = 0
-    for (let i = 0; i <= content.length; i++) {
-        if (i === content.length || content[i] === "\n") {
+    for (let i = 0; i < buf.length; i++) {
+        if (buf[i] === NEWLINE_BYTE) {
             if (i - lineStart > Defaults.MAX_LINE_LENGTH) {
-                Logger.warn(fileWithDir, "line", lineCount + 1, "exceeds", Defaults.MAX_LINE_LENGTH, "bytes")
-                return null
+                return {ok: false, reason: `line ${lineCount + 1} exceeds ${Defaults.MAX_LINE_LENGTH} bytes`}
             }
             if (++lineCount > Defaults.MAX_LOC_IN_FILE) {
-                Logger.warn(fileWithDir, "more than", Defaults.MAX_LOC_IN_FILE, "lines of code")
-                return null
+                return {ok: false, reason: `more than ${Defaults.MAX_LOC_IN_FILE} lines of code`}
             }
             lineStart = i + 1
         }
     }
-    return content
+    // Tail (text after the last newline, or the whole file if no newline). The
+    // legacy implementation counted this as a line, so a 50001-line file with
+    // 50000 newlines exceeds MAX_LOC_IN_FILE. Preserve that semantics here.
+    if (buf.length - lineStart > Defaults.MAX_LINE_LENGTH) {
+        return {ok: false, reason: `line ${lineCount + 1} exceeds ${Defaults.MAX_LINE_LENGTH} bytes`}
+    }
+    if (++lineCount > Defaults.MAX_LOC_IN_FILE) {
+        return {ok: false, reason: `more than ${Defaults.MAX_LOC_IN_FILE} lines of code`}
+    }
+    return {ok: true, content: buf.toString("utf-8")}
 }
 
-// Cheap shared iterator used by filesWithExtensions. Applies name-based filters
-// during the readdirp walk and the size guard from stats before content reads.
-//
-// `options.src` is normalized via path.resolve so the invariant "fullPath is
-// absolute" is explicit and doesn't depend on readdirp's internal behavior.
-async function* iterateMatchingEntries(
+/**
+ * Yields absolute paths of source files that survive name-based filters and
+ * the size guard. Callers (the worker pool, see [Pipeline.ts](./Pipeline.ts))
+ * are responsible for reading and validating bytes themselves so the multi-MB
+ * Buffer stays off the main thread.
+ *
+ * `options.src` is normalized via `path.resolve` so the invariant "fullPath
+ * is absolute" is explicit and doesn't depend on readdirp's internal behavior.
+ */
+export async function* pathsWithExtensions(
     options: Options,
     extensions: string[],
-): AsyncGenerator<{ path: string }> {
+): AsyncGenerator<string> {
     const dir = path.resolve(options.src)
     const excludeRules = buildExcludeRules(options)
     // Dynamic import for ESM-only package.
     const {readdirp} = await import('readdirp')
+    // Run readdirp in dirent mode (alwaysStat omitted) so the walk does not
+    // stat every entry — readdirp applies fileFilter AFTER stat, so the
+    // previous alwaysStat: true + lstat: true config stat'd every
+    // node_modules JSON, etc. before name-based filtering rejected them. We
+    // stat ourselves below, only for entries that survive the name filter,
+    // purely to enforce MAX_FILE_SIZE_BYTES before the worker reads the file.
     const stream = readdirp(dir, {
         root: dir,
         fileFilter: (f) => !ignoreFileByName(excludeRules, f.basename, f.fullPath, extensions),
         directoryFilter: (d) => !ignoreDirectory(excludeRules, d.basename, d.fullPath),
-        lstat: true,
-        alwaysStat: true,
         depth: options.recurse ? undefined : 0,
     })
     for await (const entry of stream) {
-        const stats = entry.stats as fs.Stats
-        if (stats.size > Defaults.MAX_FILE_SIZE_BYTES) {
+        let size: number
+        try {
+            size = (await fs.promises.stat(entry.fullPath)).size
+        } catch {
+            continue
+        }
+        if (size > Defaults.MAX_FILE_SIZE_BYTES) {
             Logger.warn(entry.fullPath, "exceeds maximum file size of", Defaults.MAX_FILE_SIZE_BYTES, "bytes")
             continue
         }
-        yield {path: entry.fullPath}
-    }
-}
-
-/**
- * Asynchronously yields source file entries (path + content) matching the
- * given extensions and passing every exclusion and content-validation rule.
- * Reads each file once and yields immediately.
- *
- * @param options - The options object containing source directory and exclusion patterns.
- * @param extensions - An array of file extensions to include (e.g., ['.js', '.ts']).
- * @returns An async generator that yields FileEntry objects for matching files.
- */
-export async function* filesWithExtensions(options: Options, extensions: string[]): AsyncGenerator<FileEntry> {
-    for await (const entry of iterateMatchingEntries(options, extensions)) {
-        const content = await readAndValidateContent(entry.path)
-        if (content !== null) {
-            yield {path: entry.path, content}
-        }
+        yield entry.fullPath
     }
 }
 

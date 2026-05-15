@@ -1,37 +1,15 @@
-import * as babelParser from "@babel/parser"
 import * as path from "node:path"
 
 import Options from "./Options"
 import * as Defaults from "./Defaults"
 import * as FileUtils from "./FileUtils"
 import * as Logger from "./Logger"
-import * as Parsing from "./Parsing"
 import * as Writers from "./Writers"
-import {SourceDirNotReadableError} from "./Errors"
+import {getErrorMessage, SourceDirNotReadableError} from "./Errors"
 import {FsWriteSink, WriteSink} from "./WriteSink"
 import TscUtils from "./TscUtils"
-
-/**
- * Executes an async function and swallows any exception, logging it as a
- * warning instead of propagating. Used at the per-file boundary so that one
- * file's failure does not abort the entire AST generation run.
- *
- * @param errMessage - The error message prefix logged when an exception occurs.
- * @param arg - An optional argument for log identification (typically the file path).
- * @param f - The async function to execute.
- */
-async function runOrLogWarning(errMessage: string, arg: string | undefined, f: () => Promise<void>): Promise<void> {
-    try {
-        await f()
-    } catch (err) {
-        const detail = err instanceof Error ? err.message : String(err)
-        if (arg !== undefined && arg.length > 0) {
-            Logger.warn(errMessage, arg, ":", detail)
-        } else {
-            Logger.warn(errMessage, ":", detail)
-        }
-    }
-}
+import {PARSER_JS, PARSER_VUE, type ParserKind} from "./AstWorker"
+import {defaultPoolSize, WorkerPool} from "./WorkerPool"
 
 /**
  * Builds a TscUtils instance to process TypeScript type information for the given files.
@@ -44,62 +22,58 @@ function buildTscUtils(files: string[], options: Options): TscUtils | undefined 
     try {
         return new TscUtils(files)
     } catch (err) {
-        const detail = err instanceof Error ? err.message : String(err)
-        Logger.warn("Retrieving types :", detail)
+        Logger.warn("Retrieving types :", getErrorMessage(err))
         return undefined
     }
 }
 
-/**
- * Generates Abstract Syntax Trees (ASTs) for JavaScript and TypeScript source files.
- *
- * Walks matching sources sequentially (`for await`). Each file's contents are parsed
- * and written and then discarded; they are never held for all files at once.
- * Paths are appended to `filePaths` during that pass — when the `tsTypes` option is
- * off the list is unused afterward; when on it feeds a second sequential phase that
- * loads typemaps from disk (`tsc`) without rereading file bodies through this traversal.
- *
- * Peak memory stays bounded primarily by single-file buffering, the JSON writer backlog
- * cap, and (when enabled) incremental type generation rather than buffering every source string.
- *
- * @param options - Configuration options controlling source location, output, and type extraction.
- * @param sink - Write target for AST and typemap output.
- */
-async function createJSAst(options: Options, sink: WriteSink): Promise<void> {
-    const filePaths = await processAstFiles(
-        FileUtils.filesWithExtensions(options, Defaults.JS_TS_EXTENSIONS),
-        options,
-        sink,
-    )
-    const tscUtils = buildTscUtils(filePaths, options)
-    if (tscUtils) {
-        await processTypeFiles(filePaths, options, sink, tscUtils)
-    }
+function parserFor(filePath: string): ParserKind {
+    return filePath.endsWith(Defaults.VUE_EXTENSION) ? PARSER_VUE : PARSER_JS
 }
 
 /**
- * Generates Abstract Syntax Trees (ASTs) for all `.vue` files in the specified source directory.
+ * Dispatches every matching source file to the worker pool. Each worker runs
+ * read+validate+parse+write end-to-end so the multi-MB ParseResult never
+ * crosses the thread boundary — only the per-file Done/Error envelope does.
+ * Peak memory stays bounded by pool size × per-worker single-file buffering.
+ *
+ * The returned `filePaths` list feeds the type-extraction phase (run on the
+ * main thread) when `tsTypes` is enabled.
+ *
+ * @param options - Configuration options controlling source location and output.
+ * @param sink - Write target. Used for `ensureDir` only; AST writes go straight
+ *               from the worker to disk via JsonUtils.
+ * @param extensions - Source extensions to process this run.
  */
-async function createVueAst(options: Options, sink: WriteSink): Promise<void> {
-    for await (const file of FileUtils.filesWithExtensions(options, [".vue"])) {
-        await runOrLogWarning("Parsing", file.path, async () => {
-            await Writers.writeAstFile(file.path, Parsing.toVueAst(file.content), options, sink)
-        })
-    }
-}
-
-async function processAstFiles(
-    source: AsyncIterable<FileUtils.FileEntry>,
+async function processAstFilesParallel(
     options: Options,
     sink: WriteSink,
+    extensions: string[],
 ): Promise<string[]> {
+    const pool = new WorkerPool(defaultPoolSize())
     const filePaths: string[] = []
-    for await (const file of source) {
-        filePaths.push(file.path)
-        await runOrLogWarning("Parsing", file.path, async () => {
-            const ast: babelParser.ParseResult = Parsing.codeToJsAst(file.content)
-            await Writers.writeAstFile(file.path, ast, options, sink)
-        })
+    const inflight: Promise<void>[] = []
+    try {
+        for await (const filePath of FileUtils.pathsWithExtensions(options, extensions)) {
+            filePaths.push(filePath)
+            const {relativePath, outputPath} = FileUtils.outputPathFor(options.src, options.output, filePath, ".json")
+            await sink.ensureDir(path.dirname(outputPath))
+            const job = {file: filePath, relativePath, outputPath, parser: parserFor(filePath)}
+            inflight.push(
+                pool.submit(job).then((msg) => {
+                    if (msg.kind === "error") {
+                        Logger.warn("Parsing", msg.file, ":", msg.message)
+                    } else if (msg.skipped) {
+                        Logger.warn("Parsing", msg.file, ":", msg.skipped)
+                    } else {
+                        Logger.info("Converted AST for", relativePath, "to", outputPath)
+                    }
+                }),
+            )
+        }
+        await Promise.all(inflight)
+    } finally {
+        await pool.shutdown()
     }
     return filePaths
 }
@@ -111,40 +85,46 @@ async function processTypeFiles(
     tscUtils: TscUtils,
 ): Promise<void> {
     for (const filePath of filePaths) {
-        await runOrLogWarning("Retrieving types", filePath, async () => {
+        try {
             const typeMap = tscUtils.typeMapForFile(filePath)
             if (typeMap.size !== 0) {
                 await Writers.writeTypesFile(filePath, typeMap, options, sink)
             }
-        })
+        } catch (err) {
+            Logger.warn("Retrieving types", filePath, ":", getErrorMessage(err))
+        }
     }
 }
 
-/**
- * Determines the project type in the given source directory and triggers AST generation accordingly.
- *
- * This function checks if the provided source directory contains a `package.json` or `rush.json` file
- * to identify it as a Node.js or JavaScript/TypeScript project. If neither marker is found, it logs
- * a warning and falls back to JS/TS processing rather than exiting.
- */
-async function createXAst(options: Options, sink: WriteSink): Promise<void> {
-    const srcDir: string = options.src
-    const isKnownJsProject =
-        FileUtils.fileExistsAndIsReadable(path.join(srcDir, "package.json")) ||
-        FileUtils.fileExistsAndIsReadable(path.join(srcDir, "rush.json"))
-    if (!isKnownJsProject) {
-        Logger.warn("No package.json or rush.json found in", srcDir, "— processing as JS/TS project")
+function extensionsFor(type: string, srcDir: string): string[] {
+    switch (type) {
+        case "nodejs":
+        case "js":
+        case "javascript":
+        case "typescript":
+        case "ts":
+            return Defaults.JS_TS_EXTENSIONS
+        case "vue":
+            return [Defaults.VUE_EXTENSION]
+        default: {
+            const isKnownJsProject =
+                FileUtils.fileExistsAndIsReadable(path.join(srcDir, "package.json")) ||
+                FileUtils.fileExistsAndIsReadable(path.join(srcDir, "rush.json"))
+            if (!isKnownJsProject) {
+                Logger.warn("No package.json or rush.json found in", srcDir, "— processing as JS/TS project")
+            }
+            return Defaults.JS_TS_EXTENSIONS
+        }
     }
-    return await createJSAst(options, sink)
 }
 
 /**
  * Entry point for starting the AST generation process based on the provided options.
  *
- * Exceptions raised by sub-pipelines (other than per-file errors swallowed by
- * {@link runOrLogWarning}) propagate to the caller. The CLI in
- * [astgen.ts](./astgen.ts) translates them to a non-zero exit code; tests can
- * assert on them directly.
+ * Per-file failures are caught inside the worker (parse/write errors) or this
+ * function (typemap errors) and surfaced as warnings; everything else
+ * propagates. The CLI in [astgen.ts](./astgen.ts) translates uncaught errors
+ * to a non-zero exit code; tests can assert on them directly.
  *
  * @param options - Configuration options and CLI arguments controlling source location, output, and processing type.
  * @param sink - Optional write target. Defaults to a fresh {@link FsWriteSink}; tests can pass an in-memory sink.
@@ -157,17 +137,14 @@ export default async function start(options: Options, sink: WriteSink = new FsWr
         throw new SourceDirNotReadableError(srcDir)
     }
 
-    const type: string = (options.type || "").toLowerCase()
-    switch (type) {
-        case "nodejs":
-        case "js":
-        case "javascript":
-        case "typescript":
-        case "ts":
-            return await createJSAst(options, sink)
-        case "vue":
-            return await createVueAst(options, sink)
-        default:
-            return await createXAst(options, sink)
+    const type = (options.type || "").toLowerCase()
+    const extensions = extensionsFor(type, srcDir)
+    const filePaths = await processAstFilesParallel(options, sink, extensions)
+    // Type extraction only makes sense for JS/TS projects — TscUtils runs the
+    // TypeScript compiler over the input files, which doesn't apply to .vue.
+    if (type === "vue") return
+    const tscUtils = buildTscUtils(filePaths, options)
+    if (tscUtils) {
+        await processTypeFiles(filePaths, options, sink, tscUtils)
     }
 }

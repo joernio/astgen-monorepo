@@ -23,6 +23,15 @@ export const JS_TS_EXTENSIONS: string[] = [
     ".tsx"
 ]
 
+export const VUE_EXTENSION = ".vue"
+
+/**
+ * Every source extension the pipeline knows how to handle. The worker
+ * dispatches on extension to pick between plain Babel and the Vue cleaner +
+ * Babel path (see [AstWorker.ts](./AstWorker.ts)).
+ */
+export const ALL_PARSEABLE_EXTENSIONS: string[] = [...JS_TS_EXTENSIONS, VUE_EXTENSION]
+
 /**
  * Directory basenames that are always skipped during traversal. Grouped here
  * by intent so the rationale survives future edits:
