@@ -14,8 +14,11 @@ defaults:
     working-directory: astgen-regression
 
 jobs:
-  release:
+  build:
     runs-on: ubuntu-latest
+    outputs:
+      release_tag: ${{ steps.set-release-tag.outputs.release_tag }}
+      tag_version: ${{ steps.set-tag-version.outputs.tag_version }}
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -36,6 +39,10 @@ jobs:
           echo "RELEASE_TAG=${{ github.ref_name }}" >> $GITHUB_ENV
         working-directory: .
 
+      - name: Set release tag output
+        id: set-release-tag
+        run: echo "release_tag=${{ env.RELEASE_TAG }}" >> $GITHUB_OUTPUT
+
       - name: Set up Python
         uses: actions/setup-python@v6
         with:
@@ -48,6 +55,10 @@ jobs:
           TAG_VERSION=${RELEASE_TAG#astgen-regression/v}
           echo "TAG_VERSION=$TAG_VERSION" >> $GITHUB_ENV
           echo "Tag version: $TAG_VERSION"
+
+      - name: Set tag version output
+        id: set-tag-version
+        run: echo "tag_version=${{ env.TAG_VERSION }}" >> $GITHUB_OUTPUT
 
       - name: Install dependencies
         run: |
@@ -87,16 +98,66 @@ jobs:
             astgen-regression/pyproject.toml \
             astgen-regression/tests/
 
+      - name: Upload release artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: asset-astgen-regression.tar.gz
+          path: astgen-regression-${{ env.TAG_VERSION }}.tar.gz
+          if-no-files-found: error
+
+  checksums:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download release artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: release-artifacts
+          pattern: asset-*
+          merge-multiple: true
+
+      - name: Generate checksums
+        run: |
+          cd release-artifacts
+          mkdir -p checksums
+          sha256sum * > checksums/SHA256SUMS
+          sha512sum * > checksums/SHA512SUMS
+
+      - name: Upload checksum files
+        uses: actions/upload-artifact@v7
+        with:
+          name: asset-checksums
+          path: release-artifacts/checksums/
+
+  release:
+    needs: [build, checksums]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download release artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: release-artifacts
+          pattern: asset-*
+          merge-multiple: true
+
       - name: Create GitHub release
         uses: softprops/action-gh-release@v3
         with:
-          tag_name: ${{ env.RELEASE_TAG }}
-          files: |
-            astgen-regression-${{ env.TAG_VERSION }}.tar.gz
+          draft: true
+          tag_name: ${{ needs.build.outputs.release_tag }}
+          files: release-artifacts/*
           body: |
-            Release of AST Generator Regression Framework ${{ env.TAG_VERSION }}
+            Release of AST Generator Regression Framework ${{ needs.build.outputs.tag_version }}
 
             ## Installation
             ```bash
-            pip install astgen-regression-${{ env.TAG_VERSION }}.tar.gz
+            pip install astgen-regression-${{ needs.build.outputs.tag_version }}.tar.gz
+            ```
+
+            ## Verification
+            Download checksums and verify:
+            ```bash
+            grep astgen-regression checksums/SHA256SUMS | sha256sum -c
             ```
