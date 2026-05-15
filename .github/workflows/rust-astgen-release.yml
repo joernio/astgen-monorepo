@@ -124,10 +124,37 @@ jobs:
           path: rust-astgen/dist/RustNodeSyntax.scala
           if-no-files-found: error
 
+  checksums:
+    needs:
+      - verify
+      - build
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Download release artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: release-artifacts
+          pattern: asset-*
+          merge-multiple: true
+
+      - name: Generate checksums
+        run: |
+          cd release-artifacts
+          mkdir -p checksums
+          sha256sum * > checksums/SHA256SUMS
+          sha512sum * > checksums/SHA512SUMS
+
+      - name: Upload checksum files
+        uses: actions/upload-artifact@v7
+        with:
+          name: asset-checksums
+          path: release-artifacts/checksums/
+
   release:
     needs:
       - verify
       - build
+      - checksums
     runs-on: ubuntu-24.04
     permissions:
       contents: write
@@ -142,5 +169,6 @@ jobs:
       - name: Create GitHub release
         uses: softprops/action-gh-release@v3
         with:
+          draft: true
           tag_name: ${{ needs.verify.outputs.release_tag }}
           files: release-artifacts/*
