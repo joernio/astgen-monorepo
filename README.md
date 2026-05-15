@@ -59,6 +59,25 @@ To re-release or rebuild an existing tag:
 
 The workflow discovers the latest tag for that language and creates or updates the release with fresh binaries.
 
+### Verifying releases
+
+All releases include SHA256 and SHA512 checksums in the `checksums/` directory. To verify a downloaded binary:
+
+```bash
+# Download the binary (replace <tag> with actual release tag, e.g., javascript-astgen/v3.44.0)
+curl -LO https://github.com/joernio/astgen-monorepo/releases/download/<tag>/astgen-linux
+
+# Download checksums
+curl -LO https://github.com/joernio/astgen-monorepo/releases/download/<tag>/checksums/SHA256SUMS
+
+# Verify
+grep astgen-linux SHA256SUMS | sha256sum -c
+```
+
+Expected output: `astgen-linux: OK`
+
+**Note:** All releases are created as drafts and require manual publication to ensure integrity before public distribution.
+
 ## Contributing
 
 Contributions are welcome. Please open an issue or pull request on [GitHub](https://github.com/joernio/astgen-monorepo). See each tool's README for language-specific build and test instructions.
