@@ -126,6 +126,9 @@ jobs:
   checksums:
     needs: [prepare, build]
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: .
     steps:
       - name: Download release artifacts
         uses: actions/download-artifact@v4
@@ -150,6 +153,9 @@ jobs:
   release:
     needs: [prepare, build, checksums]
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: .
     concurrency: swift-astgen-release
     permissions:
       contents: write

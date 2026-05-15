@@ -98,6 +98,9 @@ jobs:
   checksums:
     needs: build
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: .
     steps:
       - name: Download release artifacts
         uses: actions/download-artifact@v4
@@ -122,6 +125,9 @@ jobs:
   release:
     needs: [build, checksums]
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: .
     concurrency: dotnet-astgen-release
     permissions:
       contents: write
