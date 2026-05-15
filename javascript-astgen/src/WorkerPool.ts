@@ -20,8 +20,10 @@ type Pending = {
 }
 
 export function defaultPoolSize(): number {
-    // Leave one core for the main thread / IO. Cap at 8 so we don't blow the
-    // file descriptor budget on machines with many cores.
+    // Leave one core for the main thread / IO. Cap at 8 because each worker
+    // owns its own V8 heap and can hold a multi-MB ParseResult in memory; past
+    // ~8 the marginal speedup from extra parallelism is dwarfed by the memory
+    // and worker-startup overhead.
     const cores = os.cpus()?.length ?? 1
     return Math.max(1, Math.min(cores - 1, 8))
 }

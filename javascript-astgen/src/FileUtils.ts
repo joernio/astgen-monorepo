@@ -1,6 +1,7 @@
 import Options from "./Options"
 import * as Defaults from "./Defaults"
 import * as Logger from "./Logger"
+import {getErrorMessage} from "./Errors"
 
 import * as fs from "node:fs"
 import * as path from "node:path"
@@ -89,7 +90,7 @@ function ignoreFileByName(
         (rules.regex?.test(fullPath) ?? false)
 }
 
-const NEWLINE_BYTE = 0x0a
+const NEWLINE_BYTE = "\n".charCodeAt(0)
 const EMSCRIPTEN_MARKER = Buffer.from("// EMSCRIPTEN_START_ASM")
 
 export type ValidationResult =
@@ -154,11 +155,11 @@ export async function* pathsWithExtensions(
     // Dynamic import for ESM-only package.
     const {readdirp} = await import('readdirp')
     // Run readdirp in dirent mode (alwaysStat omitted) so the walk does not
-    // stat every entry — readdirp applies fileFilter AFTER stat, so the
-    // previous alwaysStat: true + lstat: true config stat'd every
-    // node_modules JSON, etc. before name-based filtering rejected them. We
-    // stat ourselves below, only for entries that survive the name filter,
-    // purely to enforce MAX_FILE_SIZE_BYTES before the worker reads the file.
+    // stat every entry — readdirp applies fileFilter AFTER stat, so enabling
+    // alwaysStat would stat every node_modules JSON etc. before the
+    // name-based filter rejects it. We stat ourselves below, only for entries
+    // that survive the name filter, purely to enforce MAX_FILE_SIZE_BYTES
+    // before the worker reads the file.
     const stream = readdirp(dir, {
         root: dir,
         fileFilter: (f) => !ignoreFileByName(excludeRules, f.basename, f.fullPath, extensions),
@@ -169,7 +170,8 @@ export async function* pathsWithExtensions(
         let size: number
         try {
             size = (await fs.promises.stat(entry.fullPath)).size
-        } catch {
+        } catch (err) {
+            Logger.warn("Stat failed for", entry.fullPath, ":", getErrorMessage(err))
             continue
         }
         if (size > Defaults.MAX_FILE_SIZE_BYTES) {
