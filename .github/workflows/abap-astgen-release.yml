@@ -11,11 +11,10 @@ defaults:
     working-directory: abap-astgen
 
 jobs:
-  release:
-    concurrency: abap-astgen-release
+  build:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
+    outputs:
+      release_tag: ${{ steps.set-release-tag.outputs.release_tag }}
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -32,6 +31,10 @@ jobs:
         if: github.event_name == 'push'
         run: |
           echo "RELEASE_TAG=${{ github.ref_name }}" >> $GITHUB_ENV
+        working-directory: .
+      - name: Set release tag output
+        id: set-release-tag
+        run: echo "release_tag=${{ env.RELEASE_TAG }}" >> $GITHUB_OUTPUT
         working-directory: .
       - name: Verify tag resolved
         run: |
@@ -76,13 +79,78 @@ jobs:
           ABAPGEN_VERSION=$(node -p "require('./package.json').version")
           echo "ABAPGEN_VERSION=$ABAPGEN_VERSION" >> $GITHUB_ENV
           echo "abapgen version is: $ABAPGEN_VERSION"
-      - name: Upload binaries to release
+      - name: Upload Windows binary
+        uses: actions/upload-artifact@v7
+        with:
+          name: asset-abapgen-win.exe
+          path: abap-astgen/abapgen-win.exe
+          if-no-files-found: error
+      - name: Upload macOS binary
+        uses: actions/upload-artifact@v7
+        with:
+          name: asset-abapgen-macos
+          path: abap-astgen/abapgen-macos
+          if-no-files-found: error
+      - name: Upload macOS ARM binary
+        uses: actions/upload-artifact@v7
+        with:
+          name: asset-abapgen-macos-arm
+          path: abap-astgen/abapgen-macos-arm
+          if-no-files-found: error
+      - name: Upload Linux binary
+        uses: actions/upload-artifact@v7
+        with:
+          name: asset-abapgen-linux
+          path: abap-astgen/abapgen-linux
+          if-no-files-found: error
+      - name: Upload Linux ARM binary
+        uses: actions/upload-artifact@v7
+        with:
+          name: asset-abapgen-linux-arm
+          path: abap-astgen/abapgen-linux-arm
+          if-no-files-found: error
+
+  checksums:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download release artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: release-artifacts
+          pattern: asset-*
+          merge-multiple: true
+
+      - name: Generate checksums
+        run: |
+          cd release-artifacts
+          mkdir -p checksums
+          sha256sum * > checksums/SHA256SUMS
+          sha512sum * > checksums/SHA512SUMS
+
+      - name: Upload checksum files
+        uses: actions/upload-artifact@v7
+        with:
+          name: asset-checksums
+          path: release-artifacts/checksums/
+
+  release:
+    needs: [build, checksums]
+    runs-on: ubuntu-latest
+    concurrency: abap-astgen-release
+    permissions:
+      contents: write
+    steps:
+      - name: Download release artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: release-artifacts
+          pattern: asset-*
+          merge-multiple: true
+
+      - name: Create GitHub release
         uses: softprops/action-gh-release@v3
         with:
-          tag_name: ${{ env.RELEASE_TAG }}
-          files: |
-            abap-astgen/abapgen-win.exe
-            abap-astgen/abapgen-macos
-            abap-astgen/abapgen-macos-arm
-            abap-astgen/abapgen-linux
-            abap-astgen/abapgen-linux-arm
+          draft: true
+          tag_name: ${{ needs.build.outputs.release_tag }}
+          files: release-artifacts/*

@@ -18,6 +18,8 @@ defaults:
 jobs:
   build:
     runs-on: ubuntu-latest
+    outputs:
+      release_tag: ${{ steps.set-release-tag.outputs.release_tag }}
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -34,6 +36,10 @@ jobs:
         if: github.event_name == 'push'
         run: |
           echo "RELEASE_TAG=${{ github.ref_name }}" >> $GITHUB_ENV
+        working-directory: .
+      - name: Set release tag output
+        id: set-release-tag
+        run: echo "release_tag=${{ env.RELEASE_TAG }}" >> $GITHUB_OUTPUT
         working-directory: .
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
@@ -64,12 +70,72 @@ jobs:
         run: |
           chmod +x dotnetastgen-linux-arm64
           chmod +x dotnetastgen-macos
-      - name: Release
+      - name: Upload Linux binary
+        uses: actions/upload-artifact@v7
+        with:
+          name: asset-dotnetastgen-linux
+          path: dotnet-astgen/dotnetastgen-linux
+          if-no-files-found: error
+      - name: Upload Linux ARM64 binary
+        uses: actions/upload-artifact@v7
+        with:
+          name: asset-dotnetastgen-linux-arm64
+          path: dotnet-astgen/dotnetastgen-linux-arm64
+          if-no-files-found: error
+      - name: Upload macOS binary
+        uses: actions/upload-artifact@v7
+        with:
+          name: asset-dotnetastgen-macos
+          path: dotnet-astgen/dotnetastgen-macos
+          if-no-files-found: error
+      - name: Upload Windows binary
+        uses: actions/upload-artifact@v7
+        with:
+          name: asset-dotnetastgen-win.exe
+          path: dotnet-astgen/dotnetastgen-win.exe
+          if-no-files-found: error
+
+  checksums:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download release artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: release-artifacts
+          pattern: asset-*
+          merge-multiple: true
+
+      - name: Generate checksums
+        run: |
+          cd release-artifacts
+          mkdir -p checksums
+          sha256sum * > checksums/SHA256SUMS
+          sha512sum * > checksums/SHA512SUMS
+
+      - name: Upload checksum files
+        uses: actions/upload-artifact@v7
+        with:
+          name: asset-checksums
+          path: release-artifacts/checksums/
+
+  release:
+    needs: [build, checksums]
+    runs-on: ubuntu-latest
+    concurrency: dotnet-astgen-release
+    permissions:
+      contents: write
+    steps:
+      - name: Download release artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: release-artifacts
+          pattern: asset-*
+          merge-multiple: true
+
+      - name: Create GitHub release
         uses: softprops/action-gh-release@v3
         with:
-          tag_name: ${{ env.RELEASE_TAG }}
-          files: |
-            dotnet-astgen/dotnetastgen-linux
-            dotnet-astgen/dotnetastgen-linux-arm64
-            dotnet-astgen/dotnetastgen-macos
-            dotnet-astgen/dotnetastgen-win.exe
+          draft: true
+          tag_name: ${{ needs.build.outputs.release_tag }}
+          files: release-artifacts/*

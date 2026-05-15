@@ -87,13 +87,83 @@ jobs:
           files: |
             swift-astgen/SwiftAstGen-win.exe
           args: -fq
-      - name: Release
+      - name: Upload Linux binary
+        if: matrix.os == 'ubuntu-latest'
+        uses: actions/upload-artifact@v7
+        with:
+          name: asset-SwiftAstGen-linux
+          path: swift-astgen/SwiftAstGen-linux
+          if-no-files-found: error
+      - name: Upload Linux ARM64 binary
+        if: matrix.os == 'ubuntu-latest'
+        uses: actions/upload-artifact@v7
+        with:
+          name: asset-SwiftAstGen-linux-arm64
+          path: swift-astgen/SwiftAstGen-linux-arm64
+          if-no-files-found: error
+      - name: Upload Mac binary
+        if: matrix.os == 'macos-latest'
+        uses: actions/upload-artifact@v7
+        with:
+          name: asset-SwiftAstGen-mac
+          path: swift-astgen/SwiftAstGen-mac
+          if-no-files-found: error
+      - name: Upload Windows binary
+        if: matrix.os == 'windows-latest'
+        uses: actions/upload-artifact@v7
+        with:
+          name: asset-SwiftAstGen-win.exe
+          path: swift-astgen/SwiftAstGen-win.exe
+          if-no-files-found: error
+      - name: Upload Swift Scala bindings
+        if: matrix.os == 'ubuntu-latest'
+        uses: actions/upload-artifact@v7
+        with:
+          name: asset-SwiftNodeSyntax.scala
+          path: swift-astgen/SwiftNodeSyntax.scala
+          if-no-files-found: error
+
+  checksums:
+    needs: [prepare, build]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download release artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: release-artifacts
+          pattern: asset-*
+          merge-multiple: true
+
+      - name: Generate checksums
+        run: |
+          cd release-artifacts
+          mkdir -p checksums
+          sha256sum * > checksums/SHA256SUMS
+          sha512sum * > checksums/SHA512SUMS
+
+      - name: Upload checksum files
+        uses: actions/upload-artifact@v7
+        with:
+          name: asset-checksums
+          path: release-artifacts/checksums/
+
+  release:
+    needs: [prepare, build, checksums]
+    runs-on: ubuntu-latest
+    concurrency: swift-astgen-release
+    permissions:
+      contents: write
+    steps:
+      - name: Download release artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: release-artifacts
+          pattern: asset-*
+          merge-multiple: true
+
+      - name: Create GitHub release
         uses: softprops/action-gh-release@v3
         with:
+          draft: true
           tag_name: ${{ needs.prepare.outputs.release_tag }}
-          files: |
-            swift-astgen/SwiftAstGen-linux
-            swift-astgen/SwiftAstGen-linux-arm64
-            swift-astgen/SwiftAstGen-mac
-            swift-astgen/SwiftAstGen-win.exe
-            swift-astgen/SwiftNodeSyntax.scala
+          files: release-artifacts/*

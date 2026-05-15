@@ -14,8 +14,11 @@ defaults:
     working-directory: ruby-astgen
 
 jobs:
-  release:
+  build:
     runs-on: ubuntu-latest
+    outputs:
+      release_tag: ${{ steps.set-release-tag.outputs.release_tag }}
+      new_tag: ${{ steps.set-new-tag.outputs.new_tag }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
@@ -36,11 +39,19 @@ jobs:
           echo "RELEASE_TAG=${{ github.ref_name }}" >> $GITHUB_ENV
         working-directory: .
 
+      - name: Set release tag output
+        id: set-release-tag
+        run: echo "release_tag=${{ env.RELEASE_TAG }}" >> $GITHUB_OUTPUT
+
       - name: Extract version from tag
         run: |
           TAG_VERSION=${RELEASE_TAG#ruby-astgen/v}
           echo "NEW_TAG=v$TAG_VERSION" >> $GITHUB_ENV
           echo "The tag version is: v$TAG_VERSION"
+
+      - name: Set new tag output
+        id: set-new-tag
+        run: echo "new_tag=${{ env.NEW_TAG }}" >> $GITHUB_OUTPUT
 
       - name: Update version file
         run: ./update_version.rb $NEW_TAG
@@ -80,9 +91,53 @@ jobs:
           zip -r ruby_ast_gen_${{ env.NEW_TAG }}.zip \
             lib exe vendor Gemfile ruby_ast_gen.gemspec
 
-      - name: Upload vendored distribution to GitHub Release
+      - name: Upload release artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: asset-ruby_ast_gen.zip
+          path: ruby-astgen/ruby_ast_gen_*.zip
+          if-no-files-found: error
+
+  checksums:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download release artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: release-artifacts
+          pattern: asset-*
+          merge-multiple: true
+
+      - name: Generate checksums
+        run: |
+          cd release-artifacts
+          mkdir -p checksums
+          sha256sum * > checksums/SHA256SUMS
+          sha512sum * > checksums/SHA512SUMS
+
+      - name: Upload checksum files
+        uses: actions/upload-artifact@v7
+        with:
+          name: asset-checksums
+          path: release-artifacts/checksums/
+
+  release:
+    needs: [build, checksums]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download release artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: release-artifacts
+          pattern: asset-*
+          merge-multiple: true
+
+      - name: Create GitHub release
         uses: softprops/action-gh-release@v3
         with:
-          tag_name: ${{ env.RELEASE_TAG }}
-          files: |
-            ruby-astgen/ruby_ast_gen_*.zip
+          draft: true
+          tag_name: ${{ needs.build.outputs.release_tag }}
+          files: release-artifacts/*
