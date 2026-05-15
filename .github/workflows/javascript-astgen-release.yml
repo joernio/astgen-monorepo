@@ -123,9 +123,10 @@ jobs:
       - name: Generate checksums
         run: |
           cd release-artifacts
+          sha256sum * 2>/dev/null | grep -v "Is a directory" > SHA256SUMS || true
+          sha512sum * 2>/dev/null | grep -v "Is a directory" > SHA512SUMS || true
           mkdir -p checksums
-          sha256sum * > checksums/SHA256SUMS
-          sha512sum * > checksums/SHA512SUMS
+          mv SHA256SUMS SHA512SUMS checksums/
 
       - name: Upload checksum files
         uses: actions/upload-artifact@v7
