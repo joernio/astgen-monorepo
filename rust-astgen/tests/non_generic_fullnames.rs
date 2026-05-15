@@ -419,7 +419,6 @@ fn main() {
     Ok(())
 }
 
-// TODO: see if we can recover `const`.
 #[test]
 fn emits_names_for_raw_pointer_parameters() -> TestResult<()> {
     let json = no_sysroot_ast_json(
@@ -438,13 +437,12 @@ fn main() {}
         "src/main.rs",
     )?;
 
-    assert_eq!(ident_pat(&json, "p_const").type_full_name(), "*i32");
-    assert_eq!(ident_pat(&json, "p_mut").type_full_name(), "*i32");
+    assert_eq!(ident_pat(&json, "p_const").type_full_name(), "*const i32");
+    assert_eq!(ident_pat(&json, "p_mut").type_full_name(), "*mut i32");
 
     Ok(())
 }
 
-// TODO: see if we can recover `const`.
 #[test]
 fn emits_names_for_raw_pointer_return_type() -> TestResult<()> {
     let json = no_sysroot_ast_json(
@@ -469,15 +467,20 @@ fn main() {
         "src/main.rs",
     )?;
 
-    assert_eq!(call_expr(&json, "returns_const()").type_full_name(), "*i32");
-    assert_eq!(call_expr(&json, "returns_mut()").type_full_name(), "*i32");
-    assert_eq!(ident_pat(&json, "const_ptr").type_full_name(), "*i32");
-    assert_eq!(ident_pat(&json, "mut_ptr").type_full_name(), "*i32");
+    assert_eq!(
+        call_expr(&json, "returns_const()").type_full_name(),
+        "*const i32"
+    );
+    assert_eq!(
+        call_expr(&json, "returns_mut()").type_full_name(),
+        "*mut i32"
+    );
+    assert_eq!(ident_pat(&json, "const_ptr").type_full_name(), "*const i32");
+    assert_eq!(ident_pat(&json, "mut_ptr").type_full_name(), "*mut i32");
 
     Ok(())
 }
 
-// TODO: see if we can recover `const`.
 #[test]
 fn emits_names_for_raw_pointer_to_user_adt() -> TestResult<()> {
     let json = no_sysroot_ast_json(
@@ -500,11 +503,159 @@ fn main() {}
 
     assert_eq!(
         ident_pat(&json, "const_p").type_full_name(),
-        "*rust2cpg::Type"
+        "*const rust2cpg::Type"
     );
     assert_eq!(
         ident_pat(&json, "mut_p").type_full_name(),
-        "*rust2cpg::Type"
+        "*mut rust2cpg::Type"
+    );
+
+    Ok(())
+}
+
+#[test]
+fn emits_names_for_nested_raw_pointer() -> TestResult<()> {
+    let json = no_sysroot_ast_json(
+        "rust2cpg",
+        &[(
+            "src/main.rs",
+            r#"
+fn takes(p: *const *mut i32) {
+    let _ = p;
+}
+
+fn main() {}
+"#,
+        )],
+        "src/main.rs",
+    )?;
+
+    assert_eq!(ident_pat(&json, "p").type_full_name(), "*const *mut i32");
+
+    Ok(())
+}
+
+#[test]
+fn emits_names_for_raw_pointer_to_slice() -> TestResult<()> {
+    let json = no_sysroot_ast_json(
+        "rust2cpg",
+        &[(
+            "src/main.rs",
+            r#"
+fn takes(p: *const [i32]) {
+    let _ = p;
+}
+
+fn main() {}
+"#,
+        )],
+        "src/main.rs",
+    )?;
+
+    assert_eq!(ident_pat(&json, "p").type_full_name(), "*const [i32]");
+
+    Ok(())
+}
+
+#[test]
+fn emits_names_for_tuple_types() -> TestResult<()> {
+    let json = no_sysroot_ast_json(
+        "rust2cpg",
+        &[(
+            "src/main.rs",
+            r#"
+fn main() {
+    let unit = ();
+    let single = (1i32,);
+    let multi = (1i32, 2u32, true);
+}
+"#,
+        )],
+        "src/main.rs",
+    )?;
+
+    assert_eq!(ident_pat(&json, "unit").type_full_name(), "()");
+    assert_eq!(ident_pat(&json, "single").type_full_name(), "(i32,)");
+    assert_eq!(
+        ident_pat(&json, "multi").type_full_name(),
+        "(i32, u32, bool)"
+    );
+
+    Ok(())
+}
+
+#[test]
+fn emits_names_for_array_type() -> TestResult<()> {
+    let json = no_sysroot_ast_json(
+        "rust2cpg",
+        &[(
+            "src/main.rs",
+            r#"
+fn main() {
+    let arr = [0, 1, 2, 3];
+}
+"#,
+        )],
+        "src/main.rs",
+    )?;
+
+    assert_eq!(ident_pat(&json, "arr").type_full_name(), "[i32; 4]");
+
+    Ok(())
+}
+
+#[test]
+fn emits_names_for_slice_type() -> TestResult<()> {
+    let json = no_sysroot_ast_json(
+        "rust2cpg",
+        &[(
+            "src/main.rs",
+            r#"
+fn main() {
+    let arr: [i32; 3] = [1, 2, 3];
+    let slice: &[i32] = &arr;
+}
+"#,
+        )],
+        "src/main.rs",
+    )?;
+
+    assert_eq!(ident_pat(&json, "slice").type_full_name(), "&[i32]");
+
+    Ok(())
+}
+
+#[test]
+fn emits_names_for_fn_pointer_type() -> TestResult<()> {
+    let json = no_sysroot_ast_json(
+        "rust2cpg",
+        &[(
+            "src/main.rs",
+            r#"
+fn no_args() -> u32 {
+    1
+}
+
+fn with_args(a: u32, b: bool) -> u32 {
+    if b { a + 1 } else { a }
+}
+
+fn main() {
+    let no_arg_ptr: fn() -> u32 = no_args;
+    let multi_arg_ptr: fn(u32, bool) -> u32 = with_args;
+}
+"#,
+        )],
+        "src/main.rs",
+    )?;
+
+    assert_eq!(
+        ident_pat(&json, "no_arg_ptr").type_full_name(),
+        "fn() -> u32"
+    );
+    assert_eq!(
+        ident_pat(&json, "multi_arg_ptr").type_full_name(),
+        "fn(u32, bool) -> u32"
     );
 
     Ok(())
