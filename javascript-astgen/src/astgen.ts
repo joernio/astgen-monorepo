@@ -4,6 +4,7 @@ import start from "./Pipeline"
 import Options from "./Options"
 import * as Defaults from "./Defaults"
 import * as Logger from "./Logger"
+import {getErrorMessage} from "./Errors"
 import {VERSION} from "./version"
 
 import * as path from "node:path"
@@ -53,8 +54,7 @@ async function main(argv: string[]) {
                 try {
                     return new RegExp(arg.toString(), "i")
                 } catch (err) {
-                    const msg = err instanceof Error ? err.message : String(err)
-                    Logger.warn(`--exclude-regex: ignoring invalid regex ${JSON.stringify(arg)}: ${msg}`)
+                    Logger.warn(`--exclude-regex: ignoring invalid regex ${JSON.stringify(arg)}: ${getErrorMessage(err)}`)
                     return undefined
                 }
             },

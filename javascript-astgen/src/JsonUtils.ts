@@ -1,10 +1,11 @@
 import * as fs from "node:fs"
 import {decodePos} from "./TscUtils"
+import {getErrorMessage} from "./Errors"
 
-const STREAM_BUFFER_SIZE = 64 * 1024
+const STREAM_BUFFER_SIZE = 1024 * 1024
 
 /**
- * Opens `filePath`, streams UTF-8 via a rolling ~64KB buffer and `writeSync`,
+ * Opens `filePath`, streams UTF-8 via a rolling ~1MB buffer and `writeSync`,
  * and closes the fd. Does not build one giant string per flush (avoids
  * `chunks.join` over many fragments at each threshold).
  *
@@ -52,8 +53,7 @@ function withBufferedWriter(filePath: string, fn: (write: (s: string) => void) =
         } catch {
             /* ignore missing file */
         }
-        const msg = err instanceof Error ? err.message : String(err)
-        throw new Error(`Failed to write ${filePath}: ${msg}`)
+        throw new Error(`Failed to write ${filePath}: ${getErrorMessage(err)}`)
     } finally {
         if (fd !== undefined) {
             fs.closeSync(fd)

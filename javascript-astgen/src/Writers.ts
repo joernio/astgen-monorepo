@@ -6,36 +6,21 @@ import Options from "./Options"
 import {TypeMap} from "./TscUtils"
 import * as Logger from "./Logger"
 import {WriteSink} from "./WriteSink"
+import {outputPathFor} from "./FileUtils"
+
+export type AstFile = {
+    fullName: string
+    relativeName: string
+    ast: babelParser.ParseResult
+}
 
 /**
- * Writes the AST (Abstract Syntax Tree) data of a source file to a JSON file.
- *
- * The output file is created in the output directory specified in the options,
- * preserving the relative path structure from the source directory. The AST data
- * is serialized using a writer that handles circular references.
- *
- * @param file - The absolute path to the source file.
- * @param ast - The Babel ParseResult object representing the AST of the file.
- * @param options - Configuration options containing source and output directories.
- * @param sink - Write target. Production code passes `FsWriteSink`; tests can
- *               supply an in-memory implementation.
+ * Wire format for the per-file `<source>.json` output. Defined here (the writer
+ * owns the schema) and reused by [AstWorker.ts](./AstWorker.ts) so workers
+ * write the same shape without hardcoding the field names.
  */
-export async function writeAstFile(
-    file: string,
-    ast: babelParser.ParseResult,
-    options: Options,
-    sink: WriteSink,
-): Promise<void> {
-    const relativePath: string = path.relative(options.src, file)
-    const outAstFile: string = path.join(options.output, relativePath + ".json")
-    const data = {
-        fullName: file,
-        relativeName: relativePath,
-        ast: ast,
-    }
-    await sink.ensureDir(path.dirname(outAstFile))
-    await sink.writeAstJson(outAstFile, data)
-    Logger.info("Converted AST for", relativePath, "to", outAstFile)
+export function buildAstFile(file: string, relativeName: string, ast: babelParser.ParseResult): AstFile {
+    return {fullName: file, relativeName, ast}
 }
 
 /**
@@ -52,9 +37,8 @@ export async function writeTypesFile(
     options: Options,
     sink: WriteSink,
 ): Promise<void> {
-    const relativePath: string = path.relative(options.src, file)
-    const outTypeFile: string = path.join(options.output, relativePath + ".typemap")
-    await sink.ensureDir(path.dirname(outTypeFile))
-    await sink.writeTypeMapJson(outTypeFile, seenTypes)
-    Logger.info("Converted types for", relativePath, "to", outTypeFile)
+    const {relativePath, outputPath} = outputPathFor(options.src, options.output, file, ".typemap")
+    await sink.ensureDir(path.dirname(outputPath))
+    await sink.writeTypeMapJson(outputPath, seenTypes)
+    Logger.info("Converted types for", relativePath, "to", outputPath)
 }

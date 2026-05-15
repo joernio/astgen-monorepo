@@ -14,6 +14,15 @@ export class AstgenError extends Error {
 }
 
 /**
+ * Extracts a human-readable message from an unknown thrown value. Used at every
+ * `catch` site that surfaces the error to the user (logger or worker envelope)
+ * to keep the `Error` vs non-`Error` branch out of the call sites.
+ */
+export function getErrorMessage(err: unknown): string {
+    return err instanceof Error ? err.message : String(err)
+}
+
+/**
  * Thrown when the configured `--src` directory does not exist or is not readable.
  */
 export class SourceDirNotReadableError extends AstgenError {

@@ -1,6 +1,6 @@
 {
   "name": "@joernio/astgen",
-  "version": "3.44.0",
+  "version": "3.45.0",
   "description": "Generate JavaScript/TypeScript AST in JSON format with Babel. CLI-only — invoke via the `astgen` binary; programmatic imports are not supported.",
   "keywords": [
     "AST",
@@ -19,6 +19,7 @@
     "yargs": "^17.7.2"
   },
   "scripts": {
+    "pretest": "yarn build",
     "test": "NODE_OPTIONS='--experimental-vm-modules' jest --silent --config=jest.config.js",
     "sync-version": "node scripts/sync-version.mjs",
     "prebuild": "node scripts/sync-version.mjs",
