@@ -16,9 +16,10 @@ defaults:
     working-directory: go-astgen
 
 jobs:
-  release:
-    name: Build and Release
+  build:
     runs-on: ubuntu-latest
+    outputs:
+      release_tag: ${{ steps.set-release-tag.outputs.release_tag }}
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -36,6 +37,10 @@ jobs:
         run: |
           echo "RELEASE_TAG=${{ github.ref_name }}" >> $GITHUB_ENV
         working-directory: .
+      - name: Set release tag output
+        id: set-release-tag
+        run: echo "release_tag=${{ env.RELEASE_TAG }}" >> $GITHUB_OUTPUT
+        working-directory: .
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
@@ -52,13 +57,78 @@ jobs:
           GOOS=windows GOARCH=amd64 go build -o build/goastgen-windows.exe -ldflags "-X main.Version=v${{ env.TAG_VERSION }}"
           GOOS=darwin GOARCH=amd64 go build -o build/goastgen-macos -ldflags "-X main.Version=v${{ env.TAG_VERSION }}"
           GOOS=darwin GOARCH=arm64 go build -o build/goastgen-macos-arm64 -ldflags "-X main.Version=v${{ env.TAG_VERSION }}"
-      - name: Release
+      - name: Upload Linux binary
+        uses: actions/upload-artifact@v7
+        with:
+          name: asset-goastgen-linux
+          path: go-astgen/build/goastgen-linux
+          if-no-files-found: error
+      - name: Upload Linux ARM64 binary
+        uses: actions/upload-artifact@v7
+        with:
+          name: asset-goastgen-linux-arm64
+          path: go-astgen/build/goastgen-linux-arm64
+          if-no-files-found: error
+      - name: Upload Windows binary
+        uses: actions/upload-artifact@v7
+        with:
+          name: asset-goastgen-windows.exe
+          path: go-astgen/build/goastgen-windows.exe
+          if-no-files-found: error
+      - name: Upload macOS binary
+        uses: actions/upload-artifact@v7
+        with:
+          name: asset-goastgen-macos
+          path: go-astgen/build/goastgen-macos
+          if-no-files-found: error
+      - name: Upload macOS ARM64 binary
+        uses: actions/upload-artifact@v7
+        with:
+          name: asset-goastgen-macos-arm64
+          path: go-astgen/build/goastgen-macos-arm64
+          if-no-files-found: error
+
+  checksums:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download release artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: release-artifacts
+          pattern: asset-*
+          merge-multiple: true
+
+      - name: Generate checksums
+        run: |
+          cd release-artifacts
+          mkdir -p checksums
+          sha256sum * > checksums/SHA256SUMS
+          sha512sum * > checksums/SHA512SUMS
+
+      - name: Upload checksum files
+        uses: actions/upload-artifact@v7
+        with:
+          name: asset-checksums
+          path: release-artifacts/checksums/
+
+  release:
+    needs: [build, checksums]
+    runs-on: ubuntu-latest
+    concurrency: go-astgen-release
+    permissions:
+      contents: write
+    steps:
+      - name: Download release artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: release-artifacts
+          pattern: asset-*
+          merge-multiple: true
+
+      - name: Create GitHub release
         uses: softprops/action-gh-release@v3
         with:
-          tag_name: ${{ env.RELEASE_TAG }}
-          files: |
-            go-astgen/build/goastgen-linux
-            go-astgen/build/goastgen-linux-arm64
-            go-astgen/build/goastgen-windows.exe
-            go-astgen/build/goastgen-macos
-            go-astgen/build/goastgen-macos-arm64
+          draft: true
+          tag_name: ${{ needs.build.outputs.release_tag }}
+          files: release-artifacts/*
