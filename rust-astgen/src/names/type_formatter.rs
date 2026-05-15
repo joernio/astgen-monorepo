@@ -51,8 +51,8 @@ impl<'db> TypeFormatter<'db> {
         if let Some(inner) = typ.as_slice() {
             return self.format_slice(inner);
         }
-        if let Some(inner) = typ.remove_raw_ptr() {
-            return self.format_raw_ptr(inner);
+        if let Some((inner, mutability)) = typ.as_raw_ptr() {
+            return self.format_raw_ptr(inner, mutability);
         }
         if typ.is_fn()
             && let Some(callable) = typ.as_callable(self.db)
@@ -109,8 +109,12 @@ impl<'db> TypeFormatter<'db> {
         Some(format!("[{}]", self.format(inner)?))
     }
 
-    fn format_raw_ptr(&self, inner: Type<'db>) -> Option<String> {
-        Some(format!("*{}", self.format(inner)?))
+    fn format_raw_ptr(&self, inner: Type<'db>, mutability: Mutability) -> Option<String> {
+        let prefix = match mutability {
+            Mutability::Shared => "*const",
+            Mutability::Mut => "*mut",
+        };
+        Some(format!("{prefix} {}", self.format(inner)?))
     }
 
     fn format_fn(&self, callable: Callable<'db>) -> Option<String> {
