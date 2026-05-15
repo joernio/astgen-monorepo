@@ -92,7 +92,7 @@ jobs:
             lib exe vendor Gemfile ruby_ast_gen.gemspec
 
       - name: Upload release artifact
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@v8
         with:
           name: asset-ruby_ast_gen.zip
           path: ruby-astgen/ruby_ast_gen_*.zip
@@ -106,7 +106,7 @@ jobs:
         working-directory: .
     steps:
       - name: Download release artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           path: release-artifacts
           pattern: asset-*
@@ -121,7 +121,7 @@ jobs:
           mv SHA256SUMS SHA512SUMS checksums/
 
       - name: Upload checksum files
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@v8
         with:
           name: asset-checksums
           path: release-artifacts/checksums/
@@ -136,7 +136,7 @@ jobs:
       contents: write
     steps:
       - name: Download release artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           path: release-artifacts
           pattern: asset-*

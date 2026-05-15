@@ -99,7 +99,7 @@ jobs:
             astgen-regression/tests/
 
       - name: Upload release artifact
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@v8
         with:
           name: asset-astgen-regression.tar.gz
           path: astgen-regression-${{ env.TAG_VERSION }}.tar.gz
@@ -113,7 +113,7 @@ jobs:
         working-directory: .
     steps:
       - name: Download release artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           path: release-artifacts
           pattern: asset-*
@@ -128,7 +128,7 @@ jobs:
           mv SHA256SUMS SHA512SUMS checksums/
 
       - name: Upload checksum files
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@v8
         with:
           name: asset-checksums
           path: release-artifacts/checksums/
@@ -143,7 +143,7 @@ jobs:
       contents: write
     steps:
       - name: Download release artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           path: release-artifacts
           pattern: asset-*

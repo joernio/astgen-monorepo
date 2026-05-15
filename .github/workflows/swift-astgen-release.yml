@@ -89,35 +89,35 @@ jobs:
           args: -fq
       - name: Upload Linux binary
         if: matrix.os == 'ubuntu-latest'
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@v8
         with:
           name: asset-SwiftAstGen-linux
           path: swift-astgen/SwiftAstGen-linux
           if-no-files-found: error
       - name: Upload Linux ARM64 binary
         if: matrix.os == 'ubuntu-latest'
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@v8
         with:
           name: asset-SwiftAstGen-linux-arm64
           path: swift-astgen/SwiftAstGen-linux-arm64
           if-no-files-found: error
       - name: Upload Mac binary
         if: matrix.os == 'macos-latest'
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@v8
         with:
           name: asset-SwiftAstGen-mac
           path: swift-astgen/SwiftAstGen-mac
           if-no-files-found: error
       - name: Upload Windows binary
         if: matrix.os == 'windows-latest'
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@v8
         with:
           name: asset-SwiftAstGen-win.exe
           path: swift-astgen/SwiftAstGen-win.exe
           if-no-files-found: error
       - name: Upload Swift Scala bindings
         if: matrix.os == 'ubuntu-latest'
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@v8
         with:
           name: asset-SwiftNodeSyntax.scala
           path: swift-astgen/SwiftNodeSyntax.scala
@@ -131,7 +131,7 @@ jobs:
         working-directory: .
     steps:
       - name: Download release artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           path: release-artifacts
           pattern: asset-*
@@ -146,7 +146,7 @@ jobs:
           mv SHA256SUMS SHA512SUMS checksums/
 
       - name: Upload checksum files
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@v8
         with:
           name: asset-checksums
           path: release-artifacts/checksums/
@@ -162,7 +162,7 @@ jobs:
       contents: write
     steps:
       - name: Download release artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           path: release-artifacts
           pattern: asset-*

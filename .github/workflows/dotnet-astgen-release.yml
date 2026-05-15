@@ -71,25 +71,25 @@ jobs:
           chmod +x dotnetastgen-linux-arm64
           chmod +x dotnetastgen-macos
       - name: Upload Linux binary
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@v8
         with:
           name: asset-dotnetastgen-linux
           path: dotnet-astgen/dotnetastgen-linux
           if-no-files-found: error
       - name: Upload Linux ARM64 binary
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@v8
         with:
           name: asset-dotnetastgen-linux-arm64
           path: dotnet-astgen/dotnetastgen-linux-arm64
           if-no-files-found: error
       - name: Upload macOS binary
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@v8
         with:
           name: asset-dotnetastgen-macos
           path: dotnet-astgen/dotnetastgen-macos
           if-no-files-found: error
       - name: Upload Windows binary
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@v8
         with:
           name: asset-dotnetastgen-win.exe
           path: dotnet-astgen/dotnetastgen-win.exe
@@ -103,7 +103,7 @@ jobs:
         working-directory: .
     steps:
       - name: Download release artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           path: release-artifacts
           pattern: asset-*
@@ -118,7 +118,7 @@ jobs:
           mv SHA256SUMS SHA512SUMS checksums/
 
       - name: Upload checksum files
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@v8
         with:
           name: asset-checksums
           path: release-artifacts/checksums/
@@ -134,7 +134,7 @@ jobs:
       contents: write
     steps:
       - name: Download release artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           path: release-artifacts
           pattern: asset-*

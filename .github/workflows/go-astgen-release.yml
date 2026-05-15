@@ -58,31 +58,31 @@ jobs:
           GOOS=darwin GOARCH=amd64 go build -o build/goastgen-macos -ldflags "-X main.Version=v${{ env.TAG_VERSION }}"
           GOOS=darwin GOARCH=arm64 go build -o build/goastgen-macos-arm64 -ldflags "-X main.Version=v${{ env.TAG_VERSION }}"
       - name: Upload Linux binary
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@v8
         with:
           name: asset-goastgen-linux
           path: go-astgen/build/goastgen-linux
           if-no-files-found: error
       - name: Upload Linux ARM64 binary
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@v8
         with:
           name: asset-goastgen-linux-arm64
           path: go-astgen/build/goastgen-linux-arm64
           if-no-files-found: error
       - name: Upload Windows binary
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@v8
         with:
           name: asset-goastgen-windows.exe
           path: go-astgen/build/goastgen-windows.exe
           if-no-files-found: error
       - name: Upload macOS binary
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@v8
         with:
           name: asset-goastgen-macos
           path: go-astgen/build/goastgen-macos
           if-no-files-found: error
       - name: Upload macOS ARM64 binary
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@v8
         with:
           name: asset-goastgen-macos-arm64
           path: go-astgen/build/goastgen-macos-arm64
@@ -96,7 +96,7 @@ jobs:
         working-directory: .
     steps:
       - name: Download release artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           path: release-artifacts
           pattern: asset-*
@@ -111,7 +111,7 @@ jobs:
           mv SHA256SUMS SHA512SUMS checksums/
 
       - name: Upload checksum files
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@v8
         with:
           name: asset-checksums
           path: release-artifacts/checksums/
@@ -127,7 +127,7 @@ jobs:
       contents: write
     steps:
       - name: Download release artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           path: release-artifacts
           pattern: asset-*
