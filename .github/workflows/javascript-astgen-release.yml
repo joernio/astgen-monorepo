@@ -11,11 +11,10 @@ defaults:
     working-directory: javascript-astgen
 
 jobs:
-  release:
-    concurrency: javascript-astgen-release
+  build:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
+    outputs:
+      release_tag: ${{ steps.set-release-tag.outputs.release_tag }}
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -32,6 +31,10 @@ jobs:
         if: github.event_name == 'push'
         run: |
           echo "RELEASE_TAG=${{ github.ref_name }}" >> $GITHUB_ENV
+        working-directory: .
+      - name: Set release tag output
+        id: set-release-tag
+        run: echo "release_tag=${{ env.RELEASE_TAG }}" >> $GITHUB_OUTPUT
         working-directory: .
       - name: Install node
         uses: actions/setup-node@v6
@@ -72,13 +75,78 @@ jobs:
           ASTGEN_VERSION=$(./astgen-linux --version)
           echo "ASTGEN_VERSION=$ASTGEN_VERSION" >> $GITHUB_ENV
           echo "astgen version is: $ASTGEN_VERSION"
-      - name: Upload binaries to release
+      - name: Upload binaries as artifacts
+        uses: actions/upload-artifact@v7
+        with:
+          name: asset-astgen-win.exe
+          path: javascript-astgen/astgen-win.exe
+          if-no-files-found: error
+      - name: Upload macOS binary
+        uses: actions/upload-artifact@v7
+        with:
+          name: asset-astgen-macos
+          path: javascript-astgen/astgen-macos
+          if-no-files-found: error
+      - name: Upload macOS ARM binary
+        uses: actions/upload-artifact@v7
+        with:
+          name: asset-astgen-macos-arm
+          path: javascript-astgen/astgen-macos-arm
+          if-no-files-found: error
+      - name: Upload Linux binary
+        uses: actions/upload-artifact@v7
+        with:
+          name: asset-astgen-linux
+          path: javascript-astgen/astgen-linux
+          if-no-files-found: error
+      - name: Upload Linux ARM binary
+        uses: actions/upload-artifact@v7
+        with:
+          name: asset-astgen-linux-arm
+          path: javascript-astgen/astgen-linux-arm
+          if-no-files-found: error
+
+  checksums:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download release artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: release-artifacts
+          pattern: asset-*
+          merge-multiple: true
+
+      - name: Generate checksums
+        run: |
+          cd release-artifacts
+          mkdir -p checksums
+          sha256sum * > checksums/SHA256SUMS
+          sha512sum * > checksums/SHA512SUMS
+
+      - name: Upload checksum files
+        uses: actions/upload-artifact@v7
+        with:
+          name: asset-checksums
+          path: release-artifacts/checksums/
+
+  release:
+    needs: [build, checksums]
+    runs-on: ubuntu-latest
+    concurrency: javascript-astgen-release
+    permissions:
+      contents: write
+    steps:
+      - name: Download release artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: release-artifacts
+          pattern: asset-*
+          merge-multiple: true
+
+      - name: Create GitHub release
         uses: softprops/action-gh-release@v3
         with:
-          tag_name: ${{ env.RELEASE_TAG }}
-          files: |
-            javascript-astgen/astgen-win.exe
-            javascript-astgen/astgen-macos
-            javascript-astgen/astgen-macos-arm
-            javascript-astgen/astgen-linux
-            javascript-astgen/astgen-linux-arm
+          draft: true
+          tag_name: ${{ needs.build.outputs.release_tag }}
+          files: release-artifacts/*
