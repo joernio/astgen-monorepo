@@ -70,8 +70,11 @@ curl -LO https://github.com/joernio/astgen-monorepo/releases/download/<tag>/astg
 # Download checksums
 curl -LO https://github.com/joernio/astgen-monorepo/releases/download/<tag>/checksums/SHA256SUMS
 
-# Verify
+# Verify (e.g., on Linux)
 grep astgen-linux SHA256SUMS | sha256sum -c
+
+# Verify (e.g., on MacOS)
+grep astgen-macos-arm SHA256SUMS | shasum -a 256 -c
 ```
 
 Expected output: `astgen-linux: OK`
