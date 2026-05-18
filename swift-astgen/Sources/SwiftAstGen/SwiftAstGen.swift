@@ -19,6 +19,12 @@ struct SwiftAstGen: ParsableCommand {
         abstract: "Generates JSON ASTs for Swift source files using SwiftSyntax."
     )
 
+    @Flag(
+        name: [.customLong("version"), .customShort("v")],
+        help: "Show the version."
+    )
+    var version: Bool = false
+
     @Option(
         name: [.customLong("src"), .customShort("i")],
         help: "Source directory (default: `\(defaultSrcDir)`).",
@@ -67,6 +73,10 @@ struct SwiftAstGen: ParsableCommand {
     }
 
     func run() throws {
+        if version {
+            print(VERSION)
+            return
+        }
         if scalaAstOnly {
             try ScalaAstGenerator(outputUrl: URL(fileURLWithPath: defaultScalaOutPath)).generate()
         } else {

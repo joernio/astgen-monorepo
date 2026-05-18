@@ -69,6 +69,7 @@ OPTIONS:
   -s, --scala-ast-only     Only print the generated Scala SwiftSyntax AST nodes
                            (writes `./SwiftNodeSyntax.scala`).
   --exclude-regex <regex>  Exclude files whose absolute path matches this case-insensitive regex.
+  -v, --version            Show the version.
   -h, --help               Show help information.
 ```
 
