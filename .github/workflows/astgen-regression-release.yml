@@ -139,6 +139,7 @@ jobs:
     defaults:
       run:
         working-directory: .
+    concurrency: astgen-regression-release
     permissions:
       contents: write
     steps:

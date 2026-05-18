@@ -132,6 +132,7 @@ jobs:
     defaults:
       run:
         working-directory: .
+    concurrency: ruby-astgen-release
     permissions:
       contents: write
     steps:
