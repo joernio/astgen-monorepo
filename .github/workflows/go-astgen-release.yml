@@ -6,8 +6,6 @@ on:
       - 'go-astgen/v*'
   workflow_dispatch:
 
-concurrency: go-astgen-release
-
 permissions:
   contents: write
 

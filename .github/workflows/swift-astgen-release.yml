@@ -6,8 +6,6 @@ on:
       - 'swift-astgen/v*'
   workflow_dispatch:
 
-concurrency: swift-astgen-release
-
 permissions:
   contents: write
 

@@ -6,8 +6,6 @@ on:
       - 'dotnet-astgen/v*'
   workflow_dispatch:
 
-concurrency: dotnet-astgen-release
-
 permissions:
   contents: write
 
