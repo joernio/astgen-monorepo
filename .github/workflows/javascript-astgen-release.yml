@@ -76,31 +76,31 @@ jobs:
           echo "ASTGEN_VERSION=$ASTGEN_VERSION" >> $GITHUB_ENV
           echo "astgen version is: $ASTGEN_VERSION"
       - name: Upload binaries as artifacts
-        uses: actions/upload-artifact@v8
+        uses: actions/upload-artifact@v7
         with:
           name: asset-astgen-win.exe
           path: javascript-astgen/astgen-win.exe
           if-no-files-found: error
       - name: Upload macOS binary
-        uses: actions/upload-artifact@v8
+        uses: actions/upload-artifact@v7
         with:
           name: asset-astgen-macos
           path: javascript-astgen/astgen-macos
           if-no-files-found: error
       - name: Upload macOS ARM binary
-        uses: actions/upload-artifact@v8
+        uses: actions/upload-artifact@v7
         with:
           name: asset-astgen-macos-arm
           path: javascript-astgen/astgen-macos-arm
           if-no-files-found: error
       - name: Upload Linux binary
-        uses: actions/upload-artifact@v8
+        uses: actions/upload-artifact@v7
         with:
           name: asset-astgen-linux
           path: javascript-astgen/astgen-linux
           if-no-files-found: error
       - name: Upload Linux ARM binary
-        uses: actions/upload-artifact@v8
+        uses: actions/upload-artifact@v7
         with:
           name: asset-astgen-linux-arm
           path: javascript-astgen/astgen-linux-arm
@@ -129,7 +129,7 @@ jobs:
           mv SHA256SUMS SHA512SUMS checksums/
 
       - name: Upload checksum files
-        uses: actions/upload-artifact@v8
+        uses: actions/upload-artifact@v7
         with:
           name: asset-checksums
           path: release-artifacts/checksums/

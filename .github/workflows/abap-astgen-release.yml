@@ -80,31 +80,31 @@ jobs:
           echo "ABAPGEN_VERSION=$ABAPGEN_VERSION" >> $GITHUB_ENV
           echo "abapgen version is: $ABAPGEN_VERSION"
       - name: Upload Windows binary
-        uses: actions/upload-artifact@v8
+        uses: actions/upload-artifact@v7
         with:
           name: asset-abapgen-win.exe
           path: abap-astgen/abapgen-win.exe
           if-no-files-found: error
       - name: Upload macOS binary
-        uses: actions/upload-artifact@v8
+        uses: actions/upload-artifact@v7
         with:
           name: asset-abapgen-macos
           path: abap-astgen/abapgen-macos
           if-no-files-found: error
       - name: Upload macOS ARM binary
-        uses: actions/upload-artifact@v8
+        uses: actions/upload-artifact@v7
         with:
           name: asset-abapgen-macos-arm
           path: abap-astgen/abapgen-macos-arm
           if-no-files-found: error
       - name: Upload Linux binary
-        uses: actions/upload-artifact@v8
+        uses: actions/upload-artifact@v7
         with:
           name: asset-abapgen-linux
           path: abap-astgen/abapgen-linux
           if-no-files-found: error
       - name: Upload Linux ARM binary
-        uses: actions/upload-artifact@v8
+        uses: actions/upload-artifact@v7
         with:
           name: asset-abapgen-linux-arm
           path: abap-astgen/abapgen-linux-arm
@@ -133,7 +133,7 @@ jobs:
           mv SHA256SUMS SHA512SUMS checksums/
 
       - name: Upload checksum files
-        uses: actions/upload-artifact@v8
+        uses: actions/upload-artifact@v7
         with:
           name: asset-checksums
           path: release-artifacts/checksums/
