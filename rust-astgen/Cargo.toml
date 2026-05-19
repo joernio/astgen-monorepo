@@ -1,6 +1,6 @@
 [package]
 name = "rust_ast_gen"
-version = "0.7.0"
+version = "0.7.1"
 edition = "2024"
 
 [dependencies]
@@ -27,3 +27,6 @@ toml = "1.1"
 [dev-dependencies]
 # used by the integration tests
 temp-dir = "0.1.16"
+
+[profile.release]
+lto = "thin"
