@@ -174,6 +174,8 @@ fn emit_base_node_and_token_traits(
     out: &mut String,
     config: &ScalaAstGenConfig,
 ) -> Result<(), Error> {
+    // TODO: methodFullName and typeFullName should not come built-in but rather from ScalaAstGenConfig,
+    //  as they don't make sense in any other context.
     write!(
         out,
         concat!(
@@ -189,6 +191,8 @@ fn emit_base_node_and_token_traits(
             "    def endOffset: Option[Int] = rangeField(\"endOffset\")\n",
             "    def startLine: Option[Int] = rangeField(\"startLine\")\n",
             "    def startColumn: Option[Int] = rangeField(\"startColumn\")\n",
+            "    def methodFullName: Option[String] = json.obj.get(\"methodFullName\").flatMap(_.strOpt)\n",
+            "    def typeFullName: Option[String] = json.obj.get(\"typeFullName\").flatMap(_.strOpt)\n",
             "  }}\n",
             "\n",
             "  sealed trait {token_base} extends {node_base}\n"
@@ -533,6 +537,8 @@ object ExampleAst {
     def endOffset: Option[Int] = rangeField("endOffset")
     def startLine: Option[Int] = rangeField("startLine")
     def startColumn: Option[Int] = rangeField("startColumn")
+    def methodFullName: Option[String] = json.obj.get("methodFullName").flatMap(_.strOpt)
+    def typeFullName: Option[String] = json.obj.get("typeFullName").flatMap(_.strOpt)
   }
 
   sealed trait AstToken extends AstNode
@@ -616,6 +622,8 @@ object ExampleAst {
     def endOffset: Option[Int] = rangeField("endOffset")
     def startLine: Option[Int] = rangeField("startLine")
     def startColumn: Option[Int] = rangeField("startColumn")
+    def methodFullName: Option[String] = json.obj.get("methodFullName").flatMap(_.strOpt)
+    def typeFullName: Option[String] = json.obj.get("typeFullName").flatMap(_.strOpt)
   }
 
   sealed trait AstToken extends AstNode
