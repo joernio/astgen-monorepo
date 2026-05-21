@@ -29,14 +29,14 @@ This package is **CLI-only** — install it for the `astgen` binary; programmati
 ## Building
 
 ```bash
-pnpm install
-pnpm build
+yarn install
+yarn build
 ```
 
 Platform-specific standalone binaries ([cross-platform SEAs](https://nodejs.org/api/single-executable-applications.html)) can be built using [pkg](https://github.com/yao-pkg/pkg):
 
 ```bash
-pnpm binary
+yarn binary
 ```
 
 This creates standalone executables with embedded Node.js runtime for:
@@ -49,9 +49,9 @@ This creates standalone executables with embedded Node.js runtime for:
 ## Testing
 
 ```bash
-pnpm install
-pnpm build
-pnpm test
+yarn install
+yarn build
+yarn test
 ```
 
 This uses `jest` with `ts-jest` to run the tests in `test/`.
@@ -145,7 +145,7 @@ The CLI entry point is [`src/astgen.ts`](src/astgen.ts), which delegates to [`sr
 
 ## Releasing
 
-The version lives in `package.json` and is mirrored into `src/version.ts` by `scripts/sync-version.mjs` (run automatically on `pnpm build` via the `prebuild` hook). Use `bump-version.sh` to bump:
+The version lives in `package.json` and is mirrored into `src/version.ts` by `scripts/sync-version.mjs` (run automatically on `yarn build` via the `prebuild` hook). Use `bump-version.sh` to bump:
 
 ```bash
 ./bump-version.sh 3.44.0
