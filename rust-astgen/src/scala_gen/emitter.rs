@@ -285,7 +285,11 @@ fn emit_node_case_classes(
     Ok(())
 }
 
-fn maybe_demoted_cardinality(node: &str, element: &Element, config: &ScalaAstGenConfig) -> Cardinality {
+fn maybe_demoted_cardinality(
+    node: &str,
+    element: &Element,
+    config: &ScalaAstGenConfig,
+) -> Cardinality {
     let is_demoted = matches!(element.cardinality, Cardinality::One)
         && config
             .elements_demoted_to_optional
