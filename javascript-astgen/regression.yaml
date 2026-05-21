@@ -4,8 +4,8 @@ project:
   language: "javascript"
 
 build:
-  install_command: "yarn install"
-  build_command: "yarn build"
+  install_command: "pnpm install --frozen-lockfile"
+  build_command: "pnpm build"
   dist_dir: "dist"
 
 execute:
@@ -39,4 +39,4 @@ github:
     uses: "actions/setup-node@v6"
     with:
       node-version: "24"
-      cache: "yarn"
+      cache: "pnpm"

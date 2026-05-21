@@ -36,26 +36,30 @@ jobs:
         id: set-release-tag
         run: echo "release_tag=${{ env.RELEASE_TAG }}" >> $GITHUB_OUTPUT
         working-directory: .
+      - name: Install pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          version: '11'
       - name: Install node
         uses: actions/setup-node@v6
         with:
           node-version: '24'
-          cache: 'yarn'
-          cache-dependency-path: 'javascript-astgen/yarn.lock'
+          cache: 'pnpm'
+          cache-dependency-path: 'javascript-astgen/pnpm-lock.yaml'
       - name: Install ldid
         uses: MOZGIII/install-ldid-action@v1
         with:
           tag: v2.1.5-procursus6
       - name: Build
         run: |
-          yarn install
-          yarn build
+          pnpm install --frozen-lockfile
+          pnpm build
       - name: Test
         run: |
-          yarn test
+          pnpm test
       - name: Create binaries
         run: |
-          yarn binary
+          pnpm binary
       - name: Rename
         run: |
           mv astgen-linux-x64 astgen-linux
