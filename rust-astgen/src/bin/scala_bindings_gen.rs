@@ -4,6 +4,7 @@ use heck::{ToPascalCase, ToShoutySnakeCase};
 use rust_ast_gen::grammar::model::Model;
 use rust_ast_gen::scala_gen::config::ScalaAstGenConfig;
 use rust_ast_gen::scala_gen::emitter::generate_scala;
+use std::collections::{HashMap, HashSet};
 use std::path::PathBuf;
 use std::str::FromStr;
 use ungrammar::Grammar;
@@ -42,12 +43,24 @@ fn main() -> Result<()> {
         "Type".to_string(),
         "VariantDef".to_string(),
     ];
+    // NB: there's a mismatch between `rust.ungram` and the auto-generated `SyntaxToken` from rust-analyzer.
+    // The grammar says that `initializer:Expr` is mandatory, but the generated `LetStmt` sees it as optional.
+    // In particular, `let x;` is indeed valid but wouldn't be accepted by the grammar.
+    // It turns out mandatory nodes are generated as optional, cf.
+    // https://github.com/rust-lang/rust-analyzer/blob/7c3fc8671f83f6e46305358b98354f0611ebb3cd/xtask/src/codegen/grammar.rs#L923
+    // and https://github.com/rust-lang/rust-analyzer/blob/7c3fc8671f83f6e46305358b98354f0611ebb3cd/crates/syntax/src/ast/generated/nodes.rs#L923
+    // Instead of following the same route (i.e. mandator -> optional), we demote only the cases
+    // we care about. Otherwise, rust2cpg would have to always deal with optional nodes.
+
+    let elements_demoted_to_optional =
+        HashMap::from([("LetStmt".to_string(), HashSet::from(["Expr".to_string()]))]);
     let config = ScalaAstGenConfig {
         package_name,
         object_name,
         base_node_trait,
         base_token_trait,
         trait_nodes,
+        elements_demoted_to_optional,
         node_name_to_scala_name,
         node_name_to_json_kind,
         token_name_to_scala_name,

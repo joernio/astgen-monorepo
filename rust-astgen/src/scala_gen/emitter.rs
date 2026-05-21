@@ -274,7 +274,8 @@ fn emit_node_case_classes(
 
         if let Some(elements) = model.elements(node) {
             for element in elements {
-                emit_accessor(out, config, element)?;
+                let cardinality = maybe_demoted_cardinality(node, element, config);
+                emit_accessor(out, config, element, cardinality)?;
             }
         }
 
@@ -284,16 +285,35 @@ fn emit_node_case_classes(
     Ok(())
 }
 
+fn maybe_demoted_cardinality(
+    node: &str,
+    element: &Element,
+    config: &ScalaAstGenConfig,
+) -> Cardinality {
+    let is_demoted = matches!(element.cardinality, Cardinality::One)
+        && config
+            .elements_demoted_to_optional
+            .get(node)
+            .is_some_and(|elements| elements.contains(element.name.as_str()));
+
+    if is_demoted {
+        Cardinality::Optional
+    } else {
+        element.cardinality
+    }
+}
+
 fn emit_accessor(
     out: &mut String,
     config: &ScalaAstGenConfig,
     element: &Element,
+    cardinality: Cardinality,
 ) -> Result<(), Error> {
     let accessor = scala_safe_identifier(&scala_accessor_name(element, config));
     let scala_type = scala_type_name(element, config);
-    let rhs = scala_json_lookup_code(element, config);
+    let rhs = scala_json_lookup_code(element, config, cardinality);
 
-    match element.cardinality {
+    match cardinality {
         Cardinality::One => writeln!(out, "    def {accessor}: {scala_type} = {rhs}",),
         Cardinality::Optional => writeln!(out, "    def {accessor}: Option[{scala_type}] = {rhs}",),
         Cardinality::Many => writeln!(out, "    def {accessor}: Seq[{scala_type}] = {rhs}",),
@@ -333,12 +353,16 @@ fn scala_type_name(element: &Element, config: &ScalaAstGenConfig) -> String {
     }
 }
 
-fn scala_json_lookup_code_for_token(element: &Element, config: &ScalaAstGenConfig) -> String {
+fn scala_json_lookup_code_for_token(
+    element: &Element,
+    config: &ScalaAstGenConfig,
+    cardinality: Cardinality,
+) -> String {
     let create_fn = format!("create{}", config.base_node_trait);
     let name = element.name.as_str();
     let kind = (config.token_name_to_json_kind)(name);
     let scala_type = (config.token_name_to_scala_name)(name);
-    match element.cardinality {
+    match cardinality {
         Cardinality::One => {
             format!("{create_fn}(_childrenByKind(\"{kind}\").head).asInstanceOf[{scala_type}]")
         }
@@ -351,7 +375,11 @@ fn scala_json_lookup_code_for_token(element: &Element, config: &ScalaAstGenConfi
     }
 }
 
-fn scala_json_lookup_code_for_trait_node(element: &Element, config: &ScalaAstGenConfig) -> String {
+fn scala_json_lookup_code_for_trait_node(
+    element: &Element,
+    config: &ScalaAstGenConfig,
+    cardinality: Cardinality,
+) -> String {
     let create_fn = format!("create{}", config.base_node_trait);
     let name = element.name.as_str();
     let kinds_name = format!(
@@ -359,7 +387,7 @@ fn scala_json_lookup_code_for_trait_node(element: &Element, config: &ScalaAstGen
         (config.node_name_to_scala_name)(name).to_lower_camel_case()
     );
     let scala_type = (config.node_name_to_scala_name)(name);
-    match element.cardinality {
+    match cardinality {
         Cardinality::One => format!(
             "{create_fn}(_children.find(child => {kinds_name}.contains(child(\"nodeKind\").str)).get).asInstanceOf[{scala_type}]"
         ),
@@ -375,13 +403,14 @@ fn scala_json_lookup_code_for_trait_node(element: &Element, config: &ScalaAstGen
 fn scala_json_lookup_code_for_non_trait_node(
     element: &Element,
     config: &ScalaAstGenConfig,
+    cardinality: Cardinality,
 ) -> String {
     let create_fn = format!("create{}", config.base_node_trait);
     let name = element.name.as_str();
     let kind = (config.node_name_to_json_kind)(name);
     let scala_type = (config.node_name_to_scala_name)(name);
 
-    match element.cardinality {
+    match cardinality {
         Cardinality::One => {
             format!("{create_fn}(_childrenByKind(\"{kind}\").head).asInstanceOf[{scala_type}]")
         }
@@ -394,13 +423,19 @@ fn scala_json_lookup_code_for_non_trait_node(
     }
 }
 
-fn scala_json_lookup_code(element: &Element, config: &ScalaAstGenConfig) -> String {
+fn scala_json_lookup_code(
+    element: &Element,
+    config: &ScalaAstGenConfig,
+    cardinality: Cardinality,
+) -> String {
     match &element.name {
-        ElementName::Token(_) => scala_json_lookup_code_for_token(element, config),
+        ElementName::Token(_) => scala_json_lookup_code_for_token(element, config, cardinality),
         ElementName::Node(node) if config.trait_nodes.iter().any(|name| name == node.as_str()) => {
-            scala_json_lookup_code_for_trait_node(element, config)
+            scala_json_lookup_code_for_trait_node(element, config, cardinality)
         }
-        ElementName::Node(_) => scala_json_lookup_code_for_non_trait_node(element, config),
+        ElementName::Node(_) => {
+            scala_json_lookup_code_for_non_trait_node(element, config, cardinality)
+        }
     }
 }
 
@@ -483,6 +518,7 @@ mod tests {
             token_name_to_json_kind: |n| format!("{}_TOKEN", n.to_uppercase()),
             token_name_to_scala_name: |n| format!("{}Token", n),
             trait_nodes: vec![],
+            elements_demoted_to_optional: HashMap::new(),
             codegen_version: "0.0.0".to_string(),
             codegen_date: Some("2020-01-01".to_string()),
         }
@@ -714,5 +750,28 @@ object ExampleAst {
         let scala = generate_scala(&model, &config).unwrap();
 
         assert!(scala.contains("def `type`: TypeNode"));
+    }
+
+    #[test]
+    fn test_elements_demoted_to_optional() {
+        let grammar = Grammar::from_str(
+            r"
+            Wrapper = Inner
+            Inner = 'inner'",
+        )
+        .unwrap();
+
+        let model = Model::from_ungrammar(&grammar).unwrap();
+
+        let mut config = example_config();
+        let baseline = generate_scala(&model, &config).unwrap();
+        assert!(baseline.contains("def inner: InnerNode = "));
+
+        config.elements_demoted_to_optional = HashMap::from([(
+            "Wrapper".to_string(),
+            std::collections::HashSet::from(["Inner".to_string()]),
+        )]);
+        let with_override = generate_scala(&model, &config).unwrap();
+        assert!(with_override.contains("def inner: Option[InnerNode] = "));
     }
 }
