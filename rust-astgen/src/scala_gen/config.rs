@@ -1,3 +1,5 @@
+use std::collections::{HashMap, HashSet};
+
 pub struct ScalaAstGenConfig {
     /// Scala package name, e.g. "io.joern.rust2cpg.parser"
     pub package_name: String,
@@ -29,6 +31,10 @@ pub struct ScalaAstGenConfig {
     /// Converts a grammar token text to the JSON representation of the
     /// token, e.g. "fn" -> "FN_KW", "(" -> "L_PAREN", etc.
     pub token_name_to_json_kind: fn(&str) -> String,
+
+    /// Elements whose grammar cardinality is `One` but which we want to treat
+    /// as `Optional`, e.g. "LetStmt" -> {"Expr"}.
+    pub elements_demoted_to_optional: HashMap<String, HashSet<String>>,
 
     /// The time this code was generated.
     /// Only included in the header when present.

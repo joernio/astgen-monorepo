@@ -31,7 +31,7 @@ class RustAstGenFullNameTests extends AnyFunSuite with RustAstGenTestFixture {
     }
     identPat.typeFullName shouldBe Some("i32")
 
-    val callExpr: CallExpr = letStmt.expr match {
+    val callExpr: CallExpr = letStmt.expr.getOrElse(fail("expected let initializer")) match {
       case ce: CallExpr => ce
       case other        => fail(s"expected CallExpr, got ${other.getClass.getSimpleName}")
     }
@@ -41,6 +41,22 @@ class RustAstGenFullNameTests extends AnyFunSuite with RustAstGenTestFixture {
     val lParen = callExpr.argList.lParenToken
     lParen.methodFullName shouldBe None
     lParen.typeFullName shouldBe None
+  }
+
+  test("LetStmt.expr is None for an uninitialized binding") {
+    val srcFile = code(
+      """
+        |fn main() { let x: i32; }
+        |""".stripMargin)
+
+    val letStmt: LetStmt = srcFile.item
+      .collect { case fn: Fn => fn }
+      .flatMap(_.blockExpr)
+      .flatMap(_.stmtList.stmt)
+      .collectFirst { case ls: LetStmt => ls }
+      .getOrElse(fail("expected let statement"))
+
+    letStmt.expr shouldBe None
   }
 
 }
