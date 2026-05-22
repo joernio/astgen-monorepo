@@ -88,9 +88,26 @@ export class WorkerPool {
     }
 
     async shutdown(): Promise<void> {
+        // Send shutdown signal to all workers
         for (const w of this.workers) {
             w.postMessage("shutdown")
         }
-        await Promise.all(this.workers.map((w) => w.terminate()))
+
+        // Wait for workers to exit gracefully or timeout after 5s
+        const exitPromises = this.workers.map((w) =>
+            new Promise<void>((resolve) => {
+                const timeout = setTimeout(() => {
+                    w.terminate()
+                    resolve()
+                }, 5000)
+
+                w.once("exit", () => {
+                    clearTimeout(timeout)
+                    resolve()
+                })
+            })
+        )
+
+        await Promise.all(exitPromises)
     }
 }
