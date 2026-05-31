@@ -1,6 +1,6 @@
 package io.joern.rust2cpg.parser
 
-import io.joern.rust2cpg.parser.RustNodeSyntax.{RustNode, SourceFile, createRustNode}
+import io.joern.rust2cpg.parser.RustNodeSyntax.{MacroCall, RustNode, SourceFile, createRustNode}
 
 import java.nio.file.{Files, Path, Paths}
 import java.util.Comparator
@@ -10,7 +10,7 @@ import ujson.Value
 
 trait RustAstGenTestFixture {
 
-  def code(source: String): SourceFile = {
+  def code(source: String, noSysRoot: Boolean = true): SourceFile = {
     val projectDir = Files.createTempDirectory("rust-ast-gen-scala-tests")
 
     try {
@@ -27,6 +27,8 @@ trait RustAstGenTestFixture {
       )
       Files.writeString(srcDir.resolve("main.rs"), source)
 
+      val sysRootArg = if (noSysRoot) Seq("--no-sysroot") else Seq.empty
+
       val exitCode = Process(
         Seq(
           "cargo",
@@ -39,8 +41,7 @@ trait RustAstGenTestFixture {
           projectDir.toString,
           "-o",
           outputDir.toString,
-          "--no-sysroot"
-        ),
+        ) ++ sysRootArg,
         repoRoot.toFile
       ).!
 
@@ -70,6 +71,14 @@ trait RustAstGenTestFixture {
     node.json.obj.get("children").map(_.arr.toSeq).getOrElse(Seq.empty).map(createRustNode)
   }
 
+  def macroCalls(node: RustNode): Seq[MacroCall] = {
+    val head = node match {
+      case macroCall: MacroCall => Seq(macroCall)
+      case _ => Seq.empty
+    }
+    head ++ childNodes(node).flatMap(macroCalls)
+  }
+
   private def prettyPrintNode(node: RustNode, indent: Int): String = {
     val renderedChildren = childNodes(node).map(child => prettyPrintNode(child, indent + 1))
     (Seq(("  " * indent) + node.json("nodeKind").str) ++ renderedChildren).mkString(System.lineSeparator())
@@ -77,4 +86,11 @@ trait RustAstGenTestFixture {
 
   extension (node: RustNode)
     def prettyPrint: String = prettyPrintNode(node, 0)
+
+    // Given the original snippet, use the node's range to extract its text.
+    // This is very ugly...
+    def textFrom(snippet: String): String = {
+      val range = node.json("range")
+      snippet.substring(range("startOffset").num.toInt, range("endOffset").num.toInt)
+    }
 }

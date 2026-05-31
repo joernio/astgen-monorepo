@@ -93,7 +93,9 @@ fn process_file(
 
     info!("building the JSON tree: {}", input_file_path.display());
 
-    let json_root = RustAstGenJsonNode::from_node(syntax_tree, &file_line_index, semantics);
+    let hir_file_id = semantics.hir_file_for(syntax_tree);
+    let json_root =
+        RustAstGenJsonNode::from_node(syntax_tree, hir_file_id, &file_line_index, semantics);
     let contents = syntax_tree.text().to_string();
     let loc = file_line_index
         .line_col(syntax_tree.text_range().end())
