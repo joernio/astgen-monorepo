@@ -33,6 +33,10 @@ pub(crate) struct RustAstGenJsonFile {
 pub(crate) struct RustAstGenJsonNode {
     pub(crate) node_kind: String,
     pub(crate) range: RustAstGenJsonNodeRange,
+    // When extracting text, prefer this when defined, otherwise substring with range.
+    // Currently this is only used for macro-expanded nodes/tokens, which have no suitable range.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(crate) text: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub(crate) method_full_name: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -91,6 +95,7 @@ impl RustAstGenJsonNode {
     ) -> Self {
         let node_kind = format!("{:?}", node.kind());
         let range = Self::make_range(node.text_range(), hir_file_id, line_index);
+        let text = hir_file_id.is_macro().then(|| node.text().to_string());
         let method_full_name = method_full_name_for_node(node, semantics);
         let type_full_name = type_full_name_for_node(node, semantics);
 
@@ -116,6 +121,7 @@ impl RustAstGenJsonNode {
         Self {
             node_kind,
             range,
+            text,
             macro_expansion,
             method_full_name,
             type_full_name,
@@ -130,11 +136,13 @@ impl RustAstGenJsonNode {
     ) -> Self {
         let node_kind = format!("{:?}", token.kind());
         let range = Self::make_range(token.text_range(), hir_file_id, line_index);
+        let text = hir_file_id.is_macro().then(|| token.text().to_string());
         let children = vec![];
 
         Self {
             node_kind,
             range,
+            text,
             children,
             macro_expansion: None,
             method_full_name: None,

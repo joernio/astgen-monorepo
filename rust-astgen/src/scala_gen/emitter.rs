@@ -174,7 +174,7 @@ fn emit_base_node_and_token_traits(
     out: &mut String,
     config: &ScalaAstGenConfig,
 ) -> Result<(), Error> {
-    // TODO: methodFullName, typeFullName and macroExpansion should not come built-in but rather
+    // TODO: methodFullName, typeFullName, macroExpansion and text should not come built-in but rather
     //  from ScalaAstGenConfig, as they don't make sense in any other context.
     write!(
         out,
@@ -191,6 +191,7 @@ fn emit_base_node_and_token_traits(
             "    def endOffset: Option[Int] = rangeField(\"endOffset\")\n",
             "    def startLine: Option[Int] = rangeField(\"startLine\")\n",
             "    def startColumn: Option[Int] = rangeField(\"startColumn\")\n",
+            "    def text: Option[String] = json.obj.get(\"text\").flatMap(_.strOpt)\n",
             "    def methodFullName: Option[String] = json.obj.get(\"methodFullName\").flatMap(_.strOpt)\n",
             "    def typeFullName: Option[String] = json.obj.get(\"typeFullName\").flatMap(_.strOpt)\n",
             "    def macroExpansion: Option[{node_base}] = json.obj.get(\"macroExpansion\").map(create{node_base}(_))\n",
@@ -574,6 +575,7 @@ object ExampleAst {
     def endOffset: Option[Int] = rangeField("endOffset")
     def startLine: Option[Int] = rangeField("startLine")
     def startColumn: Option[Int] = rangeField("startColumn")
+    def text: Option[String] = json.obj.get("text").flatMap(_.strOpt)
     def methodFullName: Option[String] = json.obj.get("methodFullName").flatMap(_.strOpt)
     def typeFullName: Option[String] = json.obj.get("typeFullName").flatMap(_.strOpt)
     def macroExpansion: Option[AstNode] = json.obj.get("macroExpansion").map(createAstNode(_))
@@ -660,6 +662,7 @@ object ExampleAst {
     def endOffset: Option[Int] = rangeField("endOffset")
     def startLine: Option[Int] = rangeField("startLine")
     def startColumn: Option[Int] = rangeField("startColumn")
+    def text: Option[String] = json.obj.get("text").flatMap(_.strOpt)
     def methodFullName: Option[String] = json.obj.get("methodFullName").flatMap(_.strOpt)
     def typeFullName: Option[String] = json.obj.get("typeFullName").flatMap(_.strOpt)
     def macroExpansion: Option[AstNode] = json.obj.get("macroExpansion").map(createAstNode(_))
