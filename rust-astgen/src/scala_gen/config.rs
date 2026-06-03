@@ -36,6 +36,10 @@ pub struct ScalaAstGenConfig {
     /// as `Optional`, e.g. "LetStmt" -> {"Expr"}.
     pub elements_demoted_to_optional: HashMap<String, HashSet<String>>,
 
+    /// Accessor names to rename. Used to avoid having to use backticks for reserved keywords,
+    /// e.g. "type" -> "typ".
+    pub accessor_renames: HashMap<String, String>,
+
     /// The time this code was generated.
     /// Only included in the header when present.
     pub codegen_date: Option<String>,

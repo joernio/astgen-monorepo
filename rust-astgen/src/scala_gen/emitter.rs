@@ -339,12 +339,13 @@ fn emit_token_case_classes(
 }
 
 fn scala_accessor_name(element: &Element, config: &ScalaAstGenConfig) -> String {
-    match &element.name {
+    let name = match &element.name {
         ElementName::Node(node) => node.as_str().to_lower_camel_case(),
         ElementName::Token(token) => {
             (config.token_name_to_scala_name)(token.as_str()).to_lower_camel_case()
         }
-    }
+    };
+    config.accessor_renames.get(&name).cloned().unwrap_or(name)
 }
 
 fn scala_type_name(element: &Element, config: &ScalaAstGenConfig) -> String {
@@ -520,6 +521,7 @@ mod tests {
             token_name_to_scala_name: |n| format!("{}Token", n),
             trait_nodes: vec![],
             elements_demoted_to_optional: HashMap::new(),
+            accessor_renames: HashMap::new(),
             codegen_version: "0.0.0".to_string(),
             codegen_date: Some("2020-01-01".to_string()),
         }
@@ -753,6 +755,25 @@ object ExampleAst {
         let scala = generate_scala(&model, &config).unwrap();
 
         assert!(scala.contains("def `type`: TypeNode"));
+    }
+
+    #[test]
+    fn test_accessor_renames() {
+        let grammar = Grammar::from_str(
+            r"
+            Wrapper = Type
+            Type = 'type'",
+        )
+        .unwrap();
+
+        let model = Model::from_ungrammar(&grammar).unwrap();
+
+        let mut config = example_config();
+        config.accessor_renames = HashMap::from([("type".to_string(), "typ".to_string())]);
+        let scala = generate_scala(&model, &config).unwrap();
+
+        assert!(scala.contains("def typ: TypeNode"));
+        assert!(!scala.contains("`type`"));
     }
 
     #[test]
