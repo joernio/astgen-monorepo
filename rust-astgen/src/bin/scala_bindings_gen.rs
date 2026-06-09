@@ -54,6 +54,7 @@ fn main() -> Result<()> {
 
     let elements_demoted_to_optional =
         HashMap::from([("LetStmt".to_string(), HashSet::from(["Expr".to_string()]))]);
+    let accessor_renames = HashMap::from([("type".to_string(), "typ".to_string())]);
     let config = ScalaAstGenConfig {
         package_name,
         object_name,
@@ -61,6 +62,7 @@ fn main() -> Result<()> {
         base_token_trait,
         trait_nodes,
         elements_demoted_to_optional,
+        accessor_renames,
         node_name_to_scala_name,
         node_name_to_json_kind,
         token_name_to_scala_name,
