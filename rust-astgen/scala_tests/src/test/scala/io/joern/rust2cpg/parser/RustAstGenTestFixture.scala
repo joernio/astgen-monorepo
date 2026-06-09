@@ -90,7 +90,9 @@ trait RustAstGenTestFixture {
     // Given the original snippet, use the node's range to extract its text.
     // This is very ugly...
     def textFrom(snippet: String): String = {
-      val range = node.json("range")
-      snippet.substring(range("startOffset").num.toInt, range("endOffset").num.toInt)
+      node.text.getOrElse {
+        val range = node.json("range")
+        snippet.substring(range("startOffset").num.toInt, range("endOffset").num.toInt)
+      }
     }
 }

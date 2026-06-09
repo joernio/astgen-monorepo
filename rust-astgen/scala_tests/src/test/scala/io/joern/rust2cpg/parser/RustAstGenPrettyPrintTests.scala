@@ -1,6 +1,15 @@
 package io.joern.rust2cpg.parser
 
-import io.joern.rust2cpg.parser.RustNodeSyntax.{BlockExpr, CallExpr, ExprStmt, Literal, MacroStmts}
+import io.joern.rust2cpg.parser.RustNodeSyntax.{
+  ArrayExpr,
+  BlockExpr,
+  CallExpr,
+  ExprStmt,
+  FormatArgsExpr,
+  Literal,
+  MacroExpr,
+  MacroStmts
+}
 import org.scalatest.Inside.inside
 import org.scalatest.funsuite.AnyFunSuite
 import org.scalatest.matchers.should.Matchers.shouldBe
@@ -163,9 +172,7 @@ class RustAstGenPrettyPrintTests extends AnyFunSuite with RustAstGenTestFixture 
         inside(stringify.macroExpansion) {
           case Some(lit: Literal) =>
             lit.typeFullName shouldBe Some("&str")
-            // Not ideal, but just documenting the current status quo: we don't have a good way of getting
-            // the expanded nodes' ranges.
-            lit.textFrom(snippet) shouldBe ""
+            lit.textFrom(snippet) shouldBe "\"hello world\""
         }
     }
   }
@@ -175,7 +182,7 @@ class RustAstGenPrettyPrintTests extends AnyFunSuite with RustAstGenTestFixture 
       """
         |fn main() {
         | let v = vec![1, 2, 3];
-        | println!(v);
+        | println!("{:?}", v);
         |}
         |""".stripMargin
     val srcFile = code(snippet, noSysRoot = false)
@@ -183,12 +190,30 @@ class RustAstGenPrettyPrintTests extends AnyFunSuite with RustAstGenTestFixture 
     inside(macroCalls(srcFile)) {
       case vec :: print :: Nil =>
         vec.textFrom(snippet) shouldBe "vec![1, 2, 3]"
-        print.textFrom(snippet) shouldBe "println!(v)"
+        print.textFrom(snippet) shouldBe "println!(\"{:?}\", v)"
 
         inside(vec.macroExpansion) {
           case Some(call: CallExpr) =>
+            call.textFrom(snippet) shouldBe "$crate::boxed::box_assume_init_into_vec_unsafe($crate::intrinsics::write_box_via_move($crate::boxed::Box::new_uninit(),[1,2,3]))"
             call.methodFullName shouldBe Some("alloc::boxed::box_assume_init_into_vec_unsafe<T, N>")
             call.typeFullName shouldBe Some("alloc::vec::Vec<i32, alloc::alloc::Global>")
+            inside(call.argList.expr) {
+              case (writeBoxCall: CallExpr) :: Nil =>
+                writeBoxCall.textFrom(snippet) shouldBe "$crate::intrinsics::write_box_via_move($crate::boxed::Box::new_uninit(),[1,2,3])"
+                writeBoxCall.methodFullName shouldBe Some("alloc::intrinsics::write_box_via_move<T>")
+                writeBoxCall.typeFullName shouldBe Some("alloc::boxed::Box<core::mem::maybe_uninit::MaybeUninit<[i32; 3]>, alloc::alloc::Global>")
+                inside(writeBoxCall.argList.expr) {
+                  case (uninitCall: CallExpr) :: (array: ArrayExpr) :: Nil =>
+                    uninitCall.textFrom(snippet) shouldBe "$crate::boxed::Box::new_uninit()"
+                    uninitCall.methodFullName shouldBe Some("alloc::boxed::Box<T, alloc::alloc::Global>::new_uninit")
+                    uninitCall.typeFullName shouldBe Some("alloc::boxed::Box<core::mem::maybe_uninit::MaybeUninit<[i32; 3]>, alloc::alloc::Global>")
+                    inside(array.expr) {
+                      case (_: Literal) :: (two: Literal) :: (_: Literal) :: Nil =>
+                        two.textFrom(snippet) shouldBe "2"
+                        two.typeFullName shouldBe Some("i32")
+                    }
+                }
+            }
         }
 
         inside(print.macroExpansion) {
@@ -202,6 +227,20 @@ class RustAstGenPrettyPrintTests extends AnyFunSuite with RustAstGenTestFixture 
                       case callExpr: CallExpr =>
                         callExpr.methodFullName shouldBe Some("std::io::stdio::_print")
                         callExpr.typeFullName shouldBe Some("()")
+                        callExpr.textFrom(snippet) shouldBe "$crate::io::_print($crate::format_args_nl!(\"{:?}\",v))"
+                        inside(callExpr.argList.expr) {
+                          case (formatArgs: MacroExpr) :: Nil =>
+                            inside(formatArgs.macroCall.macroExpansion) {
+                              case Some(formatArgsExpr: FormatArgsExpr) =>
+                                inside(formatArgsExpr.formatArgsArg) {
+                                  case formatArgsArg :: Nil =>
+                                    val arg = formatArgsArg.expr
+                                    arg.textFrom(snippet) shouldBe "v"
+                                    arg.typeFullName shouldBe Some("alloc::vec::Vec<i32, alloc::alloc::Global>")
+                                    arg.methodFullName shouldBe None
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -252,6 +291,8 @@ class RustAstGenPrettyPrintTests extends AnyFunSuite with RustAstGenTestFixture 
         |              BANG
         |              TOKEN_TREE
         |                L_PAREN
+        |                STRING
+        |                COMMA
         |                IDENT
         |                R_PAREN
         |          SEMICOLON
