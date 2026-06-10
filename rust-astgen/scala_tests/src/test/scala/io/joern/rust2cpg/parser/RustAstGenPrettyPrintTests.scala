@@ -5,6 +5,7 @@ import io.joern.rust2cpg.parser.RustNodeSyntax.{
   BlockExpr,
   CallExpr,
   ExprStmt,
+  Fn,
   FormatArgsExpr,
   Literal,
   MacroExpr,
@@ -194,17 +195,17 @@ class RustAstGenPrettyPrintTests extends AnyFunSuite with RustAstGenTestFixture 
 
         inside(vec.macroExpansion) {
           case Some(call: CallExpr) =>
-            call.textFrom(snippet) shouldBe "$crate::boxed::box_assume_init_into_vec_unsafe($crate::intrinsics::write_box_via_move($crate::boxed::Box::new_uninit(),[1,2,3]))"
+            call.textFrom(snippet) shouldBe "alloc::boxed::box_assume_init_into_vec_unsafe(alloc::intrinsics::write_box_via_move(alloc::boxed::Box::new_uninit(),[1,2,3]))"
             call.methodFullName shouldBe Some("alloc::boxed::box_assume_init_into_vec_unsafe<T, N>")
             call.typeFullName shouldBe Some("alloc::vec::Vec<i32, alloc::alloc::Global>")
             inside(call.argList.expr) {
               case (writeBoxCall: CallExpr) :: Nil =>
-                writeBoxCall.textFrom(snippet) shouldBe "$crate::intrinsics::write_box_via_move($crate::boxed::Box::new_uninit(),[1,2,3])"
+                writeBoxCall.textFrom(snippet) shouldBe "alloc::intrinsics::write_box_via_move(alloc::boxed::Box::new_uninit(),[1,2,3])"
                 writeBoxCall.methodFullName shouldBe Some("alloc::intrinsics::write_box_via_move<T>")
                 writeBoxCall.typeFullName shouldBe Some("alloc::boxed::Box<core::mem::maybe_uninit::MaybeUninit<[i32; 3]>, alloc::alloc::Global>")
                 inside(writeBoxCall.argList.expr) {
                   case (uninitCall: CallExpr) :: (array: ArrayExpr) :: Nil =>
-                    uninitCall.textFrom(snippet) shouldBe "$crate::boxed::Box::new_uninit()"
+                    uninitCall.textFrom(snippet) shouldBe "alloc::boxed::Box::new_uninit()"
                     uninitCall.methodFullName shouldBe Some("alloc::boxed::Box<T, alloc::alloc::Global>::new_uninit")
                     uninitCall.typeFullName shouldBe Some("alloc::boxed::Box<core::mem::maybe_uninit::MaybeUninit<[i32; 3]>, alloc::alloc::Global>")
                     inside(array.expr) {
@@ -227,7 +228,7 @@ class RustAstGenPrettyPrintTests extends AnyFunSuite with RustAstGenTestFixture 
                       case callExpr: CallExpr =>
                         callExpr.methodFullName shouldBe Some("std::io::stdio::_print")
                         callExpr.typeFullName shouldBe Some("()")
-                        callExpr.textFrom(snippet) shouldBe "$crate::io::_print($crate::format_args_nl!(\"{:?}\",v))"
+                        callExpr.textFrom(snippet) shouldBe "std::io::_print(std::format_args_nl!(\"{:?}\",v))"
                         inside(callExpr.argList.expr) {
                           case (formatArgs: MacroExpr) :: Nil =>
                             inside(formatArgs.macroCall.macroExpansion) {
@@ -298,5 +299,31 @@ class RustAstGenPrettyPrintTests extends AnyFunSuite with RustAstGenTestFixture 
         |          SEMICOLON
         |        R_CURLY""".stripMargin
 
+  }
+
+  test("multi-statement expansion is rendered with whitespace") {
+    val snippet =
+      """
+        |macro_rules! two_lets {
+        |    ($a:expr) => {
+        |        let p = $a;
+        |        let q = p + 1;
+        |    };
+        |}
+        |
+        |fn main() {
+        |    two_lets!(4);
+        |}
+        |""".stripMargin
+    val srcFile = code(snippet)
+
+    val main = srcFile.item.collectFirst { case fn: Fn => fn }.get
+    inside(macroCalls(main)) {
+      case twoLets :: Nil =>
+        inside(twoLets.macroExpansion) {
+          case Some(macroStmts: MacroStmts) =>
+            macroStmts.textFrom(snippet) shouldBe "let p = 4;\nlet q = p+1;"
+        }
+    }
   }
 }

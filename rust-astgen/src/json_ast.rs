@@ -1,7 +1,7 @@
 //! The actual JSON shape we emit per Rust source file.
 
 use crate::names::{method_full_name_for_node, type_full_name_for_node};
-use ra_ap_hir::{HirFileId, Semantics};
+use ra_ap_hir::{Crate, HirFileId, Semantics, db::ExpandDatabase, prettify_macro_expansion};
 use ra_ap_ide::{LineIndex, RootDatabase, TextRange};
 use ra_ap_syntax::{AstNode, NodeOrToken, SyntaxNode, SyntaxToken, ast};
 use serde::Serialize;
@@ -92,26 +92,38 @@ impl RustAstGenJsonNode {
         hir_file_id: HirFileId,
         line_index: &LineIndex,
         semantics: &Semantics<RootDatabase>,
+        target_crate: Option<Crate>,
     ) -> Self {
         let node_kind = format!("{:?}", node.kind());
         let range = Self::make_range(node.text_range(), hir_file_id, line_index);
-        let text = hir_file_id.is_macro().then(|| node.text().to_string());
+        let text = macro_text(node, hir_file_id, semantics, target_crate);
         let method_full_name = method_full_name_for_node(node, semantics);
         let type_full_name = type_full_name_for_node(node, semantics);
 
         let macro_expansion = ast::MacroCall::cast(node.clone())
             .and_then(|macro_call| semantics.expand_macro_call(&macro_call))
             .map(|expanded| {
-                Self::from_node(&expanded.value, expanded.file_id, line_index, semantics).into()
+                Self::from_node(
+                    &expanded.value,
+                    expanded.file_id,
+                    line_index,
+                    semantics,
+                    target_crate,
+                )
+                .into()
             });
 
         let children = node
             .children_with_tokens()
             .filter(|child| !child.kind().is_trivia())
             .map(|node_or_token| match node_or_token {
-                NodeOrToken::Node(child_node) => {
-                    Self::from_node(&child_node, hir_file_id, line_index, semantics)
-                }
+                NodeOrToken::Node(child_node) => Self::from_node(
+                    &child_node,
+                    hir_file_id,
+                    line_index,
+                    semantics,
+                    target_crate,
+                ),
                 NodeOrToken::Token(child_token) => {
                     Self::from_token(&child_token, hir_file_id, line_index)
                 }
@@ -164,4 +176,24 @@ impl RustAstGenJsonNode {
             RustAstGenJsonNodeRange::from_text_range(text_range, line_index)
         }
     }
+}
+
+// Macro expansions are whitespace-stripped (via `node.text()`), but rust-analyzer
+// provides `prettify_macro_expansion` for this purpose.
+fn macro_text(
+    node: &SyntaxNode,
+    hir_file_id: HirFileId,
+    semantics: &Semantics<RootDatabase>,
+    target_crate: Option<Crate>,
+) -> Option<String> {
+    let macro_file = hir_file_id.macro_file()?;
+    let Some(target_crate) = target_crate else {
+        // Without a target crate, we can't invoke `prettify_macro_expansion`.
+        return Some(node.text().to_string());
+    };
+    let span_map = semantics.db.expansion_span_map(macro_file);
+    Some(
+        prettify_macro_expansion(semantics.db, node.clone(), span_map, target_crate.into())
+            .to_string(),
+    )
 }
