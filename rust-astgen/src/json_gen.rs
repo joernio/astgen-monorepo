@@ -2,7 +2,7 @@ use crate::json_ast::{RustAstGenJsonFile, RustAstGenJsonNode};
 use crate::{cargo, config};
 use anyhow::Context;
 use log::{error, info};
-use ra_ap_hir::{Semantics, attach_db};
+use ra_ap_hir::{Crate, Semantics, attach_db};
 use ra_ap_ide::{Analysis, AnalysisHost, RootDatabase};
 use ra_ap_syntax::{AstNode, SyntaxNode};
 use ra_ap_vfs::{FileId, VfsPath};
@@ -94,8 +94,14 @@ fn process_file(
     info!("building the JSON tree: {}", input_file_path.display());
 
     let hir_file_id = semantics.hir_file_for(syntax_tree);
-    let json_root =
-        RustAstGenJsonNode::from_node(syntax_tree, hir_file_id, &file_line_index, semantics);
+    let target_crate = crate_for_file(syntax_tree, semantics);
+    let json_root = RustAstGenJsonNode::from_node(
+        syntax_tree,
+        hir_file_id,
+        &file_line_index,
+        semantics,
+        target_crate,
+    );
     let contents = syntax_tree.text().to_string();
     let loc = file_line_index
         .line_col(syntax_tree.text_range().end())
@@ -124,14 +130,19 @@ fn process_file(
     Ok(())
 }
 
-fn crate_name_for_file(
-    syntax_tree: &SyntaxNode,
-    semantics: &Semantics<RootDatabase>,
-) -> Option<String> {
+fn crate_for_file(syntax_tree: &SyntaxNode, semantics: &Semantics<RootDatabase>) -> Option<Crate> {
     semantics
         .scope(syntax_tree)?
         .module()
         .krate(semantics.db)
+        .into()
+}
+
+fn crate_name_for_file(
+    syntax_tree: &SyntaxNode,
+    semantics: &Semantics<RootDatabase>,
+) -> Option<String> {
+    crate_for_file(syntax_tree, semantics)?
         .display_name(semantics.db)
         .map(|name| name.to_string())
 }
