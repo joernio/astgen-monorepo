@@ -124,6 +124,13 @@ impl<'a> NodeSelector<'a> {
         self.field("methodFullName")
     }
 
+    pub fn method_full_name_opt(self) -> Option<String> {
+        self.one_node()
+            .get("methodFullName")
+            .and_then(Value::as_str)
+            .map(str::to_owned)
+    }
+
     fn field(self, field: &str) -> String {
         self.one_node()
             .get(field)
@@ -193,6 +200,10 @@ pub fn name_ref<'a>(json: &'a Value, text: &'static str) -> NodeSelector<'a> {
 
 pub fn ident_pat<'a>(json: &'a Value, text: &'static str) -> NodeSelector<'a> {
     node(json, "IDENT_PAT", text)
+}
+
+pub fn struct_decl<'a>(json: &'a Value, text: &'static str) -> NodeSelector<'a> {
+    node(json, "STRUCT", text)
 }
 
 pub fn self_param<'a>(json: &'a Value, text: &'static str) -> NodeSelector<'a> {
