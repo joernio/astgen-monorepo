@@ -22,6 +22,7 @@ pub(crate) fn method_full_name_for_node(
         match node {
             ast::CallExpr(call_expr) => resolve_call_expr_full_name(&call_expr, semantics),
             ast::MethodCallExpr(method_call_expr) => resolve_method_call_expr_full_name(&method_call_expr, semantics),
+            ast::Struct(struct_) => resolve_struct_ctor_full_name(&struct_, semantics),
             _ => None,
         }
     }
@@ -54,6 +55,27 @@ fn resolve_call_expr_full_name<'db>(
         // TODO(xavierp): need more time to understand what these should be named as
         CallableKind::Closure(_) | CallableKind::FnPtr | CallableKind::FnImpl(_) => None,
     }
+}
+
+fn resolve_struct_ctor_full_name<'db>(
+    struct_: &ast::Struct,
+    semantics: &Semantics<'db, RootDatabase>,
+) -> Option<String> {
+    // We provide a `methodFullName` at struct definition to match its constructor name.
+    // Only tuple structs have a callable constructor. Record/Unit structs have RecordExpr
+    // and IdentExpr at call-site.
+    // So, when we see "MyTuple(...)" (call-site), the `methodFullName` for this call shall
+    // match the `methodFullName` for the struct ctor which we synthesize in Joern.
+    let Some(ast::FieldList::TupleFieldList(_)) = struct_.field_list() else {
+        return None;
+    };
+    let struct_def = semantics.to_def(struct_)?;
+    format_generic_module_def_full_name(
+        ModuleDef::from(struct_def),
+        GenericDef::from(struct_def),
+        struct_def.module(semantics.db),
+        semantics.db,
+    )
 }
 
 fn format_function_full_name(function: Function, db: &RootDatabase) -> Option<String> {
