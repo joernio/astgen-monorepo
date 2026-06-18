@@ -1,5 +1,5 @@
 use crate::config::RustAstGenConfig;
-use anyhow::Result;
+use anyhow::{Context, Result};
 use log::info;
 use ra_ap_ide::RootDatabase;
 use ra_ap_load_cargo::{LoadCargoConfig, ProcMacroServerChoice, load_workspace_at};
@@ -37,7 +37,13 @@ pub(crate) fn load_workspace(config: &RustAstGenConfig) -> Result<(RootDatabase,
         &cargo_config,
         &load_cargo_config,
         &|progress_msg| info!("progress: {}", progress_msg),
-    )?;
+    )
+    .with_context(|| {
+        format!(
+            "failed to load the Rust project at `{}`. Are `cargo` and `rustc` on your PATH?",
+            config.input_dir_full_path.display()
+        )
+    })?;
 
     Ok((root_db, vfs))
 }
