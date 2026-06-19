@@ -96,13 +96,13 @@ fn format_path_resolution_type_full_name<'db>(
             semantics,
         ),
         PathResolution::Def(ModuleDef::BuiltinType(builtin)) => {
-            type_formatter::format_type(builtin.ty(semantics.db), module, semantics.db)
+            type_formatter::format_type(&builtin.ty(semantics.db), module, semantics.db)
         }
         PathResolution::TypeParam(type_param) => {
-            type_formatter::format_type(type_param.ty(semantics.db), module, semantics.db)
+            type_formatter::format_type(&type_param.ty(semantics.db), module, semantics.db)
         }
         PathResolution::SelfType(impl_) => {
-            type_formatter::format_type(impl_.self_ty(semantics.db), module, semantics.db)
+            type_formatter::format_type(&impl_.self_ty(semantics.db), module, semantics.db)
         }
         _ => None,
     }
@@ -144,7 +144,7 @@ fn format_generic_arg(
     match arg {
         ast::GenericArg::TypeArg(type_arg) => {
             let typ = semantics.resolve_type(&type_arg.ty()?)?;
-            type_formatter::format_type(typ, module, semantics.db)
+            type_formatter::format_type(&typ, module, semantics.db)
         }
         ast::GenericArg::ConstArg(const_arg) => Some(const_arg.syntax().text().to_string()),
         _ => None,
@@ -152,10 +152,10 @@ fn format_generic_arg(
 }
 
 fn format_node_type_full_name<'db>(
-    typ: Type<'db>,
+    typ: Type,
     node: &SyntaxNode,
     semantics: &Semantics<'db, RootDatabase>,
 ) -> Option<String> {
     let module = semantics.scope(node)?.module();
-    type_formatter::format_type(typ, module, semantics.db)
+    type_formatter::format_type(&typ, module, semantics.db)
 }
