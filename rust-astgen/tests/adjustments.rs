@@ -70,6 +70,36 @@ fn main() {
 }
 
 #[test]
+fn type_full_name_is_the_unadjusted_source() -> TestResult<()> {
+    let json = no_sysroot_ast_json(
+        "rust2cpg",
+        &[(
+            "src/main.rs",
+            r#"
+fn take_ref(_s: &i32) {}
+fn main() {
+    let mut n = 1i32;
+    take_ref(&mut n);
+}
+"#,
+        )],
+        "src/main.rs",
+    )?;
+
+    let arg = ref_expr(&json, "&mut n");
+    assert_eq!(arg.type_full_name(), "&mut i32");
+    assert_eq!(
+        arg.adjustments(),
+        vec![
+            json!({"kind": "deref", "source": "&mut i32", "target": "i32"}),
+            json!({"kind": "borrow", "source": "i32", "target": "&i32"})
+        ]
+    );
+
+    Ok(())
+}
+
+#[test]
 fn never_to_any() -> TestResult<()> {
     let json = no_sysroot_ast_json(
         "rust2cpg",
