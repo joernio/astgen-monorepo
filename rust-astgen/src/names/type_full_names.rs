@@ -27,7 +27,7 @@ fn resolve_expr_type_full_name(
     expr: &ast::Expr,
     semantics: &Semantics<RootDatabase>,
 ) -> Option<String> {
-    let typ = semantics.type_of_expr(expr)?.adjusted();
+    let typ = semantics.type_of_expr(expr)?.original();
     format_node_type_full_name(typ, expr.syntax(), semantics)
 }
 

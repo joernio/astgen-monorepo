@@ -2,8 +2,9 @@ mod common;
 
 use crate::common::{
     TestResult, bin_expr, call_expr, ident_pat, literal, method_call_expr, name_ref,
-    no_sysroot_ast_json, self_param,
+    no_sysroot_ast_json, path_expr, self_param,
 };
+use serde_json::json;
 
 #[test]
 fn emits_names_for_free_function_call() -> TestResult<()> {
@@ -154,7 +155,7 @@ fn main() {
 }
 
 #[test]
-fn emits_autoref_type_for_method_receiver() -> TestResult<()> {
+fn emits_unadjusted_type_for_method_receiver() -> TestResult<()> {
     let json = no_sysroot_ast_json(
         "rust2cpg",
         &[(
@@ -180,10 +181,17 @@ fn main() {
         )],
         "src/main.rs",
     )?;
-
     assert_eq!(
         name_ref(&json, "receiver").type_full_name(),
-        "&rust2cpg::imported::Type"
+        "rust2cpg::imported::Type"
+    );
+    assert_eq!(
+        path_expr(&json, "receiver").adjustments(),
+        vec![json!({
+            "kind": "borrow",
+            "source": "rust2cpg::imported::Type",
+            "target": "&rust2cpg::imported::Type",
+        })],
     );
 
     Ok(())
