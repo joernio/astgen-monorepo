@@ -175,6 +175,14 @@ impl<'a> NodeSelector<'a> {
         }
         parts.join(" ")
     }
+
+    pub fn adjustments(self) -> Vec<Value> {
+        self.one_node()
+            .get("adjustments")
+            .and_then(Value::as_array)
+            .cloned()
+            .unwrap_or_default()
+    }
 }
 
 fn node<'a>(json: &'a Value, kind: &'static str, text: &'static str) -> NodeSelector<'a> {
@@ -226,4 +234,20 @@ fn node_start_line<'a>(json: &'a Value, node: &Value) -> Option<&'a str> {
         .as_u64()
         .and_then(|line| usize::try_from(line).ok())?;
     content.lines().nth(start_line)
+}
+
+pub fn path_expr<'a>(json: &'a Value, text: &'static str) -> NodeSelector<'a> {
+    node(json, "PATH_EXPR", text)
+}
+
+pub fn ref_expr<'a>(json: &'a Value, text: &'static str) -> NodeSelector<'a> {
+    node(json, "REF_EXPR", text)
+}
+
+pub fn return_expr<'a>(json: &'a Value, text: &'static str) -> NodeSelector<'a> {
+    node(json, "RETURN_EXPR", text)
+}
+
+pub fn closure_expr<'a>(json: &'a Value, text: &'static str) -> NodeSelector<'a> {
+    node(json, "CLOSURE_EXPR", text)
 }

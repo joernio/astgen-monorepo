@@ -1,5 +1,6 @@
 //! The actual JSON shape we emit per Rust source file.
 
+use crate::adjustments::{Adjustment, adjustments_for_node};
 use crate::names::{method_full_name_for_node, type_full_name_for_node};
 use ra_ap_hir::{Crate, HirFileId, Semantics, db::ExpandDatabase, prettify_macro_expansion};
 use ra_ap_ide::{LineIndex, RootDatabase, TextRange};
@@ -44,6 +45,8 @@ pub(crate) struct RustAstGenJsonNode {
     // Only applicable when node_kind is MacroCall.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub(crate) macro_expansion: Option<Box<RustAstGenJsonNode>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(crate) adjustments: Option<Vec<Adjustment>>,
     pub(crate) children: Vec<RustAstGenJsonNode>,
 }
 
@@ -99,6 +102,7 @@ impl RustAstGenJsonNode {
         let text = macro_text(node, hir_file_id, semantics, target_crate);
         let method_full_name = method_full_name_for_node(node, semantics);
         let type_full_name = type_full_name_for_node(node, semantics);
+        let adjustments = adjustments_for_node(node, semantics);
 
         let macro_expansion = ast::MacroCall::cast(node.clone())
             .and_then(|macro_call| semantics.expand_macro_call(&macro_call))
@@ -137,6 +141,7 @@ impl RustAstGenJsonNode {
             macro_expansion,
             method_full_name,
             type_full_name,
+            adjustments,
             children,
         }
     }
@@ -159,6 +164,7 @@ impl RustAstGenJsonNode {
             macro_expansion: None,
             method_full_name: None,
             type_full_name: None,
+            adjustments: None,
         }
     }
 

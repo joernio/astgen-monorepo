@@ -78,7 +78,7 @@ fn resolve_struct_ctor_full_name<'db>(
     )
 }
 
-fn format_function_full_name(function: Function, db: &RootDatabase) -> Option<String> {
+pub(crate) fn format_function_full_name(function: Function, db: &RootDatabase) -> Option<String> {
     let Some(assoc_item) = function.as_assoc_item(db) else {
         return format_generic_module_def_full_name(
             ModuleDef::from(function),
