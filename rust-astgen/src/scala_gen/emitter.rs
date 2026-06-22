@@ -29,6 +29,7 @@ pub fn generate_scala(model: &Model, config: &ScalaAstGenConfig) -> Result<Strin
     emit_factory_method(&mut out, config)?;
     emit_kind_map(&mut out, config, &non_trait_nodes, &tokens)?;
     emit_base_node_and_token_traits(&mut out, config)?;
+    emit_adjustment_types(&mut out)?;
     emit_trait_kind_sets(&mut out, config, &trait_nodes, &trait_membership)?;
     emit_trait_declarations(&mut out, config, &trait_nodes)?;
     emit_node_case_classes(
@@ -174,8 +175,8 @@ fn emit_base_node_and_token_traits(
     out: &mut String,
     config: &ScalaAstGenConfig,
 ) -> Result<(), Error> {
-    // TODO: methodFullName, typeFullName, macroExpansion and text should not come built-in but rather
-    //  from ScalaAstGenConfig, as they don't make sense in any other context.
+    // TODO: methodFullName, typeFullName, macroExpansion, text and adjustments should not come
+    //  built-in but rather from ScalaAstGenConfig, as they don't make sense in any other context.
     write!(
         out,
         concat!(
@@ -195,12 +196,45 @@ fn emit_base_node_and_token_traits(
             "    def methodFullName: Option[String] = json.obj.get(\"methodFullName\").flatMap(_.strOpt)\n",
             "    def typeFullName: Option[String] = json.obj.get(\"typeFullName\").flatMap(_.strOpt)\n",
             "    def macroExpansion: Option[{node_base}] = json.obj.get(\"macroExpansion\").map(create{node_base}(_))\n",
+            "    def adjustments: Option[Seq[Adjustment]] = json.obj.get(\"adjustments\").map(_.arr.toSeq.map(Adjustment(_)))\n",
             "  }}\n",
             "\n",
             "  sealed trait {token_base} extends {node_base}\n"
         ),
         node_base = config.base_node_trait,
         token_base = config.base_token_trait
+    )
+}
+
+fn emit_adjustment_types(out: &mut String) -> Result<(), Error> {
+    write!(
+        out,
+        concat!(
+            "\n",
+            "  sealed trait Adjustment {{\n",
+            "    def json: Value\n",
+            "    def source: String = json(\"source\").str\n",
+            "    def target: String = json(\"target\").str\n",
+            "  }}\n",
+            "\n",
+            "  object Adjustment {{\n",
+            "    def apply(json: Value): Adjustment = json(\"kind\").str match {{\n",
+            "      case \"deref\" => Deref(json)\n",
+            "      case \"overloadedDeref\" => OverloadedDeref(json)\n",
+            "      case \"borrow\" => Borrow(json)\n",
+            "      case \"cast\" => Cast(json)\n",
+            "      case other => throw new IllegalArgumentException(s\"unknown adjustment kind: $other\")\n",
+            "    }}\n",
+            "  }}\n",
+            "\n",
+            "  final case class Deref(json: Value) extends Adjustment\n",
+            "  final case class OverloadedDeref(json: Value) extends Adjustment {{\n",
+            "    def mutable: Boolean = json.obj.get(\"mutable\").exists(_.bool)\n",
+            "    def methodFullName: Option[String] = json.obj.get(\"methodFullName\").flatMap(_.strOpt)\n",
+            "  }}\n",
+            "  final case class Borrow(json: Value) extends Adjustment\n",
+            "  final case class Cast(json: Value) extends Adjustment\n"
+        )
     )
 }
 
@@ -581,9 +615,34 @@ object ExampleAst {
     def methodFullName: Option[String] = json.obj.get("methodFullName").flatMap(_.strOpt)
     def typeFullName: Option[String] = json.obj.get("typeFullName").flatMap(_.strOpt)
     def macroExpansion: Option[AstNode] = json.obj.get("macroExpansion").map(createAstNode(_))
+    def adjustments: Option[Seq[Adjustment]] = json.obj.get("adjustments").map(_.arr.toSeq.map(Adjustment(_)))
   }
 
   sealed trait AstToken extends AstNode
+
+  sealed trait Adjustment {
+    def json: Value
+    def source: String = json("source").str
+    def target: String = json("target").str
+  }
+
+  object Adjustment {
+    def apply(json: Value): Adjustment = json("kind").str match {
+      case "deref" => Deref(json)
+      case "overloadedDeref" => OverloadedDeref(json)
+      case "borrow" => Borrow(json)
+      case "cast" => Cast(json)
+      case other => throw new IllegalArgumentException(s"unknown adjustment kind: $other")
+    }
+  }
+
+  final case class Deref(json: Value) extends Adjustment
+  final case class OverloadedDeref(json: Value) extends Adjustment {
+    def mutable: Boolean = json.obj.get("mutable").exists(_.bool)
+    def methodFullName: Option[String] = json.obj.get("methodFullName").flatMap(_.strOpt)
+  }
+  final case class Borrow(json: Value) extends Adjustment
+  final case class Cast(json: Value) extends Adjustment
 
   private val _exprNodeKinds: Set[String] = Set(
     "LITERAL_NODE",
@@ -668,9 +727,34 @@ object ExampleAst {
     def methodFullName: Option[String] = json.obj.get("methodFullName").flatMap(_.strOpt)
     def typeFullName: Option[String] = json.obj.get("typeFullName").flatMap(_.strOpt)
     def macroExpansion: Option[AstNode] = json.obj.get("macroExpansion").map(createAstNode(_))
+    def adjustments: Option[Seq[Adjustment]] = json.obj.get("adjustments").map(_.arr.toSeq.map(Adjustment(_)))
   }
 
   sealed trait AstToken extends AstNode
+
+  sealed trait Adjustment {
+    def json: Value
+    def source: String = json("source").str
+    def target: String = json("target").str
+  }
+
+  object Adjustment {
+    def apply(json: Value): Adjustment = json("kind").str match {
+      case "deref" => Deref(json)
+      case "overloadedDeref" => OverloadedDeref(json)
+      case "borrow" => Borrow(json)
+      case "cast" => Cast(json)
+      case other => throw new IllegalArgumentException(s"unknown adjustment kind: $other")
+    }
+  }
+
+  final case class Deref(json: Value) extends Adjustment
+  final case class OverloadedDeref(json: Value) extends Adjustment {
+    def mutable: Boolean = json.obj.get("mutable").exists(_.bool)
+    def methodFullName: Option[String] = json.obj.get("methodFullName").flatMap(_.strOpt)
+  }
+  final case class Borrow(json: Value) extends Adjustment
+  final case class Cast(json: Value) extends Adjustment
 
   private val _exprNodeKinds: Set[String] = Set(
     "CALL_NODE",
