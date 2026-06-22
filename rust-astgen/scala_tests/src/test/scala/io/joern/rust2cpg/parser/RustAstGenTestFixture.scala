@@ -79,6 +79,10 @@ trait RustAstGenTestFixture {
     head ++ childNodes(node).flatMap(macroCalls)
   }
 
+  def allNodes(node: RustNode): Seq[RustNode] = {
+    node +: childNodes(node).flatMap(allNodes)
+  }
+
   private def prettyPrintNode(node: RustNode, indent: Int): String = {
     val renderedChildren = childNodes(node).map(child => prettyPrintNode(child, indent + 1))
     (Seq(("  " * indent) + node.json("nodeKind").str) ++ renderedChildren).mkString(System.lineSeparator())
