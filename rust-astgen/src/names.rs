@@ -1,6 +1,6 @@
-mod method_full_names;
+pub(crate) mod method_full_names;
 mod rust_name_formatter;
-mod type_formatter;
+pub(crate) mod type_formatter;
 mod type_full_names;
 
 pub(crate) use method_full_names::method_full_name_for_node;
