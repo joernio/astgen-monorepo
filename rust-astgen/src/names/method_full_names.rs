@@ -23,6 +23,7 @@ pub(crate) fn method_full_name_for_node(
             ast::CallExpr(call_expr) => resolve_call_expr_full_name(&call_expr, semantics),
             ast::MethodCallExpr(method_call_expr) => resolve_method_call_expr_full_name(&method_call_expr, semantics),
             ast::Struct(struct_) => resolve_struct_ctor_full_name(&struct_, semantics),
+            ast::Fn(fn_) => resolve_fn_def_full_name(&fn_, semantics),
             _ => None,
         }
     }
@@ -76,6 +77,14 @@ fn resolve_struct_ctor_full_name<'db>(
         struct_def.module(semantics.db),
         semantics.db,
     )
+}
+
+fn resolve_fn_def_full_name<'db>(
+    fn_: &ast::Fn,
+    semantics: &Semantics<'db, RootDatabase>,
+) -> Option<String> {
+    let function = semantics.to_def(fn_)?;
+    format_function_full_name(function, semantics.db)
 }
 
 pub(crate) fn format_function_full_name(function: Function, db: &RootDatabase) -> Option<String> {

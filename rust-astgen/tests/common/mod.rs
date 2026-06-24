@@ -214,6 +214,10 @@ pub fn struct_decl<'a>(json: &'a Value, text: &'static str) -> NodeSelector<'a> 
     node(json, "STRUCT", text)
 }
 
+pub fn fn_decl<'a>(json: &'a Value, text: &'static str) -> NodeSelector<'a> {
+    node(json, "FN", text)
+}
+
 pub fn self_param<'a>(json: &'a Value, text: &'static str) -> NodeSelector<'a> {
     node(json, "SELF_PARAM", text)
 }
