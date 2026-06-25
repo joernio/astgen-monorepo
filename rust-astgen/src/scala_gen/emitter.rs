@@ -175,8 +175,9 @@ fn emit_base_node_and_token_traits(
     out: &mut String,
     config: &ScalaAstGenConfig,
 ) -> Result<(), Error> {
-    // TODO: methodFullName, typeFullName, macroExpansion, text and adjustments should not come
-    //  built-in but rather from ScalaAstGenConfig, as they don't make sense in any other context.
+    // TODO: methodFullName, typeFullName, macroExpansion, text, adjustments and hasSelfReceiver
+    //  should not come built-in but rather from ScalaAstGenConfig, as they don't make sense
+    //  in any other context.
     write!(
         out,
         concat!(
@@ -197,6 +198,7 @@ fn emit_base_node_and_token_traits(
             "    def typeFullName: Option[String] = json.obj.get(\"typeFullName\").flatMap(_.strOpt)\n",
             "    def macroExpansion: Option[{node_base}] = json.obj.get(\"macroExpansion\").map(create{node_base}(_))\n",
             "    def adjustments: Option[Seq[Adjustment]] = json.obj.get(\"adjustments\").map(_.arr.toSeq.map(Adjustment(_)))\n",
+            "    def hasSelfReceiver: Option[Boolean] = json.obj.get(\"hasSelfReceiver\").map(_.bool)\n",
             "  }}\n",
             "\n",
             "  sealed trait {token_base} extends {node_base}\n"
@@ -616,6 +618,7 @@ object ExampleAst {
     def typeFullName: Option[String] = json.obj.get("typeFullName").flatMap(_.strOpt)
     def macroExpansion: Option[AstNode] = json.obj.get("macroExpansion").map(createAstNode(_))
     def adjustments: Option[Seq[Adjustment]] = json.obj.get("adjustments").map(_.arr.toSeq.map(Adjustment(_)))
+    def hasSelfReceiver: Option[Boolean] = json.obj.get("hasSelfReceiver").map(_.bool)
   }
 
   sealed trait AstToken extends AstNode
@@ -728,6 +731,7 @@ object ExampleAst {
     def typeFullName: Option[String] = json.obj.get("typeFullName").flatMap(_.strOpt)
     def macroExpansion: Option[AstNode] = json.obj.get("macroExpansion").map(createAstNode(_))
     def adjustments: Option[Seq[Adjustment]] = json.obj.get("adjustments").map(_.arr.toSeq.map(Adjustment(_)))
+    def hasSelfReceiver: Option[Boolean] = json.obj.get("hasSelfReceiver").map(_.bool)
   }
 
   sealed trait AstToken extends AstNode

@@ -183,6 +183,12 @@ impl<'a> NodeSelector<'a> {
             .cloned()
             .unwrap_or_default()
     }
+
+    pub fn has_self_receiver(self) -> Option<bool> {
+        self.one_node()
+            .get("hasSelfReceiver")
+            .and_then(Value::as_bool)
+    }
 }
 
 fn node<'a>(json: &'a Value, kind: &'static str, text: &'static str) -> NodeSelector<'a> {

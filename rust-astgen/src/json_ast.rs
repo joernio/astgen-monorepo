@@ -2,6 +2,7 @@
 
 use crate::adjustments::{Adjustment, adjustments_for_node};
 use crate::names::{method_full_name_for_node, type_full_name_for_node};
+use crate::receivers::has_self_receiver_for_node;
 use ra_ap_hir::{Crate, HirFileId, Semantics, db::ExpandDatabase, prettify_macro_expansion};
 use ra_ap_ide::{LineIndex, RootDatabase, TextRange};
 use ra_ap_syntax::{AstNode, NodeOrToken, SyntaxNode, SyntaxToken, ast};
@@ -47,6 +48,9 @@ pub(crate) struct RustAstGenJsonNode {
     pub(crate) macro_expansion: Option<Box<RustAstGenJsonNode>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub(crate) adjustments: Option<Vec<Adjustment>>,
+    // Only applicable when node_kind is CallExpr.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(crate) has_self_receiver: Option<bool>,
     pub(crate) children: Vec<RustAstGenJsonNode>,
 }
 
@@ -103,6 +107,7 @@ impl RustAstGenJsonNode {
         let method_full_name = method_full_name_for_node(node, semantics);
         let type_full_name = type_full_name_for_node(node, semantics);
         let adjustments = adjustments_for_node(node, semantics);
+        let has_self_receiver = has_self_receiver_for_node(node, semantics);
 
         let macro_expansion = ast::MacroCall::cast(node.clone())
             .and_then(|macro_call| semantics.expand_macro_call(&macro_call))
@@ -142,6 +147,7 @@ impl RustAstGenJsonNode {
             method_full_name,
             type_full_name,
             adjustments,
+            has_self_receiver,
             children,
         }
     }
@@ -165,6 +171,7 @@ impl RustAstGenJsonNode {
             method_full_name: None,
             type_full_name: None,
             adjustments: None,
+            has_self_receiver: None,
         }
     }
 
