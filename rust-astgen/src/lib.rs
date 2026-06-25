@@ -5,4 +5,5 @@ pub mod grammar;
 mod json_ast;
 pub mod json_gen;
 mod names;
+mod receivers;
 pub mod scala_gen;
