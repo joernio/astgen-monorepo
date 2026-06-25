@@ -74,7 +74,7 @@ LANGUAGE_DEFAULTS: dict[str, dict[str, Any]] = {
         "runs_on": "macos-latest",
         "setup_action": {
             "uses": "SwiftyLab/setup-swift@latest",
-            "with": {"swift-version": "6.1"},
+            "with": {"swift-version": "6.3"},
         },
     },
     "dotnet": {

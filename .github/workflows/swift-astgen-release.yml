@@ -51,10 +51,19 @@ jobs:
         uses: actions/checkout@v6
         with:
           fetch-depth: '0'
+
+      - name: Install Swift (macos-latest)
+        if: matrix.os == 'macos-latest'
+        uses: SwiftyLab/setup-swift@latest
+        with:
+          swift-version: "6.3"
+
       - name: Install Swift
+        if: matrix.os != 'macos-latest'
         uses: SwiftyLab/setup-swift@latest
         with:
           swift-version: "6.1"
+
       - name: Run Linux Build
         if: matrix.os == 'ubuntu-latest'
         run: |
@@ -66,17 +75,20 @@ jobs:
           mv ./.build/release/SwiftAstGen SwiftAstGen-linux-arm64
           gzexe SwiftAstGen-linux-arm64
           ./SwiftAstGen-linux -s
+
       - name: Run Mac Build
         if: matrix.os == 'macos-latest'
         run: |
           xcrun --toolchain ${{ env.TOOLCHAINS }} swift build -c release --arch arm64 --arch x86_64
           mv ./.build/apple/Products/Release/SwiftAstGen SwiftAstGen-mac
           gzexe SwiftAstGen-mac
+
       - name: Run Windows Build
         if: matrix.os == 'windows-latest'
         run: |
           swift build -c release --arch x86_64 --static-swift-stdlib
           mv .\.build\release\SwiftAstGen.exe SwiftAstGen-win.exe
+
       - name: Run UPX for Windows Build
         if: matrix.os == 'windows-latest'
         uses: crazy-max/ghaction-upx@v4
@@ -85,6 +97,7 @@ jobs:
           files: |
             swift-astgen/SwiftAstGen-win.exe
           args: -fq
+
       - name: Upload Linux binary
         if: matrix.os == 'ubuntu-latest'
         uses: actions/upload-artifact@v7
@@ -92,6 +105,7 @@ jobs:
           name: asset-SwiftAstGen-linux
           path: swift-astgen/SwiftAstGen-linux
           if-no-files-found: error
+
       - name: Upload Linux ARM64 binary
         if: matrix.os == 'ubuntu-latest'
         uses: actions/upload-artifact@v7
@@ -99,6 +113,7 @@ jobs:
           name: asset-SwiftAstGen-linux-arm64
           path: swift-astgen/SwiftAstGen-linux-arm64
           if-no-files-found: error
+
       - name: Upload Mac binary
         if: matrix.os == 'macos-latest'
         uses: actions/upload-artifact@v7
@@ -106,6 +121,7 @@ jobs:
           name: asset-SwiftAstGen-mac
           path: swift-astgen/SwiftAstGen-mac
           if-no-files-found: error
+
       - name: Upload Windows binary
         if: matrix.os == 'windows-latest'
         uses: actions/upload-artifact@v7
@@ -113,6 +129,7 @@ jobs:
           name: asset-SwiftAstGen-win.exe
           path: swift-astgen/SwiftAstGen-win.exe
           if-no-files-found: error
+
       - name: Upload Swift Scala bindings
         if: matrix.os == 'ubuntu-latest'
         uses: actions/upload-artifact@v7

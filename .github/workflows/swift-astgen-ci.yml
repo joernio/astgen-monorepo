@@ -19,12 +19,26 @@ jobs:
         uses: actions/checkout@v6
         with:
           fetch-depth: '0'
+
       - name: Install sbt
         uses: sbt/setup-sbt@v1
+
+      - name: Install Swift (macos-latest)
+        if: matrix.os == 'macos-latest'
+        uses: SwiftyLab/setup-swift@latest
+        with:
+          swift-version: "6.3"
+
       - name: Install Swift
+        if: matrix.os != 'macos-latest'
         uses: SwiftyLab/setup-swift@latest
         with:
           swift-version: "6.1"
+
+      - name: Install swift-format (macos-latest)
+        if: matrix.os == 'macos-latest'
+        run: command -v swift-format &>/dev/null || brew install swift-format
+
       - name: Run swift-format lint
         if: matrix.os == 'macos-latest'
         run: |
@@ -32,6 +46,7 @@ jobs:
             Sources/SwiftAstGen \
             Sources/SwiftAstGenLib \
             Tests/SwiftAstGenTests
+
       - name: Run Linux Build
         if: matrix.os == 'ubuntu-latest'
         run: |
@@ -43,6 +58,7 @@ jobs:
           mv ./.build/debug/SwiftAstGen SwiftAstGen-linux-arm64
           gzexe SwiftAstGen-linux-arm64
           ./SwiftAstGen-linux -s
+
       - name: Run Mac Build
         if: matrix.os == 'macos-latest'
         run: |
@@ -50,12 +66,14 @@ jobs:
           mv ./.build/debug/SwiftAstGen SwiftAstGen-mac
           gzexe SwiftAstGen-mac
           ./SwiftAstGen-mac -s
+
       - name: Run Windows Build
         if: matrix.os == 'windows-latest'
         run: |
           swift build
           mv .\.build\debug\SwiftAstGen.exe SwiftAstGen-win.exe
           .\SwiftAstGen-win.exe -s
+
       - name: Run UPX for Windows Build
         if: matrix.os == 'windows-latest'
         uses: crazy-max/ghaction-upx@v4
@@ -64,8 +82,10 @@ jobs:
           files: |
             swift-astgen/SwiftAstGen-win.exe
           args: -fq
+
       - name: Run Swift Tests
         run: swift test
+
       - name: Set up JDK
         if: matrix.os != 'windows-latest'
         uses: actions/setup-java@v5
@@ -76,6 +96,7 @@ jobs:
           cache-dependency-path: |
             swift-astgen/Tests/ScalaSwiftNodeSyntaxTests/build.sbt
             swift-astgen/Tests/ScalaSwiftNodeSyntaxTests/project/build.properties
+
       - name: Run Scala Tests
         run: sbt test
         working-directory: swift-astgen/Tests/ScalaSwiftNodeSyntaxTests

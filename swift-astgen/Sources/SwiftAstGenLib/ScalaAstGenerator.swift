@@ -91,6 +91,7 @@ public final class ScalaAstGenerator {
 
             \t\tprivate lazy val _rangeObj = json.obj.get("range").map(_.obj)
             \t\tprivate def _rangeField(name: String): Option[Int] = _rangeObj.flatMap(_.get(name)).map(_.num.toInt)
+
             \t\tdef startOffset: Option[Int] = _rangeField("startOffset")
             \t\tdef endOffset: Option[Int] = _rangeField("endOffset")
             \t\tdef startLine: Option[Int] = _rangeField("startLine")
@@ -170,13 +171,13 @@ public final class ScalaAstGenerator {
             return "\"\(syntaxType)\" -> (json => \(syntaxType)(json))"
         }
         let withTokenSyntax = entries + ["\"TokenSyntax\" -> (json => TokenSyntax(json))"]
-        return withTokenSyntax.joined(separator: ",\n\t\t\t")
+        return withTokenSyntax.joined(separator: ",\n\t\t")
     }
 
     private func renderTokenKindMap() -> String {
         Token.allCases
             .map { "\"\($0)\" -> (json => \($0)(json))" }
-            .joined(separator: ",\n\t\t\t")
+            .joined(separator: ",\n\t\t")
     }
 
     // MARK: - Per-node rendering
@@ -190,7 +191,7 @@ public final class ScalaAstGenerator {
         return """
             \(docString)
             \tcase class \(syntaxType)(json: Value) \(inheritsString) {
-            \t\t\(childrenString)
+            \t\(childrenString)
             \t}
             """
     }
