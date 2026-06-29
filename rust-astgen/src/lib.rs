@@ -1,6 +1,7 @@
 mod adjustments;
 mod cargo;
 pub mod config;
+pub mod function_fullnames_gen;
 pub mod grammar;
 mod json_ast;
 pub mod json_gen;

@@ -9,7 +9,7 @@ use super::{
 };
 use ra_ap_hir::{
     AsAssocItem, AssocItemContainer, CallableKind, EnumVariant, Function, GenericDef, Module,
-    ModuleDef, Name, PathResolution, Semantics, TraitRef,
+    ModuleDef, Name, PathResolution, Semantics, Struct, TraitRef,
 };
 use ra_ap_ide::RootDatabase;
 use ra_ap_syntax::{AstNode, SyntaxNode, ast, match_ast};
@@ -61,12 +61,9 @@ fn resolve_call_expr_full_name<'db>(
     }
     match semantics.resolve_expr_as_callable(&callee_expr)?.kind() {
         CallableKind::Function(function) => format_function_full_name(function, semantics.db),
-        CallableKind::TupleStruct(tuple_struct) => format_generic_module_def_full_name(
-            ModuleDef::from(tuple_struct),
-            GenericDef::from(tuple_struct),
-            tuple_struct.module(semantics.db),
-            semantics.db,
-        ),
+        CallableKind::TupleStruct(tuple_struct) => {
+            format_tuple_struct_ctor_full_name(tuple_struct, semantics.db)
+        }
         CallableKind::TupleEnumVariant(enum_variant) => {
             format_enum_variant_full_name(enum_variant, semantics.db)
         }
@@ -88,12 +85,7 @@ fn resolve_struct_ctor_full_name<'db>(
         return None;
     };
     let struct_def = semantics.to_def(struct_)?;
-    format_generic_module_def_full_name(
-        ModuleDef::from(struct_def),
-        GenericDef::from(struct_def),
-        struct_def.module(semantics.db),
-        semantics.db,
-    )
+    format_tuple_struct_ctor_full_name(struct_def, semantics.db)
 }
 
 fn resolve_fn_def_full_name<'db>(
@@ -202,7 +194,22 @@ fn format_generic_args_for_def(
     args
 }
 
-fn format_enum_variant_full_name(enum_variant: EnumVariant, db: &RootDatabase) -> Option<String> {
+pub(crate) fn format_tuple_struct_ctor_full_name(
+    struct_: Struct,
+    db: &RootDatabase,
+) -> Option<String> {
+    format_generic_module_def_full_name(
+        ModuleDef::from(struct_),
+        GenericDef::from(struct_),
+        struct_.module(db),
+        db,
+    )
+}
+
+pub(crate) fn format_enum_variant_full_name(
+    enum_variant: EnumVariant,
+    db: &RootDatabase,
+) -> Option<String> {
     let enum_ = enum_variant.parent_enum(db);
     let enum_name = format_generic_module_def_full_name(
         ModuleDef::from(enum_),
