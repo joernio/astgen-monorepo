@@ -4,8 +4,12 @@
 //! We need to traverse the type and format each case ourselves: the provided `display` and
 //! `display_source_code` do not emit fully qualified paths.
 
-use super::rust_name_formatter::{format_module_def_full_name, format_name_with_generic_args};
-use ra_ap_hir::{Adt, Callable, DisplayTarget, HirDisplay, Module, ModuleDef, Mutability, Type};
+use super::rust_name_formatter::{
+    format_item_name, format_module_def_full_name, format_name_with_generic_args,
+};
+use ra_ap_hir::{
+    Adt, AssocItem, Callable, DisplayTarget, HirDisplay, Module, ModuleDef, Mutability, Trait, Type,
+};
 use ra_ap_ide::RootDatabase;
 
 pub(crate) fn format_type(typ: &Type, module: Module, db: &RootDatabase) -> Option<String> {
@@ -54,6 +58,9 @@ impl<'db> TypeFormatter<'db> {
             && let Some(callable) = typ.as_callable(self.db)
         {
             return self.format_fn(callable);
+        }
+        if let Some(traits) = typ.as_impl_traits(self.db) {
+            return self.format_impl_trait(typ, traits);
         }
         Some(self.format_fallback(typ))
     }
@@ -116,6 +123,33 @@ impl<'db> TypeFormatter<'db> {
             .collect::<Option<Vec<_>>>()?;
         let ret = self.format(&callable.return_type())?;
         Some(format!("fn({}) -> {ret}", params.join(", ")))
+    }
+
+    fn format_impl_trait(&self, typ: &Type, traits: impl Iterator<Item = Trait>) -> Option<String> {
+        let bounds = traits
+            .map(|trait_| self.format_trait_bound(typ, trait_))
+            .collect::<Option<Vec<_>>>()?;
+        Some(format!("impl {}", bounds.join(" + ")))
+    }
+
+    fn format_trait_bound(&self, typ: &Type, trait_: Trait) -> Option<String> {
+        let base = format_module_def_full_name(ModuleDef::from(trait_), self.db)?;
+        let bindings = trait_
+            .items(self.db)
+            .into_iter()
+            .filter_map(|item| match item {
+                AssocItem::TypeAlias(alias) => {
+                    let value = typ.normalize_trait_assoc_type(self.db, &[], alias)?;
+                    Some((alias, value))
+                }
+                _ => None,
+            })
+            .map(|(alias, value)| {
+                let name = format_item_name(alias.name(self.db), self.module, self.db);
+                Some(format!("{name} = {}", self.format(&value)?))
+            })
+            .collect::<Option<Vec<_>>>()?;
+        Some(format_name_with_generic_args(base, bindings))
     }
 
     fn format_fallback(&self, typ: &Type) -> String {

@@ -61,6 +61,10 @@ edition = "2021"
     }
     let output = command.output()?;
 
+    if !output.stderr.is_empty() {
+        eprint!("{}", String::from_utf8_lossy(&output.stderr));
+    }
+
     assert!(
         output.status.success(),
         "rust_ast_gen failed\nstdout:\n{}\nstderr:\n{}",
