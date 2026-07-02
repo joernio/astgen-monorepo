@@ -1,6 +1,6 @@
 mod common;
 
-use crate::common::{TestResult, call_expr, no_sysroot_ast_json};
+use crate::common::{TestResult, call_expr, name_ref, no_sysroot_ast_json};
 
 #[test]
 fn emits_names_for_impl_trait_with_associated_type() -> TestResult<()> {
@@ -180,6 +180,59 @@ fn main() {
         call_expr(&json, "make()").type_full_name(),
         "impl rust2cpg::Trait<Assoc = i32>"
     );
+
+    Ok(())
+}
+
+#[test]
+fn emits_type_full_name_for_impl_trait_ref() -> TestResult<()> {
+    let json = no_sysroot_ast_json(
+        "rust2cpg",
+        &[(
+            "src/main.rs",
+            r#"
+trait Foo {}
+
+struct Bar;
+
+impl Foo for Bar {}
+
+fn main() {}
+"#,
+        )],
+        "src/main.rs",
+    )?;
+
+    assert_eq!(name_ref(&json, "Foo").type_full_name(), "rust2cpg::Foo");
+    assert_eq!(name_ref(&json, "Bar").type_full_name(), "rust2cpg::Bar");
+
+    Ok(())
+}
+
+#[test]
+fn emits_type_full_name_for_generic_impl_trait_ref() -> TestResult<()> {
+    let json = no_sysroot_ast_json(
+        "rust2cpg",
+        &[(
+            "src/main.rs",
+            r#"
+trait Extract<T> {}
+
+struct Bar;
+
+impl Extract<i32> for Bar {}
+
+fn main() {}
+"#,
+        )],
+        "src/main.rs",
+    )?;
+
+    assert_eq!(
+        name_ref(&json, "Extract").type_full_name(),
+        "rust2cpg::Extract<i32>"
+    );
+    assert_eq!(name_ref(&json, "Bar").type_full_name(), "rust2cpg::Bar");
 
     Ok(())
 }

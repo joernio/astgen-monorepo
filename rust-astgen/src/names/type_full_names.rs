@@ -95,6 +95,13 @@ fn format_path_resolution_type_full_name<'db>(
             semantics.db,
             semantics,
         ),
+        PathResolution::Def(ModuleDef::Trait(trait_)) => format_module_def_type_full_name(
+            ModuleDef::from(trait_),
+            path,
+            module,
+            semantics.db,
+            semantics,
+        ),
         PathResolution::Def(ModuleDef::BuiltinType(builtin)) => {
             type_formatter::format_type(&builtin.ty(semantics.db), module, semantics.db)
         }
