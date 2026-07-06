@@ -33,6 +33,10 @@ struct RustAstGenCliArgs {
     #[arg(help = "Skip sysroot loading. Faster, but will not resolve std symbols")]
     #[arg(long = "no-sysroot", default_value_t = false)]
     no_sysroot: bool,
+
+    #[arg(help = "Resolve #[cfg(...)] attributes, dropping inactive items.")]
+    #[arg(long = "resolve-cfg", default_value_t = false)]
+    resolve_cfg: bool,
 }
 
 impl RustAstGenCliArgs {
@@ -87,6 +91,7 @@ impl TryFrom<RustAstGenCliArgs> for RustAstGenConfig {
             output_dir_full_path,
             available_threads,
             !args.no_sysroot,
+            args.resolve_cfg,
         )
     }
 }

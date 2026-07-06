@@ -95,12 +95,18 @@ fn process_file(
 
     let hir_file_id = semantics.hir_file_for(syntax_tree);
     let target_crate = crate_for_file(syntax_tree, semantics);
+    let cfg_options = if config.resolve_cfg {
+        target_crate.map(|target_crate| target_crate.cfg(semantics.db))
+    } else {
+        None
+    };
     let json_root = RustAstGenJsonNode::from_node(
         syntax_tree,
         hir_file_id,
         &file_line_index,
         semantics,
         target_crate,
+        cfg_options,
     );
     let contents = syntax_tree.text().to_string();
     let loc = file_line_index
