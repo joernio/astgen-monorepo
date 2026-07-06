@@ -9,6 +9,8 @@ pub struct RustAstGenConfig {
     // It's faster but will not resolve std symbols.
     // Mainly useful for testing when std symbols are not needed.
     pub(crate) load_sysroot: bool,
+    // When true, evaluate `#[cfg(...)]` and drop items whose cfg is inactive.
+    pub(crate) resolve_cfg: bool,
 }
 
 impl RustAstGenConfig {
@@ -17,6 +19,7 @@ impl RustAstGenConfig {
         output_dir_full_path: PathBuf,
         num_threads: usize,
         load_sysroot: bool,
+        resolve_cfg: bool,
     ) -> Result<Self> {
         Self::ensure_paths_are_absolute(&input_dir_full_path, &output_dir_full_path)?;
 
@@ -25,6 +28,7 @@ impl RustAstGenConfig {
             output_dir_full_path,
             cargo_worker_threads: num_threads,
             load_sysroot,
+            resolve_cfg,
         };
 
         Ok(config)
@@ -78,7 +82,7 @@ mod tests {
     fn test_make_output_path_for_input_file_success_unix() -> Result<()> {
         let input_dir = PathBuf::from("/input");
         let output_dir = PathBuf::from("/output");
-        let config = RustAstGenConfig::new(input_dir.clone(), output_dir.clone(), 1, true)?;
+        let config = RustAstGenConfig::new(input_dir.clone(), output_dir.clone(), 1, true, false)?;
 
         let input_file = input_dir.join("subdir").join("file.rs");
         let output_file = config.make_output_path_for_input_file(&input_file)?;
@@ -94,7 +98,7 @@ mod tests {
     fn test_make_output_path_for_input_file_success_windows() -> Result<()> {
         let input_dir = PathBuf::from(r"C:\input");
         let output_dir = PathBuf::from(r"C:\output");
-        let config = RustAstGenConfig::new(input_dir.clone(), output_dir.clone(), 1, true)?;
+        let config = RustAstGenConfig::new(input_dir.clone(), output_dir.clone(), 1, true, false)?;
 
         let input_file = input_dir.join("subdir").join("file.rs");
         let output_file = config.make_output_path_for_input_file(&input_file)?;
@@ -110,7 +114,7 @@ mod tests {
     fn test_make_output_path_for_input_file_not_under_input_dir_unix() -> Result<()> {
         let input_dir = PathBuf::from("/input");
         let output_dir = PathBuf::from("/output");
-        let config = RustAstGenConfig::new(input_dir, output_dir, 1, true)?;
+        let config = RustAstGenConfig::new(input_dir, output_dir, 1, true, false)?;
 
         let other_file = PathBuf::from("/other/file.rs");
         let result = config.make_output_path_for_input_file(&other_file);
@@ -127,7 +131,7 @@ mod tests {
     fn test_make_output_path_for_input_file_not_under_input_dir_windows() -> Result<()> {
         let input_dir = PathBuf::from(r"C:\input");
         let output_dir = PathBuf::from(r"C:\output");
-        let config = RustAstGenConfig::new(input_dir, output_dir, 1, true)?;
+        let config = RustAstGenConfig::new(input_dir, output_dir, 1, true, false)?;
 
         let other_file = PathBuf::from(r"C:\other\file.rs");
         let result = config.make_output_path_for_input_file(&other_file);

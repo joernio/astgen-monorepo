@@ -14,17 +14,32 @@ pub fn no_sysroot_ast_json(
     file_code_pairs: &[(&str, &str)],
     target_file: &str,
 ) -> TestResult<Value> {
-    run(crate_name, file_code_pairs, false, target_file)
+    run(crate_name, file_code_pairs, false, false, target_file)
+}
+
+pub fn no_sysroot_resolve_cfg_ast_json(
+    crate_name: &str,
+    file_code_pairs: &[(&str, &str)],
+    target_file: &str,
+) -> TestResult<Value> {
+    run(crate_name, file_code_pairs, false, true, target_file)
 }
 
 pub fn sysroot_ast_json(crate_name: &str, source: &str) -> TestResult<Value> {
-    run(crate_name, &[("src/main.rs", source)], true, "src/main.rs")
+    run(
+        crate_name,
+        &[("src/main.rs", source)],
+        true,
+        false,
+        "src/main.rs",
+    )
 }
 
 fn run(
     crate_name: &str,
     file_code_pairs: &[(&str, &str)],
     with_sysroot: bool,
+    resolve_cfg: bool,
     target_file: &str,
 ) -> TestResult<Value> {
     // NB: automatically deleted when dropped
@@ -59,6 +74,9 @@ edition = "2021"
     if !with_sysroot {
         command.arg("--no-sysroot");
     }
+    if resolve_cfg {
+        command.arg("--resolve-cfg");
+    }
     let output = command.output()?;
 
     if !output.stderr.is_empty() {
@@ -76,7 +94,7 @@ edition = "2021"
     Ok(serde_json::from_str(&fs::read_to_string(&target_json)?)?)
 }
 
-fn nodes_by_kind<'a>(json: &'a Value, kind: &str) -> Vec<&'a Value> {
+pub fn nodes_by_kind<'a>(json: &'a Value, kind: &str) -> Vec<&'a Value> {
     let mut result = Vec::new();
     if let Some(children) = json.get("children").and_then(Value::as_array) {
         for child in children {
@@ -95,6 +113,11 @@ fn collect_nodes_by_kind<'a>(node: &'a Value, kind: &str, result: &mut Vec<&'a V
         for child in children {
             collect_nodes_by_kind(child, kind, result);
         }
+    }
+
+    // NB: macro-expanded nodes live under macroExpansion, not children.
+    if let Some(expansion) = node.get("macroExpansion") {
+        collect_nodes_by_kind(expansion, kind, result);
     }
 }
 

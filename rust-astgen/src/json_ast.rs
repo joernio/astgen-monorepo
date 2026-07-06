@@ -3,9 +3,11 @@
 use crate::adjustments::{Adjustment, adjustments_for_node};
 use crate::names::{method_full_name_for_node, type_full_name_for_node};
 use crate::receivers::has_self_receiver_for_node;
-use ra_ap_hir::{Crate, HirFileId, Semantics, db::ExpandDatabase, prettify_macro_expansion};
+use ra_ap_hir::{
+    CfgExpr, CfgOptions, Crate, HirFileId, Semantics, db::ExpandDatabase, prettify_macro_expansion,
+};
 use ra_ap_ide::{LineIndex, RootDatabase, TextRange};
-use ra_ap_syntax::{AstNode, NodeOrToken, SyntaxNode, SyntaxToken, ast};
+use ra_ap_syntax::{AstNode, NodeOrToken, SyntaxElement, SyntaxNode, SyntaxToken, ast};
 use serde::Serialize;
 
 /// Per-file envelope wrapping the AST.
@@ -100,6 +102,7 @@ impl RustAstGenJsonNode {
         line_index: &LineIndex,
         semantics: &Semantics<RootDatabase>,
         target_crate: Option<Crate>,
+        cfg_options: Option<&CfgOptions>,
     ) -> Self {
         let node_kind = format!("{:?}", node.kind());
         let range = Self::make_range(node.text_range(), hir_file_id, line_index);
@@ -118,6 +121,7 @@ impl RustAstGenJsonNode {
                     line_index,
                     semantics,
                     target_crate,
+                    cfg_options,
                 )
                 .into()
             });
@@ -125,6 +129,7 @@ impl RustAstGenJsonNode {
         let children = node
             .children_with_tokens()
             .filter(|child| !child.kind().is_trivia())
+            .filter(|child| !is_cfg_inactive(child, cfg_options))
             .map(|node_or_token| match node_or_token {
                 NodeOrToken::Node(child_node) => Self::from_node(
                     &child_node,
@@ -132,6 +137,7 @@ impl RustAstGenJsonNode {
                     line_index,
                     semantics,
                     target_crate,
+                    cfg_options,
                 ),
                 NodeOrToken::Token(child_token) => {
                     Self::from_token(&child_token, hir_file_id, line_index)
@@ -189,6 +195,19 @@ impl RustAstGenJsonNode {
             RustAstGenJsonNodeRange::from_text_range(text_range, line_index)
         }
     }
+}
+
+fn is_cfg_inactive(child: &SyntaxElement, cfg_options: Option<&CfgOptions>) -> bool {
+    let (Some(cfg_options), NodeOrToken::Node(node)) = (cfg_options, child) else {
+        return false;
+    };
+    node.children()
+        .filter_map(ast::Attr::cast)
+        .filter_map(|attr| match attr.meta()? {
+            ast::Meta::CfgMeta(cfg_meta) => cfg_meta.cfg_predicate(),
+            _ => None,
+        })
+        .any(|predicate| cfg_options.check(&CfgExpr::parse_from_ast(predicate)) == Some(false))
 }
 
 // Macro expansions are whitespace-stripped (via `node.text()`), but rust-analyzer
