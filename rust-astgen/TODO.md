@@ -13,10 +13,6 @@ For instance in,
 Currently, if we can't load via cargo, the entire process fails.
 We don't have to: we can at least emit an AST with missing types/method fullnames.
 
-## Expand macros
-
-So that the tree doesn't end up with TOKEN_STREAM nodes, but instead with proper sub-ASTs.
-
 ## Don't pretty print JSON
 
 No need, unless we ask it to. Shouldn't be the default.
