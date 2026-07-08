@@ -9,7 +9,7 @@ use super::{
 };
 use ra_ap_hir::{
     AsAssocItem, AssocItemContainer, CallableKind, EnumVariant, Function, GenericDef, Module,
-    ModuleDef, Name, Semantics, TraitRef,
+    ModuleDef, Name, PathResolution, Semantics, TraitRef,
 };
 use ra_ap_ide::RootDatabase;
 use ra_ap_syntax::{AstNode, SyntaxNode, ast, match_ast};
@@ -24,6 +24,7 @@ pub(crate) fn method_full_name_for_node(
             ast::MethodCallExpr(method_call_expr) => resolve_method_call_expr_full_name(&method_call_expr, semantics),
             ast::Struct(struct_) => resolve_struct_ctor_full_name(&struct_, semantics),
             ast::Fn(fn_) => resolve_fn_def_full_name(&fn_, semantics),
+            ast::PathExpr(path_expr) => resolve_path_expr_full_name(&path_expr, semantics),
             _ => None,
         }
     }
@@ -35,6 +36,17 @@ fn resolve_method_call_expr_full_name<'db>(
 ) -> Option<String> {
     let function = semantics.resolve_method_call(method_call_expr)?;
     format_function_full_name(function, semantics.db)
+}
+
+fn resolve_path_expr_full_name<'db>(
+    path_expr: &ast::PathExpr,
+    semantics: &Semantics<'db, RootDatabase>,
+) -> Option<String> {
+    let path = path_expr.path()?;
+    match semantics.resolve_path(&path)? {
+        PathResolution::Def(ModuleDef::Function(f)) => format_function_full_name(f, semantics.db),
+        _ => None,
+    }
 }
 
 fn resolve_call_expr_full_name<'db>(
