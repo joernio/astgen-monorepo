@@ -64,7 +64,7 @@ public final class ScalaAstGenerator {
             \t\tif (nodeType.nonEmpty) {
             \t\t\t_nodeTypeMap.getOrElse(nodeType, throw new UnsupportedOperationException(s"NodeType '$nodeType' is not a known Swift NodeType!"))(json)
             \t\t} else if (tokenKind.nonEmpty) {
-            \t\t\tval prefix = { val i = tokenKind.indexOf('('); if (i >= 0) tokenKind.substring(0, i) else tokenKind }
+            \t\t\tval prefix = { val parenIndex = tokenKind.indexOf('('); if (parenIndex >= 0) tokenKind.substring(0, parenIndex) else tokenKind }
             \t\t\t_tokenKindMap.getOrElse(prefix, throw new UnsupportedOperationException(s"TokenKind '$tokenKind' is not a known Swift TokenKind!"))(json)
             \t\t} else {
             \t\t\tthrow new UnsupportedOperationException("Invalid SwiftSyntax json element. 'nodeType' and 'tokenKind' cannot be empty at the same time!")
@@ -84,7 +84,7 @@ public final class ScalaAstGenerator {
 
             \t\tprotected lazy val _childrenMap: Map[String, Value] = {
             \t\t\tjson.obj.get("children") match {
-            \t\t\t\tcase Some(ch) => ch.arr.iterator.flatMap(c => c.obj.get("name").map(_.str -> c)).toMap
+            \t\t\t\tcase Some(ch) => ch.arr.iterator.flatMap(child => child.obj.get("name").map(_.str -> child)).toMap
             \t\t\t\tcase None => Map.empty
             \t\t\t}
             \t\t}
@@ -218,7 +218,7 @@ public final class ScalaAstGenerator {
         // that builds the AST for one file.
         return
             "\tlazy val children: Seq[\(elementType)] = "
-            + "json(\"children\").arr.iterator.map(c => createSwiftNode(c).asInstanceOf[\(elementType)]).toSeq"
+            + "json(\"children\").arr.iterator.map(child => createSwiftNode(child).asInstanceOf[\(elementType)]).toSeq"
     }
 
     private func renderLayoutChild(_ child: Child) -> String {
@@ -231,7 +231,7 @@ public final class ScalaAstGenerator {
         if child.isOptional {
             return
                 "\tlazy val \(name): Option[\(childType)] = "
-                + "_childrenMap.get(\"\(varName)\").map(c => createSwiftNode(c).asInstanceOf[\(childType)])"
+                + "_childrenMap.get(\"\(varName)\").map(child => createSwiftNode(child).asInstanceOf[\(childType)])"
         } else {
             return
                 "\tlazy val \(name): \(childType) = "
