@@ -55,7 +55,6 @@ async function processAstFilesParallel(
     const inflight: Promise<void>[] = []
     try {
         for await (const filePath of FileUtils.pathsWithExtensions(options, extensions)) {
-            filePaths.push(filePath)
             const {relativePath, outputPath} = FileUtils.outputPathFor(options.src, options.output, filePath, ".json")
             await sink.ensureDir(path.dirname(outputPath))
             const job = {file: filePath, relativePath, outputPath, parser: parserFor(filePath)}
@@ -66,6 +65,12 @@ async function processAstFilesParallel(
                     } else if (msg.skipped) {
                         Logger.warn("Parsing", msg.file, ":", msg.skipped)
                     } else {
+                        // Only files that actually produced an AST feed the
+                        // type-extraction phase. A file skipped by validateBuffer
+                        // (e.g. a huge single-line minified bundle) has no AST, so
+                        // running tsc over it would be pointless work — and, on
+                        // pathological input, hang the TypeChecker traversal.
+                        filePaths.push(filePath)
                         Logger.info("Converted AST for", relativePath, "to", outputPath)
                     }
                 }),

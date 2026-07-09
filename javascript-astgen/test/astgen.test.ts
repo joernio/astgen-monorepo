@@ -223,6 +223,29 @@ describe("astgen basic functionality", () => {
         })
     })
 
+    it("should not run type extraction on files skipped during AST parsing", async () => {
+        // A file rejected by validateBuffer (e.g. a minified single-line bundle
+        // with a line over 10000 bytes) produces no AST. It must therefore also
+        // be excluded from the TypeScript type-extraction phase: feeding such a
+        // file to tsc is both pointless (the typemap is keyed by AST node
+        // positions that were never emitted) and a hang risk (tsc's type
+        // traversal blows up superlinearly on huge single-line minified input).
+        const longLine = "const x = \"" + "a".repeat(10001) + "\";"
+        const files = [
+            {name: "src/normal.ts", code: "const a: number = 1;"},
+            {name: "src/skipme.ts", code: `const y = 1;\n${longLine}\nconst z = 2;`},
+        ]
+
+        await setupProject(files, {type: "ts", tsTypes: true}, (tmpDir) => {
+            // The valid file is fully processed.
+            expect(fs.existsSync(path.join(tmpDir, "ast_out", "src", "normal.ts.json"))).toBe(true)
+            expect(fs.existsSync(path.join(tmpDir, "ast_out", "src", "normal.ts.typemap"))).toBe(true)
+            // The skipped file gets neither an AST nor a (orphaned) typemap.
+            expect(fs.existsSync(path.join(tmpDir, "ast_out", "src", "skipme.ts.json"))).toBe(false)
+            expect(fs.existsSync(path.join(tmpDir, "ast_out", "src", "skipme.ts.typemap"))).toBe(false)
+        })
+    })
+
     it("should emit outputs for many files in a single run", async () => {
         await withTmpDir(async (tmpDir) => {
             const files = Array.from({length: 150}, (_, i) => ({
