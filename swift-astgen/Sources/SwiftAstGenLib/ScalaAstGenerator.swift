@@ -212,8 +212,12 @@ public final class ScalaAstGenerator {
             return "\t// no children available"
         }
         let elementType = TypeGenerator.collectionElementType(for: collection)
+        // `lazy val` (not `def`): each accessor builds a fresh wrapper and re-materializes the whole
+        // child Seq, so re-accessing `.children` on the same instance would repeat that work. Caching is
+        // safe because a node wrapper (and the JSON tree it navigates) is confined to the single thread
+        // that builds the AST for one file.
         return
-            "\tdef children: Seq[\(elementType)] = "
+            "\tlazy val children: Seq[\(elementType)] = "
             + "json(\"children\").arr.iterator.map(c => createSwiftNode(c).asInstanceOf[\(elementType)]).toSeq"
     }
 
@@ -221,13 +225,16 @@ public final class ScalaAstGenerator {
         let varName = lowercaseFirstWord(name: child.name)
         let name = backtickedIfNeeded(name: varName)
         let childType = TypeGenerator.type(for: child)
+        // `lazy val` (not `def`): each accessor allocates a fresh wrapper and, on the second field access,
+        // rebuilds `_childrenMap`. Caching the wrapper makes re-access free. Safe because a node wrapper is
+        // confined to the single thread that builds the AST for one file (see `renderChildren`).
         if child.isOptional {
             return
-                "\tdef \(name): Option[\(childType)] = "
+                "\tlazy val \(name): Option[\(childType)] = "
                 + "_childrenMap.get(\"\(varName)\").map(c => createSwiftNode(c).asInstanceOf[\(childType)])"
         } else {
             return
-                "\tdef \(name): \(childType) = "
+                "\tlazy val \(name): \(childType) = "
                 + "createSwiftNode(_childrenMap(\"\(varName)\")).asInstanceOf[\(childType)]"
         }
     }
