@@ -284,12 +284,11 @@ fn merge_alternatives(left: Vec<Element>, right: Vec<Element>) -> Vec<Element> {
 }
 
 impl Cardinality {
-    fn for_sequence(self, other: Self) -> Self {
-        use Cardinality::*;
-        match (self, other) {
-            (Optional, Optional) => Optional,
-            _ => Many,
-        }
+    fn for_sequence(self, _other: Self) -> Self {
+        // Always Many since we don't have OneOrMore.
+        // So, `A A`, `A A?`, `A A*` (and vice-versa) are clearly Many.
+        // The interesting case is `A? A?`, which is Many since both `A` may be present.
+        Cardinality::Many
     }
 
     fn for_alternative(self, other: Self) -> Self {
@@ -344,6 +343,22 @@ mod tests {
                 .iter()
                 .any(|e| e.name.as_str() == "self" && e.cardinality == Cardinality::Optional)
         );
+    }
+
+    #[test]
+    fn test_two_optionals_in_sequence() {
+        let grammar = Grammar::from_str(
+            r#"
+            R = start:A? 'x' end:A?
+            A = 'a'
+            "#,
+        )
+        .unwrap();
+        let model = Model::from_ungrammar(&grammar).unwrap();
+        let elements = model.elements("R").unwrap();
+
+        assert_eq!(find_element(elements, "A").cardinality, Cardinality::Many);
+        assert_eq!(find_element(elements, "x").cardinality, Cardinality::One);
     }
 
     #[test]
@@ -501,6 +516,25 @@ mod tests {
         );
         assert_eq!(
             find_element(elements, "..=").cardinality,
+            Cardinality::Optional
+        );
+    }
+
+    #[test]
+    fn test_rust_range_expr() {
+        let grammar = Grammar::from_str(include_str!("../../rust.ungram")).unwrap();
+        let model = Model::from_ungrammar(&grammar).unwrap();
+        let elements = model.elements("RangeExpr").unwrap();
+
+        // RangeExpr =
+        //   Attr* start:Expr? op:('..' | '..=') end:Expr?
+
+        assert_eq!(
+            find_element(elements, "Expr").cardinality,
+            Cardinality::Many
+        );
+        assert_eq!(
+            find_element(elements, "..").cardinality,
             Cardinality::Optional
         );
     }
