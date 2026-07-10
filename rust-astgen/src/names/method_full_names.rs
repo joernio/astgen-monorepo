@@ -54,6 +54,11 @@ fn resolve_call_expr_full_name<'db>(
     semantics: &Semantics<'db, RootDatabase>,
 ) -> Option<String> {
     let callee_expr = call_expr.expr()?;
+    if let ast::Expr::PathExpr(path_expr) = &callee_expr
+        && let Some(name) = resolve_path_expr_full_name(path_expr, semantics)
+    {
+        return Some(name);
+    }
     match semantics.resolve_expr_as_callable(&callee_expr)?.kind() {
         CallableKind::Function(function) => format_function_full_name(function, semantics.db),
         CallableKind::TupleStruct(tuple_struct) => format_generic_module_def_full_name(
