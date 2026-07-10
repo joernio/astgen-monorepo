@@ -1,7 +1,7 @@
 mod common;
 
 use crate::common::{
-    TestResult, bin_expr, call_expr, ident_pat, literal, method_call_expr, name_ref,
+    TestResult, bin_expr, call_expr, fn_decl, ident_pat, literal, method_call_expr, name_ref,
     no_sysroot_ast_json, path_expr, self_param,
 };
 use serde_json::json;
@@ -240,6 +240,108 @@ fn main() {
             .on_line("impl Trait for Type {")
             .type_full_name(),
         "rust2cpg::imported::Type"
+    );
+
+    Ok(())
+}
+
+#[test]
+fn emits_concrete_impl_method_for_fully_qualified_path_call() -> TestResult<()> {
+    let json = no_sysroot_ast_json(
+        "rust2cpg",
+        &[(
+            "src/main.rs",
+            r#"
+trait Tr {
+    fn m(&self) -> i32;
+}
+struct S;
+impl Tr for S {
+    fn m(&self) -> i32 { 0 }
+}
+fn f(s: S) {
+    let a = <S as Tr>::m(&s);
+}
+"#,
+        )],
+        "src/main.rs",
+    )?;
+
+    assert_eq!(
+        call_expr(&json, "<S as Tr>::m(&s)").method_full_name(),
+        "<rust2cpg::S as rust2cpg::Tr>::m"
+    );
+    assert_eq!(
+        fn_decl(&json, "fn m(&self) -> i32 { 0 }").method_full_name(),
+        "<rust2cpg::S as rust2cpg::Tr>::m"
+    );
+
+    Ok(())
+}
+
+#[test]
+fn emits_concrete_impl_method_for_trait_qualified_path_call() -> TestResult<()> {
+    let json = no_sysroot_ast_json(
+        "rust2cpg",
+        &[(
+            "src/main.rs",
+            r#"
+trait Tr {
+    fn m(&self) -> i32;
+}
+struct S;
+impl Tr for S {
+    fn m(&self) -> i32 { 0 }
+}
+fn f(s: S) {
+    let b = Tr::m(&s);
+}
+"#,
+        )],
+        "src/main.rs",
+    )?;
+
+    assert_eq!(
+        call_expr(&json, "Tr::m(&s)").method_full_name(),
+        "<rust2cpg::S as rust2cpg::Tr>::m"
+    );
+    assert_eq!(
+        fn_decl(&json, "fn m(&self) -> i32 { 0 }").method_full_name(),
+        "<rust2cpg::S as rust2cpg::Tr>::m"
+    );
+
+    Ok(())
+}
+
+#[test]
+fn emits_trait_method_for_dyn_receiver_path_call() -> TestResult<()> {
+    let json = no_sysroot_ast_json(
+        "rust2cpg",
+        &[(
+            "src/main.rs",
+            r#"
+trait Tr {
+    fn m(&self) -> i32;
+}
+struct S;
+impl Tr for S {
+    fn m(&self) -> i32 { 0 }
+}
+fn f(g: &dyn Tr) {
+    let c = Tr::m(g);
+}
+"#,
+        )],
+        "src/main.rs",
+    )?;
+
+    assert_eq!(
+        call_expr(&json, "Tr::m(g)").method_full_name(),
+        "rust2cpg::Tr::m"
+    );
+    assert_eq!(
+        fn_decl(&json, "fn m(&self) -> i32;").method_full_name(),
+        "rust2cpg::Tr::m"
     );
 
     Ok(())

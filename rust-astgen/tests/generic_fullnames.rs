@@ -1,7 +1,7 @@
 mod common;
 
 use crate::common::{
-    TestResult, call_expr, ident_pat, method_call_expr, name_ref, no_sysroot_ast_json,
+    TestResult, call_expr, fn_decl, ident_pat, method_call_expr, name_ref, no_sysroot_ast_json,
 };
 
 #[test]
@@ -186,6 +186,41 @@ fn main() {
     assert_eq!(
         extract_call.method_full_name(),
         "<rust2cpg::Wrapper<T> as rust2cpg::Extract<T>>::extract"
+    );
+
+    Ok(())
+}
+
+#[test]
+fn emits_concrete_impl_method_for_generic_trait_path_call() -> TestResult<()> {
+    let json = no_sysroot_ast_json(
+        "rust2cpg",
+        &[(
+            "src/main.rs",
+            r#"
+trait Tr<T> {
+    fn m(&self) -> T;
+}
+struct S<T>(T);
+impl<T: Copy> Tr<T> for S<T> {
+    fn m(&self) -> T { self.0 }
+}
+fn f(w: S<u32>) {
+    let a = <S<u32> as Tr<u32>>::m(&w);
+}
+"#,
+        )],
+        "src/main.rs",
+    )?;
+
+    let m_call = call_expr(&json, "<S<u32> as Tr<u32>>::m(&w)");
+    assert_eq!(
+        m_call.method_full_name(),
+        "<rust2cpg::S<T> as rust2cpg::Tr<T>>::m"
+    );
+    assert_eq!(
+        fn_decl(&json, "fn m(&self) -> T { self.0 }").method_full_name(),
+        "<rust2cpg::S<T> as rust2cpg::Tr<T>>::m"
     );
 
     Ok(())
