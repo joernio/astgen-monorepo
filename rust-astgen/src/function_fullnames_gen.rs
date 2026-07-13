@@ -9,10 +9,11 @@ use ra_ap_hir::{
 };
 use ra_ap_ide::RootDatabase;
 use serde::{Deserialize, Serialize};
-use std::collections::{BTreeMap, HashSet};
+use std::collections::HashSet;
 use std::io::{self, Write};
+use std::rc::Rc;
 
-#[derive(Debug, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct FunctionFullNameEntry {
     #[serde(rename = "methodFullName")]
     pub method_full_name: String,
@@ -34,33 +35,281 @@ pub struct FunctionFullNamesOutput {
 pub fn run(config: &config::RustAstGenConfig) -> anyhow::Result<()> {
     let (root_db, _vfs) = cargo::load_workspace(config)?;
 
-    let output = attach_db(&root_db, || collect_dependency_full_names(&root_db));
-
-    let json = serde_json::to_string_pretty(&output)?;
-    let mut stdout = io::stdout().lock();
-    stdout
-        .write_all(json.as_bytes())
-        .context("failed to write function fullnames JSON to stdout")?;
-    stdout
-        .write_all(b"\n")
-        .context("failed to write trailing newline to stdout")?;
-
-    Ok(())
+    attach_db(&root_db, || {
+        let mut stdout = io::stdout().lock();
+        write_function_fullnames_json(&mut stdout, dependency_full_names(&root_db))
+    })
 }
 
-fn collect_dependency_full_names(db: &RootDatabase) -> FunctionFullNamesOutput {
-    let mut entries = BTreeMap::new();
-    let workspace_roots = workspace_root_modules(db);
+pub fn dependency_full_names<'db>(
+    db: &'db RootDatabase,
+) -> impl Iterator<Item = FunctionFullNameEntry> + 'db {
+    let workspace_roots = workspace_root_modules_rc(db);
+    unique_by_method_full_name(dependency_crates(db).into_iter().flat_map({
+        let workspace_roots = Rc::clone(&workspace_roots);
+        move |krate| {
+            let workspace_roots = Rc::clone(&workspace_roots);
+            modules_in_crate(db, krate).flat_map(move |module| {
+                module_full_names(db, module, Rc::clone(&workspace_roots))
+            })
+        }
+    }))
+}
 
-    for krate in dependency_crates(db) {
-        for module in krate.modules(db) {
-            collect_from_module(module, db, &workspace_roots, &mut entries);
+pub fn load_sysroot_workspace(
+    input_dir: std::path::PathBuf,
+) -> anyhow::Result<RootDatabase> {
+    let input_dir = input_dir.canonicalize()?;
+    let config = config::RustAstGenConfig::new(input_dir.clone(), input_dir, 1, true)?;
+    Ok(cargo::load_workspace(&config)?.0)
+}
+
+pub fn workspace_root_modules_rc(db: &RootDatabase) -> Rc<[Module]> {
+    workspace_root_modules(db).into()
+}
+
+pub fn dependency_crates(db: &RootDatabase) -> Vec<Crate> {
+    let mut deps = Vec::new();
+    let mut seen = HashSet::new();
+
+    for krate in Crate::all(db) {
+        if !krate.origin(db).is_local() {
+            continue;
+        }
+        collect_transitive_dependency_crates(krate, db, &mut seen, &mut deps);
+    }
+
+    if deps.is_empty() {
+        return Crate::all(db)
+            .into_iter()
+            .filter(|krate| !krate.origin(db).is_local())
+            .collect();
+    }
+
+    deps
+}
+
+pub fn dependency_crate_named(db: &RootDatabase, name: &str) -> Option<Crate> {
+    dependency_crates(db).into_iter().find(|krate| {
+        krate
+            .display_name(db)
+            .is_some_and(|crate_name| crate_name.as_str() == name)
+    })
+}
+
+pub fn modules_in_crate(db: &RootDatabase, krate: Crate) -> impl Iterator<Item = Module> + '_ {
+    krate.modules(db).into_iter()
+}
+
+pub fn module_full_names<'db>(
+    db: &'db RootDatabase,
+    module: Module,
+    workspace_roots: Rc<[Module]>,
+) -> impl Iterator<Item = FunctionFullNameEntry> + 'db {
+    let decl_roots = Rc::clone(&workspace_roots);
+    let decls = module
+        .declarations(db)
+        .into_iter()
+        .flat_map(move |def| module_def_full_names(db, def, Rc::clone(&decl_roots)));
+
+    let impls = module.impl_defs(db).into_iter().flat_map(move |impl_| {
+        impl_full_names(db, impl_, Rc::clone(&workspace_roots))
+    });
+
+    decls.chain(impls)
+}
+
+fn module_def_full_names<'db>(
+    db: &'db RootDatabase,
+    def: ModuleDef,
+    workspace_roots: Rc<[Module]>,
+) -> Box<dyn Iterator<Item = FunctionFullNameEntry> + 'db> {
+    match def {
+        ModuleDef::Function(function) => option_entry(function_entry(
+            db,
+            function,
+            workspace_roots.as_ref(),
+        )),
+        ModuleDef::Adt(Adt::Struct(struct_)) => option_entry(tuple_struct_ctor_entry(
+            db,
+            struct_,
+            workspace_roots.as_ref(),
+        )),
+        ModuleDef::Adt(Adt::Enum(enum_)) => Box::new(enum_full_names(db, enum_, workspace_roots)),
+        ModuleDef::Trait(trait_) => Box::new(trait_full_names(db, trait_, workspace_roots)),
+        _ => Box::new(std::iter::empty()),
+    }
+}
+
+fn enum_full_names<'db>(
+    db: &'db RootDatabase,
+    enum_: Enum,
+    workspace_roots: Rc<[Module]>,
+) -> impl Iterator<Item = FunctionFullNameEntry> + 'db {
+    enum_.variants(db).into_iter().filter_map(move |variant| {
+        enum_variant_ctor_entry(db, variant, workspace_roots.as_ref())
+    })
+}
+
+fn trait_full_names<'db>(
+    db: &'db RootDatabase,
+    trait_: Trait,
+    workspace_roots: Rc<[Module]>,
+) -> impl Iterator<Item = FunctionFullNameEntry> + 'db {
+    trait_.items(db).into_iter().filter_map(move |item| match item {
+        AssocItem::Function(function) => {
+            function_entry(db, function, workspace_roots.as_ref())
+        }
+        _ => None,
+    })
+}
+
+fn impl_full_names<'db>(
+    db: &'db RootDatabase,
+    impl_: Impl,
+    workspace_roots: Rc<[Module]>,
+) -> impl Iterator<Item = FunctionFullNameEntry> + 'db {
+    impl_.items(db).into_iter().filter_map(move |item| match item {
+        AssocItem::Function(function) => function_entry(db, function, workspace_roots.as_ref()),
+        _ => None,
+    })
+}
+
+fn function_entry(
+    db: &RootDatabase,
+    function: Function,
+    workspace_roots: &[Module],
+) -> Option<FunctionFullNameEntry> {
+    if !is_function_available_from_workspace(function, db, workspace_roots) {
+        return None;
+    }
+
+    let method_full_name = format_function_full_name(function, db)?;
+
+    let (is_trait_impl, is_trait_method_def) = match function.as_assoc_item(db) {
+        Some(assoc_item) => trait_flags(assoc_item, db),
+        None => (false, false),
+    };
+
+    Some(FunctionFullNameEntry {
+        method_full_name,
+        has_self_receiver: function.has_self_param(db),
+        is_trait_impl,
+        is_trait_method_def,
+        is_nightly_only: function.is_unstable(db),
+    })
+}
+
+fn tuple_struct_ctor_entry(
+    db: &RootDatabase,
+    struct_: ra_ap_hir::Struct,
+    workspace_roots: &[Module],
+) -> Option<FunctionFullNameEntry> {
+    if !is_available_from_workspace(&struct_, db, workspace_roots) {
+        return None;
+    }
+
+    if struct_.kind(db) != StructKind::Tuple {
+        return None;
+    }
+
+    let method_full_name = format_tuple_struct_ctor_full_name(struct_, db)?;
+
+    Some(FunctionFullNameEntry {
+        method_full_name,
+        has_self_receiver: false,
+        is_trait_impl: false,
+        is_trait_method_def: false,
+        is_nightly_only: struct_.is_unstable(db),
+    })
+}
+
+fn enum_variant_ctor_entry(
+    db: &RootDatabase,
+    enum_variant: EnumVariant,
+    workspace_roots: &[Module],
+) -> Option<FunctionFullNameEntry> {
+    if !is_available_from_workspace(&enum_variant, db, workspace_roots) {
+        return None;
+    }
+
+    match enum_variant.kind(db) {
+        StructKind::Tuple | StructKind::Unit => {}
+        StructKind::Record => return None,
+    }
+
+    let method_full_name = format_enum_variant_full_name(enum_variant, db)?;
+
+    Some(FunctionFullNameEntry {
+        method_full_name,
+        has_self_receiver: false,
+        is_trait_impl: false,
+        is_trait_method_def: false,
+        is_nightly_only: enum_variant.is_unstable(db),
+    })
+}
+
+fn option_entry(
+    entry: Option<FunctionFullNameEntry>,
+) -> Box<dyn Iterator<Item = FunctionFullNameEntry>> {
+    Box::new(entry.into_iter())
+}
+
+pub fn unique_by_method_full_name<I>(iter: I) -> UniqueByMethodFullName<I>
+where
+    I: Iterator<Item = FunctionFullNameEntry>,
+{
+    UniqueByMethodFullName {
+        inner: iter,
+        seen: HashSet::new(),
+    }
+}
+
+pub struct UniqueByMethodFullName<I> {
+    inner: I,
+    seen: HashSet<String>,
+}
+
+impl<I> Iterator for UniqueByMethodFullName<I>
+where
+    I: Iterator<Item = FunctionFullNameEntry>,
+{
+    type Item = FunctionFullNameEntry;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        loop {
+            let entry = self.inner.next()?;
+            if self.seen.insert(entry.method_full_name.clone()) {
+                return Some(entry);
+            }
         }
     }
+}
 
-    FunctionFullNamesOutput {
-        functions: entries.into_values().collect(),
+fn write_function_fullnames_json<W: Write>(
+    writer: &mut W,
+    entries: impl Iterator<Item = FunctionFullNameEntry>,
+) -> anyhow::Result<()> {
+    writer
+        .write_all(b"{\"functions\":[\n")
+        .context("failed to write function fullnames JSON header")?;
+
+    let mut first = true;
+    for entry in entries {
+        if !first {
+            writer
+                .write_all(b",\n")
+                .context("failed to write function fullnames JSON separator")?;
+        }
+        first = false;
+        serde_json::to_writer(&mut *writer, &entry)
+            .context("failed to serialize function fullname entry")?;
     }
+
+    writer
+        .write_all(b"\n]}\n")
+        .context("failed to write function fullnames JSON footer")?;
+    Ok(())
 }
 
 fn workspace_root_modules(db: &RootDatabase) -> Vec<Module> {
@@ -119,84 +368,6 @@ fn is_self_ty_available_from_workspace(
     }
 }
 
-fn collect_from_module(
-    module: Module,
-    db: &RootDatabase,
-    workspace_roots: &[Module],
-    entries: &mut BTreeMap<String, FunctionFullNameEntry>,
-) {
-    for def in module.declarations(db) {
-        match def {
-            ModuleDef::Function(function) => {
-                insert_function(function, db, workspace_roots, entries);
-            }
-            ModuleDef::Adt(Adt::Struct(struct_)) => {
-                insert_tuple_struct_ctor(struct_, db, workspace_roots, entries);
-            }
-            ModuleDef::Adt(Adt::Enum(enum_)) => {
-                collect_enum_variants(enum_, db, workspace_roots, entries);
-            }
-            ModuleDef::Trait(trait_) => {
-                collect_trait_functions(trait_, db, workspace_roots, entries);
-            }
-            _ => {}
-        }
-    }
-
-    for impl_ in module.impl_defs(db) {
-        for item in impl_.items(db) {
-            if let AssocItem::Function(function) = item {
-                insert_function(function, db, workspace_roots, entries);
-            }
-        }
-    }
-}
-
-fn collect_enum_variants(
-    enum_: Enum,
-    db: &RootDatabase,
-    workspace_roots: &[Module],
-    entries: &mut BTreeMap<String, FunctionFullNameEntry>,
-) {
-    for enum_variant in enum_.variants(db) {
-        insert_enum_variant_ctor(enum_variant, db, workspace_roots, entries);
-    }
-}
-
-fn collect_trait_functions(
-    trait_: Trait,
-    db: &RootDatabase,
-    workspace_roots: &[Module],
-    entries: &mut BTreeMap<String, FunctionFullNameEntry>,
-) {
-    for item in trait_.items(db) {
-        if let AssocItem::Function(function) = item {
-            insert_function(function, db, workspace_roots, entries);
-        }
-    }
-}
-
-fn dependency_crates(db: &RootDatabase) -> Vec<Crate> {
-    let mut deps = Vec::new();
-    let mut seen = HashSet::new();
-
-    for krate in Crate::all(db) {
-        if !krate.origin(db).is_local() {
-            continue;
-        }
-        collect_transitive_dependency_crates(krate, db, &mut seen, &mut deps);
-    }
-
-    if deps.is_empty() {
-        return Crate::all(db)
-            .into_iter()
-            .filter(|krate| !krate.origin(db).is_local())
-            .collect();
-    }
-
-    deps
-}
-
 fn collect_transitive_dependency_crates(
     krate: Crate,
     db: &RootDatabase,
@@ -213,98 +384,6 @@ fn collect_transitive_dependency_crates(
             collect_transitive_dependency_crates(dep_krate, db, seen, deps);
         }
     }
-}
-
-fn insert_function(
-    function: Function,
-    db: &RootDatabase,
-    workspace_roots: &[Module],
-    entries: &mut BTreeMap<String, FunctionFullNameEntry>,
-) {
-    if !is_function_available_from_workspace(function, db, workspace_roots) {
-        return;
-    }
-
-    let Some(method_full_name) = format_function_full_name(function, db) else {
-        return;
-    };
-
-    let (is_trait_impl, is_trait_method_def) = match function.as_assoc_item(db) {
-        Some(assoc_item) => trait_flags(assoc_item, db),
-        None => (false, false),
-    };
-
-    entries.insert(
-        method_full_name.clone(),
-        FunctionFullNameEntry {
-            method_full_name,
-            has_self_receiver: function.has_self_param(db),
-            is_trait_impl,
-            is_trait_method_def,
-            is_nightly_only: function.is_unstable(db),
-        },
-    );
-}
-
-fn insert_tuple_struct_ctor(
-    struct_: ra_ap_hir::Struct,
-    db: &RootDatabase,
-    workspace_roots: &[Module],
-    entries: &mut BTreeMap<String, FunctionFullNameEntry>,
-) {
-    if !is_available_from_workspace(&struct_, db, workspace_roots) {
-        return;
-    }
-
-    if struct_.kind(db) != StructKind::Tuple {
-        return;
-    }
-
-    let Some(method_full_name) = format_tuple_struct_ctor_full_name(struct_, db) else {
-        return;
-    };
-
-    entries.insert(
-        method_full_name.clone(),
-        FunctionFullNameEntry {
-            method_full_name,
-            has_self_receiver: false,
-            is_trait_impl: false,
-            is_trait_method_def: false,
-            is_nightly_only: struct_.is_unstable(db),
-        },
-    );
-}
-
-fn insert_enum_variant_ctor(
-    enum_variant: EnumVariant,
-    db: &RootDatabase,
-    workspace_roots: &[Module],
-    entries: &mut BTreeMap<String, FunctionFullNameEntry>,
-) {
-    if !is_available_from_workspace(&enum_variant, db, workspace_roots) {
-        return;
-    }
-
-    match enum_variant.kind(db) {
-        StructKind::Tuple | StructKind::Unit => {}
-        StructKind::Record => return,
-    }
-
-    let Some(method_full_name) = format_enum_variant_full_name(enum_variant, db) else {
-        return;
-    };
-
-    entries.insert(
-        method_full_name.clone(),
-        FunctionFullNameEntry {
-            method_full_name,
-            has_self_receiver: false,
-            is_trait_impl: false,
-            is_trait_method_def: false,
-            is_nightly_only: enum_variant.is_unstable(db),
-        },
-    );
 }
 
 fn trait_flags(assoc_item: AssocItem, db: &RootDatabase) -> (bool, bool) {

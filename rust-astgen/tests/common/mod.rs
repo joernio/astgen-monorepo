@@ -2,7 +2,7 @@
 //! parses back the generated JSON. Currently only one crate is supported.
 #![allow(dead_code)]
 
-use rust_ast_gen::function_fullnames_gen::FunctionFullNamesOutput;
+use rust_ast_gen::function_fullnames_gen::{FunctionFullNameEntry, FunctionFullNamesOutput};
 use serde_json::Value;
 use std::fs;
 use std::process::Command;
@@ -39,7 +39,7 @@ pub fn sysroot_ast_json(crate_name: &str, source: &str) -> TestResult<Value> {
 pub fn sysroot_function_fullnames_json(
     crate_name: &str,
     file_code_pairs: &[(&str, &str)],
-) -> TestResult<FunctionFullNamesOutput> {
+) -> TestResult<Vec<FunctionFullNameEntry>> {
     function_fullnames_run(crate_name, file_code_pairs, true)
 }
 
@@ -47,7 +47,7 @@ fn function_fullnames_run(
     crate_name: &str,
     file_code_pairs: &[(&str, &str)],
     with_sysroot: bool,
-) -> TestResult<FunctionFullNamesOutput> {
+) -> TestResult<Vec<FunctionFullNameEntry>> {
     let root = TempDir::with_prefix("rust_ast_gen_function_fullnames_test_")?;
 
     fs::write(
@@ -87,9 +87,10 @@ edition = "2021"
         String::from_utf8_lossy(&output.stderr)
     );
 
-    Ok(serde_json::from_str(&String::from_utf8_lossy(
+    let parsed: FunctionFullNamesOutput = serde_json::from_str(&String::from_utf8_lossy(
         &output.stdout,
-    ))?)
+    ))?;
+    Ok(parsed.functions)
 }
 
 fn run(
