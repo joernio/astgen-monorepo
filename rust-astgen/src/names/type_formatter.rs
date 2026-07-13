@@ -62,6 +62,9 @@ impl<'db> TypeFormatter<'db> {
         if let Some(traits) = typ.as_impl_traits(self.db) {
             return self.format_impl_trait(typ, traits);
         }
+        if let Some(trait_) = typ.as_dyn_trait() {
+            return self.format_dyn_trait(typ, trait_);
+        }
         Some(self.format_fallback(typ))
     }
 
@@ -150,6 +153,10 @@ impl<'db> TypeFormatter<'db> {
             })
             .collect::<Option<Vec<_>>>()?;
         Some(format_name_with_generic_args(base, bindings))
+    }
+
+    fn format_dyn_trait(&self, typ: &Type, trait_: Trait) -> Option<String> {
+        Some(format!("dyn {}", self.format_trait_bound(typ, trait_)?))
     }
 
     fn format_fallback(&self, typ: &Type) -> String {

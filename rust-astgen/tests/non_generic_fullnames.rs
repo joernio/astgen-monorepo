@@ -348,6 +348,74 @@ fn f(g: &dyn Tr) {
 }
 
 #[test]
+fn emits_qualified_trait_for_dyn_type() -> TestResult<()> {
+    let json = no_sysroot_ast_json(
+        "rust2cpg",
+        &[(
+            "src/main.rs",
+            r#"
+trait Tr {}
+fn f(g: &dyn Tr) {
+    let c = g;
+}
+"#,
+        )],
+        "src/main.rs",
+    )?;
+
+    assert_eq!(path_expr(&json, "g").type_full_name(), "&dyn rust2cpg::Tr");
+
+    Ok(())
+}
+
+#[test]
+fn emits_qualified_trait_for_dyn_type_with_assoc_binding() -> TestResult<()> {
+    let json = no_sysroot_ast_json(
+        "rust2cpg",
+        &[(
+            "src/main.rs",
+            r#"
+trait Tr {
+    type A;
+}
+fn f(g: &dyn Tr<A = i32>) {
+    let c = g;
+}
+"#,
+        )],
+        "src/main.rs",
+    )?;
+
+    assert_eq!(
+        path_expr(&json, "g").type_full_name(),
+        "&dyn rust2cpg::Tr<A = i32>"
+    );
+
+    Ok(())
+}
+
+#[test]
+fn emits_qualified_trait_for_dyn_type_with_named_lifetime() -> TestResult<()> {
+    let json = no_sysroot_ast_json(
+        "rust2cpg",
+        &[(
+            "src/main.rs",
+            r#"
+trait Tr {}
+fn f<'a>(g: &'a (dyn Tr + 'a)) {
+    let c = g;
+}
+"#,
+        )],
+        "src/main.rs",
+    )?;
+
+    assert_eq!(path_expr(&json, "g").type_full_name(), "&dyn rust2cpg::Tr");
+
+    Ok(())
+}
+
+#[test]
 fn emits_names_for_methods_via_ref_receiver() -> TestResult<()> {
     let json = no_sysroot_ast_json(
         "rust2cpg",

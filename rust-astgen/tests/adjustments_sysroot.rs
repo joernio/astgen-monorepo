@@ -157,7 +157,7 @@ fn main() {
         vec![
             json!({"kind": "deref", "source": "&alloc::string::String", "target": "alloc::string::String"}),
             json!({"kind": "borrow", "source": "alloc::string::String", "target": "&alloc::string::String"}),
-            json!({"kind": "cast", "source": "&alloc::string::String", "target": "&dyn Display + 'static"}),
+            json!({"kind": "cast", "source": "&alloc::string::String", "target": "&dyn core::fmt::Display"}),
         ],
     );
 
