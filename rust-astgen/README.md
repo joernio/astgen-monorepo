@@ -40,14 +40,3 @@ Set `RUST_LOG=info` (or `debug`/`trace`) for progress output.
 ```bash
 ./target/release/rust_ast_gen --input-dir <path to project> --output-dir <path to output>
 ```
-
-## Dependency function fullnames (`rust_ast_function_fullnames`)
-
-Dump public callable symbols from dependency crates (stdlib and external deps)
-to stdout as JSON. Workspace-local definitions are excluded. The output is a
-JSON object with a `functions` array. Each entry is an object with the method
-fullname, and some meta information about it.
-
-```bash
-./target/release/rust_ast_function_fullnames --input-dir <path to project> > function-fullnames.json
-```

@@ -7,6 +7,9 @@ use std::path::PathBuf;
 use std::thread::available_parallelism;
 
 fn main() -> Result<()> {
+    // This tool is unstable and unsupported. It may be removed at any time when
+    // it becomes inconvenient.
+    //
     // We can use RUST_LOG={debug,info,trace,error,warn} in the environment
     // to control the log level.
     env_logger::init();
