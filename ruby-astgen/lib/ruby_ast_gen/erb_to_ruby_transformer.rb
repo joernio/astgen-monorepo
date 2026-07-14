@@ -233,7 +233,7 @@ class ErbToRubyTransformer
   def extract_ast(code)
     parser_buffer = Parser::Source::Buffer.new("internal_tmp_#{Time.now.nsec}")
     parser_buffer.source = code
-    ruby_parser = Parser::CurrentRuby.new
+    ruby_parser = RubyAstGen::ParserProvider.new_parser
     ruby_parser.parse(parser_buffer)
   end
 end

@@ -6,6 +6,7 @@ require 'thread'
 require_relative 'ruby_ast_gen/version'
 require_relative 'ruby_ast_gen/node_handling'
 require_relative 'ruby_ast_gen/erb_to_ruby_transformer'
+require_relative 'ruby_ast_gen/parser_provider'
 
 module RubyAstGen
 
@@ -129,16 +130,12 @@ module RubyAstGen
     RubyAstGen::Logger::debug "code: #{code}"
     buffer = Parser::Source::Buffer.new(file_path)
     buffer.source = code
-    parser = Parser::CurrentRuby.new
-    ast = parser.parse(buffer)
+    ast = ParserProvider.parse(buffer)
     return unless ast
     json_ast = NodeHandling::ast_to_json(ast, code, file_path: relative_input_path, is_erb: is_erb)
     json_ast[:file_path] = file_path
     json_ast[:rel_file_path] = relative_input_path
     json_ast
-  rescue Parser::SyntaxError => e
-    RubyAstGen::Logger::error "Failed to parse #{file_path}: #{e.message}"
-    nil
   end
 
   def self.ruby_file?(file_path)
