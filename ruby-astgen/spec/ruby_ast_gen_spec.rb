@@ -4,10 +4,6 @@ require 'tempfile'
 require 'tmpdir'
 
 RSpec.describe RubyAstGen::ParserProvider do
-  it "returns a parser that responds to :parse" do
-    expect(described_class.new_parser).to respond_to(:parse)
-  end
-
   it "parses valid Ruby with Prism" do
     buffer = Parser::Source::Buffer.new("test")
     buffer.source = "class Foo; end"

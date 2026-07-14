@@ -20,14 +20,5 @@ module RubyAstGen
       end
     end
 
-    def self.new_parser
-      require "prism"
-      Prism::Translation::Parser.new
-    rescue LoadError
-      require "parser/current"
-      RubyAstGen::Logger::warn "Prism gem not available, using parser gem"
-      Parser::CurrentRuby.new
-    end
-
   end
 end
