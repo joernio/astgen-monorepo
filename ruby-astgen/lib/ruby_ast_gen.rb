@@ -131,7 +131,10 @@ module RubyAstGen
     buffer = Parser::Source::Buffer.new(file_path)
     buffer.source = code
     ast = ParserProvider.parse(buffer)
-    return unless ast
+    unless ast
+      RubyAstGen::Logger::warn "Skipping #{file_path}: failed to produce an AST"
+      return
+    end
     json_ast = NodeHandling::ast_to_json(ast, code, file_path: relative_input_path, is_erb: is_erb)
     json_ast[:file_path] = file_path
     json_ast[:rel_file_path] = relative_input_path
