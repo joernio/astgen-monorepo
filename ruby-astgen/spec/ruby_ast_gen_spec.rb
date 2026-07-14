@@ -2,6 +2,68 @@
 
 require 'tempfile'
 
+RSpec.describe "Prism::Translation::Parser behaviour" do
+  def parse_with_prism(code)
+    require "prism"
+    buffer = Parser::Source::Buffer.new("test")
+    buffer.source = code
+    Prism::Translation::Parser.new.parse(buffer)
+  end
+
+  it "parses valid Ruby" do
+    ast = parse_with_prism("class Foo; end")
+    expect(ast).not_to be_nil
+    expect(ast.type).to eq(:class)
+  end
+
+  it "crashes with NoMethodError on severely invalid syntax" do
+    expect {
+      parse_with_prism("def class end end }{][")
+    }.to raise_error(NoMethodError)
+  end
+
+  it "returns partial AST for gibberish instead of raising" do
+    ast = parse_with_prism('@#$%^&*()_+=')
+    expect(ast).not_to be_nil
+  end
+
+  it "returns nil for empty source" do
+    ast = parse_with_prism("")
+    expect(ast).to be_nil
+  end
+end
+
+RSpec.describe "Parser::CurrentRuby behaviour" do
+  def parse_with_parser(code)
+    require "parser/current"
+    buffer = Parser::Source::Buffer.new("test")
+    buffer.source = code
+    Parser::CurrentRuby.new.parse(buffer)
+  end
+
+  it "parses valid Ruby" do
+    ast = parse_with_parser("class Foo; end")
+    expect(ast).not_to be_nil
+    expect(ast.type).to eq(:class)
+  end
+
+  it "returns nil for severely invalid syntax" do
+    ast = parse_with_parser("def class end end }{][")
+    expect(ast).to be_nil
+  end
+
+  it "raises Parser::SyntaxError for gibberish" do
+    expect {
+      parse_with_parser('@#$%^&*()_+=')
+    }.to raise_error(Parser::SyntaxError)
+  end
+
+  it "returns nil for empty source" do
+    ast = parse_with_parser("")
+    expect(ast).to be_nil
+  end
+end
+
 RSpec.describe RubyAstGen::ParserProvider do
   it "parses valid Ruby with Prism" do
     buffer = Parser::Source::Buffer.new("test")
