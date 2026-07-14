@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 require 'tempfile'
-require 'tmpdir'
 
 RSpec.describe RubyAstGen::ParserProvider do
   it "parses valid Ruby with Prism" do
