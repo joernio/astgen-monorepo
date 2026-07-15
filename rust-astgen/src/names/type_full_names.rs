@@ -74,7 +74,7 @@ fn terminal_path_expr(path: &ast::Path) -> Option<ast::PathExpr> {
     path.syntax().parent().and_then(ast::PathExpr::cast)
 }
 
-fn format_path_resolution_type_full_name<'db>(
+pub(super) fn format_path_resolution_type_full_name<'db>(
     resolution: PathResolution,
     path: &ast::Path,
     semantics: &Semantics<'db, RootDatabase>,

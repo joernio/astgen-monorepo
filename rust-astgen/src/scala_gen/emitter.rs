@@ -175,7 +175,8 @@ fn emit_base_node_and_token_traits(
     out: &mut String,
     config: &ScalaAstGenConfig,
 ) -> Result<(), Error> {
-    // TODO: methodFullName, typeFullName, macroExpansion, text, adjustments and hasSelfReceiver
+    // TODO: methodFullName, typeFullName, macroExpansion, text, adjustments, hasSelfReceiver,
+    //  implementedTraits and supertraits
     //  should not come built-in but rather from ScalaAstGenConfig, as they don't make sense
     //  in any other context.
     write!(
@@ -196,6 +197,8 @@ fn emit_base_node_and_token_traits(
             "    def text: Option[String] = json.obj.get(\"text\").flatMap(_.strOpt)\n",
             "    def methodFullName: Option[String] = json.obj.get(\"methodFullName\").flatMap(_.strOpt)\n",
             "    def typeFullName: Option[String] = json.obj.get(\"typeFullName\").flatMap(_.strOpt)\n",
+            "    def implementedTraits: Option[Seq[String]] = json.obj.get(\"implementedTraits\").map(_.arr.toSeq.map(_.str))\n",
+            "    def supertraits: Option[Seq[String]] = json.obj.get(\"supertraits\").map(_.arr.toSeq.map(_.str))\n",
             "    def macroExpansion: Option[{node_base}] = json.obj.get(\"macroExpansion\").map(create{node_base}(_))\n",
             "    def adjustments: Option[Seq[Adjustment]] = json.obj.get(\"adjustments\").map(_.arr.toSeq.map(Adjustment(_)))\n",
             "    def hasSelfReceiver: Option[Boolean] = json.obj.get(\"hasSelfReceiver\").map(_.bool)\n",
@@ -616,6 +619,8 @@ object ExampleAst {
     def text: Option[String] = json.obj.get("text").flatMap(_.strOpt)
     def methodFullName: Option[String] = json.obj.get("methodFullName").flatMap(_.strOpt)
     def typeFullName: Option[String] = json.obj.get("typeFullName").flatMap(_.strOpt)
+    def implementedTraits: Option[Seq[String]] = json.obj.get("implementedTraits").map(_.arr.toSeq.map(_.str))
+    def supertraits: Option[Seq[String]] = json.obj.get("supertraits").map(_.arr.toSeq.map(_.str))
     def macroExpansion: Option[AstNode] = json.obj.get("macroExpansion").map(createAstNode(_))
     def adjustments: Option[Seq[Adjustment]] = json.obj.get("adjustments").map(_.arr.toSeq.map(Adjustment(_)))
     def hasSelfReceiver: Option[Boolean] = json.obj.get("hasSelfReceiver").map(_.bool)
@@ -729,6 +734,8 @@ object ExampleAst {
     def text: Option[String] = json.obj.get("text").flatMap(_.strOpt)
     def methodFullName: Option[String] = json.obj.get("methodFullName").flatMap(_.strOpt)
     def typeFullName: Option[String] = json.obj.get("typeFullName").flatMap(_.strOpt)
+    def implementedTraits: Option[Seq[String]] = json.obj.get("implementedTraits").map(_.arr.toSeq.map(_.str))
+    def supertraits: Option[Seq[String]] = json.obj.get("supertraits").map(_.arr.toSeq.map(_.str))
     def macroExpansion: Option[AstNode] = json.obj.get("macroExpansion").map(createAstNode(_))
     def adjustments: Option[Seq[Adjustment]] = json.obj.get("adjustments").map(_.arr.toSeq.map(Adjustment(_)))
     def hasSelfReceiver: Option[Boolean] = json.obj.get("hasSelfReceiver").map(_.bool)
