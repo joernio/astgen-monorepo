@@ -125,6 +125,7 @@ jobs:
             --output jruby.jar
 
       - name: Install dependencies and build release
+        shell: bash
         run: |
           mkdir -p ${PWD}/vendor/bundle/jruby/3.1.0
           export GEM_HOME=${PWD}/vendor/bundle/jruby/3.1.0
