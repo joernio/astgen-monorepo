@@ -87,9 +87,8 @@ edition = "2021"
         String::from_utf8_lossy(&output.stderr)
     );
 
-    let parsed: FunctionFullNamesOutput = serde_json::from_str(&String::from_utf8_lossy(
-        &output.stdout,
-    ))?;
+    let parsed: FunctionFullNamesOutput =
+        serde_json::from_str(&String::from_utf8_lossy(&output.stdout))?;
     Ok(parsed.functions)
 }
 

@@ -49,16 +49,13 @@ pub fn dependency_full_names<'db>(
         let workspace_roots = Rc::clone(&workspace_roots);
         move |krate| {
             let workspace_roots = Rc::clone(&workspace_roots);
-            modules_in_crate(db, krate).flat_map(move |module| {
-                module_full_names(db, module, Rc::clone(&workspace_roots))
-            })
+            modules_in_crate(db, krate)
+                .flat_map(move |module| module_full_names(db, module, Rc::clone(&workspace_roots)))
         }
     }))
 }
 
-pub fn load_sysroot_workspace(
-    input_dir: std::path::PathBuf,
-) -> anyhow::Result<RootDatabase> {
+pub fn load_sysroot_workspace(input_dir: std::path::PathBuf) -> anyhow::Result<RootDatabase> {
     let input_dir = input_dir.canonicalize()?;
     let config = config::RustAstGenConfig::new(input_dir.clone(), input_dir, 1, true, false)?;
     Ok(cargo::load_workspace(&config)?.0)
@@ -105,9 +102,10 @@ pub fn module_full_names<'db>(
         .into_iter()
         .flat_map(move |def| module_def_full_names(db, def, Rc::clone(&decl_roots)));
 
-    let impls = module.impl_defs(db).into_iter().flat_map(move |impl_| {
-        impl_full_names(db, impl_, Rc::clone(&workspace_roots))
-    });
+    let impls = module
+        .impl_defs(db)
+        .into_iter()
+        .flat_map(move |impl_| impl_full_names(db, impl_, Rc::clone(&workspace_roots)));
 
     decls.chain(impls)
 }
@@ -118,11 +116,9 @@ fn module_def_full_names<'db>(
     workspace_roots: Rc<[Module]>,
 ) -> Box<dyn Iterator<Item = FunctionFullNameEntry> + 'db> {
     match def {
-        ModuleDef::Function(function) => option_entry(function_entry(
-            db,
-            function,
-            workspace_roots.as_ref(),
-        )),
+        ModuleDef::Function(function) => {
+            option_entry(function_entry(db, function, workspace_roots.as_ref()))
+        }
         ModuleDef::Adt(Adt::Struct(struct_)) => option_entry(tuple_struct_ctor_entry(
             db,
             struct_,
@@ -139,9 +135,10 @@ fn enum_full_names<'db>(
     enum_: Enum,
     workspace_roots: Rc<[Module]>,
 ) -> impl Iterator<Item = FunctionFullNameEntry> + 'db {
-    enum_.variants(db).into_iter().filter_map(move |variant| {
-        enum_variant_ctor_entry(db, variant, workspace_roots.as_ref())
-    })
+    enum_
+        .variants(db)
+        .into_iter()
+        .filter_map(move |variant| enum_variant_ctor_entry(db, variant, workspace_roots.as_ref()))
 }
 
 fn trait_full_names<'db>(
@@ -149,12 +146,13 @@ fn trait_full_names<'db>(
     trait_: Trait,
     workspace_roots: Rc<[Module]>,
 ) -> impl Iterator<Item = FunctionFullNameEntry> + 'db {
-    trait_.items(db).into_iter().filter_map(move |item| match item {
-        AssocItem::Function(function) => {
-            function_entry(db, function, workspace_roots.as_ref())
-        }
-        _ => None,
-    })
+    trait_
+        .items(db)
+        .into_iter()
+        .filter_map(move |item| match item {
+            AssocItem::Function(function) => function_entry(db, function, workspace_roots.as_ref()),
+            _ => None,
+        })
 }
 
 fn impl_full_names<'db>(
@@ -162,10 +160,13 @@ fn impl_full_names<'db>(
     impl_: Impl,
     workspace_roots: Rc<[Module]>,
 ) -> impl Iterator<Item = FunctionFullNameEntry> + 'db {
-    impl_.items(db).into_iter().filter_map(move |item| match item {
-        AssocItem::Function(function) => function_entry(db, function, workspace_roots.as_ref()),
-        _ => None,
-    })
+    impl_
+        .items(db)
+        .into_iter()
+        .filter_map(move |item| match item {
+            AssocItem::Function(function) => function_entry(db, function, workspace_roots.as_ref()),
+            _ => None,
+        })
 }
 
 fn function_entry(
@@ -310,9 +311,8 @@ fn write_function_fullnames_by_crate<W: Write>(
             .context("failed to write array opening")?;
 
         let entries = unique_by_method_full_name(
-            modules_in_crate(db, krate).flat_map(|module| {
-                module_full_names(db, module, Rc::clone(&workspace_roots))
-            })
+            modules_in_crate(db, krate)
+                .flat_map(|module| module_full_names(db, module, Rc::clone(&workspace_roots))),
         );
 
         let mut first_entry = true;
