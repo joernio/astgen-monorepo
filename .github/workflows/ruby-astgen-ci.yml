@@ -54,6 +54,7 @@ jobs:
         if: runner.os == 'Windows'
         uses: msys2/setup-msys2@v2
         with:
+          release: false
           msystem: UCRT64
           install: make mingw-w64-ucrt-x86_64-gcc
 
