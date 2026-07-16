@@ -88,6 +88,7 @@ jobs:
 
       - name: Update version file
         shell: bash
+        working-directory: ruby-astgen
         run: ./update_version.rb ${{ needs.verify.outputs.new_tag }}
 
       - name: Set up JDK
@@ -120,18 +121,24 @@ jobs:
 
       - name: Set up JRuby
         shell: bash
+        working-directory: ruby-astgen
         run: |
           curl -L 'https://repo1.maven.org/maven2/org/jruby/jruby-complete/9.4.8.0/jruby-complete-9.4.8.0.jar' \
             --output jruby.jar
 
-      - name: Install dependencies and build release
+      - name: Set up JRuby environment
         shell: bash
+        working-directory: ruby-astgen
         run: |
           mkdir -p ${PWD}/vendor/bundle/jruby/3.1.0
-          export GEM_HOME=${PWD}/vendor/bundle/jruby/3.1.0
-          export GEM_PATH=${PWD}/vendor/bundle/jruby/3.1.0
-          export PATH=$GEM_HOME/bin:$PATH
+          echo "GEM_HOME=${PWD}/vendor/bundle/jruby/3.1.0" >> "$GITHUB_ENV"
+          echo "GEM_PATH=${PWD}/vendor/bundle/jruby/3.1.0" >> "$GITHUB_ENV"
+          echo "${PWD}/vendor/bundle/jruby/3.1.0/bin" >> "$GITHUB_PATH"
 
+      - name: Install dependencies and build release
+        shell: bash
+        working-directory: ruby-astgen
+        run: |
           java -jar jruby.jar -S gem install bundler -v 2.5.21 --install-dir ${GEM_HOME}
           java -jar jruby.jar -S bundle install
 

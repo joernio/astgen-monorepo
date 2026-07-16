@@ -72,18 +72,23 @@ jobs:
           curl -L 'https://repo1.maven.org/maven2/org/jruby/jruby-complete/9.4.8.0/jruby-complete-9.4.8.0.jar' \
             --output jruby.jar
 
-      - name: Install dependencies
+      - name: Set up JRuby environment
+        shell: bash
+        working-directory: ruby-astgen
         run: |
           mkdir -p ${PWD}/vendor/bundle/jruby/3.1.0
-          export GEM_HOME=${PWD}/vendor/bundle/jruby/3.1.0
-          export GEM_PATH=${PWD}/vendor/bundle/jruby/3.1.0
-          export PATH=$GEM_HOME/bin:$PATH
+          echo "GEM_HOME=${PWD}/vendor/bundle/jruby/3.1.0" >> "$GITHUB_ENV"
+          echo "GEM_PATH=${PWD}/vendor/bundle/jruby/3.1.0" >> "$GITHUB_ENV"
+          echo "${PWD}/vendor/bundle/jruby/3.1.0/bin" >> "$GITHUB_PATH"
+
+      - name: Install dependencies
+        shell: bash
+        working-directory: ruby-astgen
+        run: |
           java -jar jruby.jar -S gem install bundler -v 2.5.21 --install-dir ${GEM_HOME}
           java -jar jruby.jar -S bundle install
 
       - name: Run tests with JRuby
-        run: |
-          export GEM_HOME=${PWD}/vendor/bundle/jruby/3.1.0
-          export GEM_PATH=${PWD}/vendor/bundle/jruby/3.1.0
-          export PATH=$GEM_HOME/bin:$PATH
-          java -jar jruby.jar -S bundle exec rake
+        shell: bash
+        working-directory: ruby-astgen
+        run: java -jar jruby.jar -S bundle exec rake
