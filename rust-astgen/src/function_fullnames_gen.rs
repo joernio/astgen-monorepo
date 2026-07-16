@@ -60,7 +60,7 @@ pub fn load_sysroot_workspace(
     input_dir: std::path::PathBuf,
 ) -> anyhow::Result<RootDatabase> {
     let input_dir = input_dir.canonicalize()?;
-    let config = config::RustAstGenConfig::new(input_dir.clone(), input_dir, 1, true)?;
+    let config = config::RustAstGenConfig::new(input_dir.clone(), input_dir, 1, true, false)?;
     Ok(cargo::load_workspace(&config)?.0)
 }
 
