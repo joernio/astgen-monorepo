@@ -86,7 +86,7 @@ jobs:
         shell: bash
         working-directory: ruby-astgen
         run: |
-          LIBDIR="$(bundle exec ruby -e 'print RbConfig::CONFIG["libdir"]')"
+          LIBDIR="$(bundle exec ruby -e "print RbConfig::CONFIG['libdir']")"
           echo "=== JRuby libdir prism dll ==="
           ls -la "$LIBDIR/prism" || echo "no libdir prism"
           echo "=== vendored build dll ==="
