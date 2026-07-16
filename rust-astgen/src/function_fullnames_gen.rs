@@ -79,13 +79,6 @@ pub fn dependency_crates(db: &RootDatabase) -> Vec<Crate> {
         collect_transitive_dependency_crates(krate, db, &mut seen, &mut deps);
     }
 
-    if deps.is_empty() {
-        return Crate::all(db)
-            .into_iter()
-            .filter(|krate| !krate.origin(db).is_local())
-            .collect();
-    }
-
     deps
 }
 
