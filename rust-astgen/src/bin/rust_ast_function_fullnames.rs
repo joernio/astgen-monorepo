@@ -27,10 +27,6 @@ struct CliArgs {
     #[arg(help = "Input directory containing a Rust project")]
     #[arg(short = 'i', long = "input-dir")]
     input_dir: PathBuf,
-
-    #[arg(help = "Skip sysroot loading. Faster, but will not resolve std symbols")]
-    #[arg(long = "no-sysroot", default_value_t = false)]
-    no_sysroot: bool,
 }
 
 impl CliArgs {
@@ -58,7 +54,7 @@ fn config_from_args(args: CliArgs) -> Result<RustAstGenConfig> {
         input_dir_full_path.clone(),
         input_dir_full_path,
         available_threads,
-        !args.no_sysroot,
+        true,
         false,
     )
 }
