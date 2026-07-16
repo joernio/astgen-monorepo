@@ -21,12 +21,3 @@ No need, unless we ask it to. Shouldn't be the default.
 
 Labels for sub-rules are not lowered. We handle this manually in Joern with
 extension methods, but it would be nice to find a way to do it automatically.
-
-## Automatically derive `token_name_to_json_kind`
-
-It currently matches the `Debug` representation of a `SyntaxNode`, but it
-would be nicer to have guaranteed consistency, so that updates to rust-analyzer
-don't inadvertently break the JSON output.
-
-We would need to map each `SyntaxKind` to a `String` and use this mapping both
-in scala-gen and json-gen.

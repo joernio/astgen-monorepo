@@ -1,7 +1,10 @@
 use anyhow::{Context, Result};
 use clap::Parser;
-use heck::{ToPascalCase, ToShoutySnakeCase};
+use heck::ToPascalCase;
 use rust_ast_gen::grammar::model::Model;
+use rust_ast_gen::json_kind::{
+    node_name_to_syntax_kind, syntax_kind_to_json_name, token_name_to_syntax_kind,
+};
 use rust_ast_gen::scala_gen::config::ScalaAstGenConfig;
 use rust_ast_gen::scala_gen::emitter::generate_scala;
 use std::collections::{HashMap, HashSet};
@@ -11,12 +14,27 @@ use ungrammar::Grammar;
 
 fn main() -> Result<()> {
     let args = ScalaBindingsGenArgs::parse();
+    let scala_output = generate_bindings(args.include_date)?;
+
+    std::fs::write(&args.output_file_path, &scala_output)
+        .with_context(|| format!("failed to write to {}", args.output_file_path.display()))?;
+
+    eprintln!(
+        "wrote {} bytes to {}",
+        scala_output.len(),
+        args.output_file_path.display()
+    );
+
+    Ok(())
+}
+
+fn generate_bindings(include_date: bool) -> Result<String> {
     let grammar_text = include_str!("../../rust.ungram");
     let grammar = Grammar::from_str(grammar_text)?;
     let model = Model::from_ungrammar(&grammar)?;
 
     let codegen_version = env!("CARGO_PKG_VERSION").to_string();
-    let codegen_date = args.include_date.then(|| {
+    let codegen_date = include_date.then(|| {
         chrono::Local::now()
             .format("%d %B %Y, %H:%M:%S %Z")
             .to_string()
@@ -41,6 +59,7 @@ fn main() -> Result<()> {
         "Pat".to_string(),
         "Stmt".to_string(),
         "Type".to_string(),
+        "UseBoundGenericArg".to_string(),
         "VariantDef".to_string(),
     ];
     // NB: there's a mismatch between `rust.ungram` and the auto-generated `SyntaxToken` from rust-analyzer.
@@ -71,18 +90,7 @@ fn main() -> Result<()> {
         codegen_date,
     };
 
-    let scala_output = generate_scala(&model, &config)?;
-
-    std::fs::write(&args.output_file_path, &scala_output)
-        .with_context(|| format!("failed to write to {}", args.output_file_path.display()))?;
-
-    eprintln!(
-        "wrote {} bytes to {}",
-        scala_output.len(),
-        args.output_file_path.display()
-    );
-
-    Ok(())
+    Ok(generate_scala(&model, &config)?)
 }
 
 #[derive(Parser)]
@@ -102,95 +110,31 @@ fn node_name_to_scala_name(node: &str) -> String {
     node.to_string()
 }
 
-/// This one is important, as it MUST match the nodeKind in the JSON representation.
+// We want to crash hard if there's any missing node.
 fn node_name_to_json_kind(node: &str) -> String {
-    node.to_shouty_snake_case()
+    let kind = node_name_to_syntax_kind(node)
+        .unwrap_or_else(|| panic!("ungrammar node {node:?} has no SyntaxKind"));
+    syntax_kind_to_json_name(kind)
 }
 
-fn token_operator_or_punct_to_json_kind(token: &str) -> Option<&'static str> {
-    match token {
-        ";" => Some("SEMICOLON"),
-        "," => Some("COMMA"),
-        "(" => Some("L_PAREN"),
-        ")" => Some("R_PAREN"),
-        "{" => Some("L_CURLY"),
-        "}" => Some("R_CURLY"),
-        "[" => Some("L_BRACK"),
-        "]" => Some("R_BRACK"),
-        "<" => Some("L_ANGLE"),
-        ">" => Some("R_ANGLE"),
-        "@" => Some("AT"),
-        "#" => Some("POUND"),
-        "~" => Some("TILDE"),
-        "?" => Some("QUESTION"),
-        "&" => Some("AMP"),
-        "|" => Some("PIPE"),
-        "+" => Some("PLUS"),
-        "*" => Some("STAR"),
-        "/" => Some("SLASH"),
-        "^" => Some("CARET"),
-        "%" => Some("PERCENT"),
-        "_" => Some("UNDERSCORE"),
-        "." => Some("DOT"),
-        ".." => Some("DOT2"),
-        "..." => Some("DOT3"),
-        "..=" => Some("DOT2EQ"),
-        ":" => Some("COLON"),
-        "::" => Some("COLON2"),
-        "=" => Some("EQ"),
-        "==" => Some("EQ2"),
-        "=>" => Some("FAT_ARROW"),
-        "!" => Some("BANG"),
-        "!=" => Some("NEQ"),
-        "-" => Some("MINUS"),
-        "->" => Some("THIN_ARROW"),
-        "<=" => Some("LTEQ"),
-        ">=" => Some("GTEQ"),
-        "+=" => Some("PLUSEQ"),
-        "-=" => Some("MINUSEQ"),
-        "|=" => Some("PIPEEQ"),
-        "&=" => Some("AMPEQ"),
-        "^=" => Some("CARETEQ"),
-        "/=" => Some("SLASHEQ"),
-        "*=" => Some("STAREQ"),
-        "%=" => Some("PERCENTEQ"),
-        "&&" => Some("AMP2"),
-        "||" => Some("PIPE2"),
-        "<<" => Some("SHL"),
-        ">>" => Some("SHR"),
-        "<<=" => Some("SHLEQ"),
-        ">>=" => Some("SHREQ"),
-        _ => None,
-    }
-}
-
-/// This one is important, as it MUST match the nodeKind in the JSON representation.
-/// TODO: Currently manual. See how it could be automated.
+// We want to crash hard if there's any missing node.
 fn token_name_to_json_kind(token: &str) -> String {
-    if let Some(json_kind) = token_operator_or_punct_to_json_kind(token) {
-        return json_kind.to_string();
-    }
-
-    // #ident  -> IDENT
-    if let Some(inner) = token.strip_prefix('#') {
-        return inner.to_shouty_snake_case();
-    }
-
-    // @int_number -> INT_NUMBER
-    if let Some(inner) = token.strip_prefix('@') {
-        return inner.to_shouty_snake_case();
-    }
-
-    // Self is a special case keyword
-    if token == "Self" {
-        return "SELF_TYPE_KW".to_string();
-    }
-
-    // Any other keyword, fn -> FN_KW
-    format!("{}_KW", token.to_shouty_snake_case())
+    let kind = token_name_to_syntax_kind(token)
+        .unwrap_or_else(|| panic!("ungrammar token {token:?} has no SyntaxKind"));
+    syntax_kind_to_json_name(kind)
 }
 
 fn token_name_to_scala_name(token: &str) -> String {
     // Suffix token to prevent e.g. `String` from conflicting with Scala's `String` type.
     format!("{}Token", token_name_to_json_kind(token)).to_pascal_case()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::generate_bindings;
+
+    #[test]
+    fn every_grammar_name_resolves_to_a_syntax_kind() {
+        generate_bindings(false).unwrap();
+    }
 }

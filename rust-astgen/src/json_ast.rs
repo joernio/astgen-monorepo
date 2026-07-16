@@ -1,6 +1,7 @@
 //! The actual JSON shape we emit per Rust source file.
 
 use crate::adjustments::{Adjustment, adjustments_for_node};
+use crate::json_kind::syntax_kind_to_json_name;
 use crate::names::{
     implemented_traits_for_node, method_full_name_for_node, supertraits_for_node,
     type_full_name_for_node,
@@ -113,7 +114,7 @@ impl RustAstGenJsonNode {
         target_crate: Option<Crate>,
         cfg_options: Option<&CfgOptions>,
     ) -> Self {
-        let node_kind = format!("{:?}", node.kind());
+        let node_kind = syntax_kind_to_json_name(node.kind());
         let range = Self::make_range(node.text_range(), hir_file_id, line_index);
         let text = macro_text(node, hir_file_id, semantics, target_crate);
         let method_full_name = method_full_name_for_node(node, semantics);
@@ -176,7 +177,7 @@ impl RustAstGenJsonNode {
         hir_file_id: HirFileId,
         line_index: &LineIndex,
     ) -> Self {
-        let node_kind = format!("{:?}", token.kind());
+        let node_kind = syntax_kind_to_json_name(token.kind());
         let range = Self::make_range(token.text_range(), hir_file_id, line_index);
         let text = hir_file_id.is_macro().then(|| token.text().to_string());
         let children = vec![];
