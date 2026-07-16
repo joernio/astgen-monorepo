@@ -1,12 +1,12 @@
 # Ruby AST Generator
 
-Generates JSON Abstract Syntax Trees (ASTs) for Ruby source files. Uses the [`parser` gem](https://github.com/whitequark/parser), which supports Ruby 1.8 through 3.2 syntax with backwards-compatible AST formats.
+Generates JSON Abstract Syntax Trees (ASTs) for Ruby source files. Uses the [`prism` gem](https://github.com/ruby/prism) parser with a fallback to the [`parser` gem](https://github.com/whitequark/parser) for backwards-compatible AST formats.
 
 ## Supported languages
 
-| Language | Tool used    | Notes                     |
-| -------- | ------------ | ------------------------- |
-| Ruby     | `parser` gem | Ruby 1.8 – 3.2 syntax     |
+| Language | Tool used                  | Notes                                              |
+| -------- | -------------------------- | -------------------------------------------------- |
+| Ruby     | `prism` / `parser` gem     | Prism is primary; falls back to `parser` on failure |
 
 ## Building
 
