@@ -97,13 +97,6 @@ jobs:
           distribution: 'temurin'
           java-version: '21'
 
-      - name: Set up Ruby
-        uses: ruby/setup-ruby@v1
-        with:
-          ruby-version: 3.1.4
-          bundler-cache: false
-          working-directory: ruby-astgen
-
       - name: Set up MSYS2 (Windows)
         if: runner.os == 'Windows'
         uses: msys2/setup-msys2@v2
@@ -120,11 +113,11 @@ jobs:
           echo "${RUNNER_TEMP}/msys64/usr/bin" >> "$GITHUB_PATH"
 
       - name: Set up JRuby
-        shell: bash
-        working-directory: ruby-astgen
-        run: |
-          curl -L 'https://repo1.maven.org/maven2/org/jruby/jruby-complete/9.4.8.0/jruby-complete-9.4.8.0.jar' \
-            --output jruby.jar
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: jruby-9.4.8.0
+          bundler-cache: false
+          working-directory: ruby-astgen
 
       - name: Set up JRuby environment
         shell: bash
@@ -135,20 +128,12 @@ jobs:
           echo "GEM_PATH=${PWD}/vendor/bundle/jruby/3.1.0" >> "$GITHUB_ENV"
           echo "${PWD}/vendor/bundle/jruby/3.1.0/bin" >> "$GITHUB_PATH"
 
-      - name: Install dependencies (Unix)
-        if: runner.os != 'Windows'
+      - name: Install dependencies
         shell: bash
         working-directory: ruby-astgen
         run: |
-          java -jar jruby.jar -S gem install bundler -v 2.5.21 --install-dir ${GEM_HOME}
-          java -jar jruby.jar -S bundle install
-
-      - name: Install dependencies (Windows)
-        if: runner.os == 'Windows'
-        working-directory: ruby-astgen
-        run: |
-          java -jar jruby.jar -S gem install bundler -v 2.5.21 --install-dir $env:GEM_HOME
-          java -jar jruby.jar -S bundle install
+          gem install bundler -v 2.5.21 --install-dir ${GEM_HOME}
+          bundle install
 
       - name: Build release
         shell: bash
