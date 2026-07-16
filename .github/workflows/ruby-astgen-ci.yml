@@ -10,7 +10,10 @@ defaults:
 
 jobs:
   ruby-ci:
-    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
@@ -24,3 +27,79 @@ jobs:
 
       - name: Run the default task
         run: bundle exec rake
+
+  jruby-ci:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Set up JDK
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: 3.1.4
+          bundler-cache: false
+          working-directory: ruby-astgen
+
+      - name: Set up MSYS2 (Windows)
+        if: runner.os == 'Windows'
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: UCRT64
+          install: make mingw-w64-ucrt-x86_64-gcc
+
+      - name: Set up JRuby
+        shell: bash
+        working-directory: ruby-astgen
+        run: |
+          curl -L 'https://repo1.maven.org/maven2/org/jruby/jruby-complete/9.4.8.0/jruby-complete-9.4.8.0.jar' \
+            --output jruby.jar
+
+      - name: Install dependencies (Unix)
+        if: runner.os != 'Windows'
+        run: |
+          mkdir -p ${PWD}/vendor/bundle/jruby/3.1.0
+          export GEM_HOME=${PWD}/vendor/bundle/jruby/3.1.0
+          export GEM_PATH=${PWD}/vendor/bundle/jruby/3.1.0
+          export PATH=$GEM_HOME/bin:$PATH
+          java -jar jruby.jar -S gem install bundler -v 2.5.21 --install-dir ${GEM_HOME}
+          java -jar jruby.jar -S bundle install
+
+      - name: Install dependencies (Windows)
+        if: runner.os == 'Windows'
+        shell: msys2 {0}
+        run: |
+          cd ruby-astgen
+          mkdir -p vendor/bundle/jruby/3.1.0
+          export GEM_HOME=$(pwd)/vendor/bundle/jruby/3.1.0
+          export GEM_PATH=$(pwd)/vendor/bundle/jruby/3.1.0
+          export PATH=$GEM_HOME/bin:$PATH
+          java -jar jruby.jar -S gem install bundler -v 2.5.21 --install-dir ${GEM_HOME}
+          java -jar jruby.jar -S bundle install
+
+      - name: Run tests with JRuby (Unix)
+        if: runner.os != 'Windows'
+        run: |
+          export GEM_HOME=${PWD}/vendor/bundle/jruby/3.1.0
+          export GEM_PATH=${PWD}/vendor/bundle/jruby/3.1.0
+          export PATH=$GEM_HOME/bin:$PATH
+          java -jar jruby.jar -S bundle exec rake
+
+      - name: Run tests with JRuby (Windows)
+        if: runner.os == 'Windows'
+        shell: msys2 {0}
+        run: |
+          cd ruby-astgen
+          export GEM_HOME=$(pwd)/vendor/bundle/jruby/3.1.0
+          export GEM_PATH=$(pwd)/vendor/bundle/jruby/3.1.0
+          export PATH=$GEM_HOME/bin:$PATH
+          java -jar jruby.jar -S bundle exec rake
