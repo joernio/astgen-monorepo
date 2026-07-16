@@ -135,13 +135,25 @@ jobs:
           echo "GEM_PATH=${PWD}/vendor/bundle/jruby/3.1.0" >> "$GITHUB_ENV"
           echo "${PWD}/vendor/bundle/jruby/3.1.0/bin" >> "$GITHUB_PATH"
 
-      - name: Install dependencies and build release
+      - name: Install dependencies (Unix)
+        if: runner.os != 'Windows'
         shell: bash
         working-directory: ruby-astgen
         run: |
           java -jar jruby.jar -S gem install bundler -v 2.5.21 --install-dir ${GEM_HOME}
           java -jar jruby.jar -S bundle install
 
+      - name: Install dependencies (Windows)
+        if: runner.os == 'Windows'
+        working-directory: ruby-astgen
+        run: |
+          java -jar jruby.jar -S gem install bundler -v 2.5.21 --install-dir $env:GEM_HOME
+          java -jar jruby.jar -S bundle install
+
+      - name: Build release
+        shell: bash
+        working-directory: ruby-astgen
+        run: |
           find vendor/bundle/jruby/3.1.0 -mindepth 1 -maxdepth 1 -type \
             d ! -name "gems" ! -name "bin" ! -name "specifications" \
             -exec rm -rf {} +
