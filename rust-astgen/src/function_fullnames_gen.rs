@@ -37,7 +37,7 @@ pub fn run(config: &config::RustAstGenConfig) -> anyhow::Result<()> {
 
     attach_db(&root_db, || {
         let mut stdout = io::stdout().lock();
-        write_function_fullnames_json(&mut stdout, dependency_full_names(&root_db))
+        write_function_fullnames_by_crate(&mut stdout, &root_db)
     })
 }
 
@@ -286,29 +286,62 @@ where
     }
 }
 
-fn write_function_fullnames_json<W: Write>(
+fn write_function_fullnames_by_crate<W: Write>(
     writer: &mut W,
-    entries: impl Iterator<Item = FunctionFullNameEntry>,
+    db: &RootDatabase,
 ) -> anyhow::Result<()> {
     writer
-        .write_all(b"{\"functions\":[\n")
-        .context("failed to write function fullnames JSON header")?;
+        .write_all(b"{\n")
+        .context("failed to write JSON opening brace")?;
 
-    let mut first = true;
-    for entry in entries {
-        if !first {
+    let workspace_roots = workspace_root_modules_rc(db);
+    let mut first_crate = true;
+
+    for krate in dependency_crates(db) {
+        let crate_name = match krate.display_name(db) {
+            Some(name) => name.to_string(),
+            None => continue,
+        };
+
+        if !first_crate {
             writer
                 .write_all(b",\n")
-                .context("failed to write function fullnames JSON separator")?;
+                .context("failed to write crate separator")?;
         }
-        first = false;
-        serde_json::to_writer(&mut *writer, &entry)
-            .context("failed to serialize function fullname entry")?;
+        first_crate = false;
+
+        serde_json::to_writer(&mut *writer, &crate_name)
+            .context("failed to serialize crate name")?;
+        writer
+            .write_all(b":[\n")
+            .context("failed to write array opening")?;
+
+        let entries = unique_by_method_full_name(
+            modules_in_crate(db, krate).flat_map(|module| {
+                module_full_names(db, module, Rc::clone(&workspace_roots))
+            })
+        );
+
+        let mut first_entry = true;
+        for entry in entries {
+            if !first_entry {
+                writer
+                    .write_all(b",\n")
+                    .context("failed to write entry separator")?;
+            }
+            first_entry = false;
+            serde_json::to_writer(&mut *writer, &entry)
+                .context("failed to serialize function fullname entry")?;
+        }
+
+        writer
+            .write_all(b"\n]")
+            .context("failed to write array closing")?;
     }
 
     writer
-        .write_all(b"\n]}\n")
-        .context("failed to write function fullnames JSON footer")?;
+        .write_all(b"\n}\n")
+        .context("failed to write JSON closing brace")?;
     Ok(())
 }
 
