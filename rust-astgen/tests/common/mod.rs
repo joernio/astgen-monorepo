@@ -2,6 +2,7 @@
 //! parses back the generated JSON. Currently only one crate is supported.
 #![allow(dead_code)]
 
+use rust_ast_gen::function_fullnames_gen::{FunctionFullNameEntry, FunctionFullNamesOutput};
 use serde_json::Value;
 use std::fs;
 use std::process::Command;
@@ -33,6 +34,62 @@ pub fn sysroot_ast_json(crate_name: &str, source: &str) -> TestResult<Value> {
         false,
         "src/main.rs",
     )
+}
+
+pub fn sysroot_function_fullnames_json(
+    crate_name: &str,
+    file_code_pairs: &[(&str, &str)],
+) -> TestResult<Vec<FunctionFullNameEntry>> {
+    function_fullnames_run(crate_name, file_code_pairs, true)
+}
+
+fn function_fullnames_run(
+    crate_name: &str,
+    file_code_pairs: &[(&str, &str)],
+    with_sysroot: bool,
+) -> TestResult<Vec<FunctionFullNameEntry>> {
+    let root = TempDir::with_prefix("rust_ast_gen_function_fullnames_test_")?;
+
+    fs::write(
+        root.child("Cargo.toml"),
+        format!(
+            r#"[package]
+name = "{crate_name}"
+version = "0.1.0"
+edition = "2021"
+"#
+        ),
+    )?;
+
+    for (relative_path, content) in file_code_pairs {
+        let path = root.path().join(relative_path);
+        if let Some(parent) = path.parent() {
+            fs::create_dir_all(parent)?;
+        }
+        fs::write(&path, content)?;
+    }
+
+    let mut command = Command::new(env!("CARGO_BIN_EXE_rust_ast_function_fullnames"));
+    command.arg("-i").arg(root.path());
+    if !with_sysroot {
+        command.arg("--no-sysroot");
+    }
+    let output = command.output()?;
+
+    if !output.stderr.is_empty() {
+        eprint!("{}", String::from_utf8_lossy(&output.stderr));
+    }
+
+    assert!(
+        output.status.success(),
+        "rust_ast_function_fullnames failed\nstdout:\n{}\nstderr:\n{}",
+        String::from_utf8_lossy(&output.stdout),
+        String::from_utf8_lossy(&output.stderr)
+    );
+
+    let parsed: FunctionFullNamesOutput =
+        serde_json::from_str(&String::from_utf8_lossy(&output.stdout))?;
+    Ok(parsed.functions)
 }
 
 fn run(
