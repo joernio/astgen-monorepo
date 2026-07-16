@@ -138,6 +138,14 @@ jobs:
           gem install bundler -v 2.5.21 --install-dir ${GEM_HOME}
           bundle install
 
+      - name: Fix prism native library (Windows)
+        if: runner.os == 'Windows'
+        shell: bash
+        working-directory: ruby-astgen
+        run: |
+          JRUBY_PRISM_LIB="$(ruby -e 'print RbConfig::CONFIG["libdir"]')/prism"
+          cp vendor/bundle/jruby/${RUBY_ABI}/gems/prism-*/build/libprism.dll "$JRUBY_PRISM_LIB/libprism.dll"
+
       - name: Build release
         shell: bash
         working-directory: ruby-astgen
