@@ -81,6 +81,23 @@ jobs:
           gem install bundler -v 2.5.21 --install-dir ${GEM_HOME}
           bundle install
 
+      - name: Diagnose prism (Windows)
+        if: runner.os == 'Windows'
+        shell: bash
+        working-directory: ruby-astgen
+        run: |
+          LIBDIR="$(bundle exec ruby -e 'print RbConfig::CONFIG["libdir"]')"
+          echo "=== JRuby libdir prism dll ==="
+          ls -la "$LIBDIR/prism" || echo "no libdir prism"
+          echo "=== vendored build dll ==="
+          ls -la vendor/bundle/jruby/3.1.0/gems/prism-*/build/ || echo "no vendored build"
+          echo "=== symbols in the JRuby-libdir dll (the one being loaded) ==="
+          nm -D "$LIBDIR/prism/libprism.dll" 2>/dev/null | grep -iE 'pm_serialize|pm_version|pm_parse' || echo "expected pm_* symbols NOT found"
+          echo "=== symbols in the vendored dll ==="
+          nm -D vendor/bundle/jruby/3.1.0/gems/prism-*/build/libprism.dll 2>/dev/null | grep -iE 'pm_serialize|pm_version|pm_parse' || echo "vendored: pm_* NOT found"
+          echo "=== dependent DLLs of vendored build ==="
+          objdump -p vendor/bundle/jruby/3.1.0/gems/prism-*/build/libprism.dll 2>/dev/null | grep -i 'DLL Name' || true
+
       - name: Run tests with JRuby
         shell: bash
         working-directory: ruby-astgen
