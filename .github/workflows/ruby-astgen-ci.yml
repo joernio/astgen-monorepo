@@ -58,6 +58,13 @@ jobs:
           msystem: UCRT64
           install: make mingw-w64-ucrt-x86_64-gcc
 
+      - name: Add MSYS2 to PATH (Windows)
+        if: runner.os == 'Windows'
+        shell: bash
+        run: |
+          echo "${RUNNER_TEMP}/msys64/ucrt64/bin" >> "$GITHUB_PATH"
+          echo "${RUNNER_TEMP}/msys64/usr/bin" >> "$GITHUB_PATH"
+
       - name: Set up JRuby
         shell: bash
         working-directory: ruby-astgen
@@ -65,8 +72,7 @@ jobs:
           curl -L 'https://repo1.maven.org/maven2/org/jruby/jruby-complete/9.4.8.0/jruby-complete-9.4.8.0.jar' \
             --output jruby.jar
 
-      - name: Install dependencies (Unix)
-        if: runner.os != 'Windows'
+      - name: Install dependencies
         run: |
           mkdir -p ${PWD}/vendor/bundle/jruby/3.1.0
           export GEM_HOME=${PWD}/vendor/bundle/jruby/3.1.0
@@ -75,32 +81,9 @@ jobs:
           java -jar jruby.jar -S gem install bundler -v 2.5.21 --install-dir ${GEM_HOME}
           java -jar jruby.jar -S bundle install
 
-      - name: Install dependencies (Windows)
-        if: runner.os == 'Windows'
-        shell: msys2 {0}
-        run: |
-          cd "$GITHUB_WORKSPACE/ruby-astgen"
-          mkdir -p vendor/bundle/jruby/3.1.0
-          export GEM_HOME=$(pwd)/vendor/bundle/jruby/3.1.0
-          export GEM_PATH=$(pwd)/vendor/bundle/jruby/3.1.0
-          export PATH=$GEM_HOME/bin:$PATH
-          java -jar jruby.jar -S gem install bundler -v 2.5.21 --install-dir ${GEM_HOME}
-          java -jar jruby.jar -S bundle install
-
-      - name: Run tests with JRuby (Unix)
-        if: runner.os != 'Windows'
+      - name: Run tests with JRuby
         run: |
           export GEM_HOME=${PWD}/vendor/bundle/jruby/3.1.0
           export GEM_PATH=${PWD}/vendor/bundle/jruby/3.1.0
-          export PATH=$GEM_HOME/bin:$PATH
-          java -jar jruby.jar -S bundle exec rake
-
-      - name: Run tests with JRuby (Windows)
-        if: runner.os == 'Windows'
-        shell: msys2 {0}
-        run: |
-          cd "$GITHUB_WORKSPACE/ruby-astgen"
-          export GEM_HOME=$(pwd)/vendor/bundle/jruby/3.1.0
-          export GEM_PATH=$(pwd)/vendor/bundle/jruby/3.1.0
           export PATH=$GEM_HOME/bin:$PATH
           java -jar jruby.jar -S bundle exec rake
