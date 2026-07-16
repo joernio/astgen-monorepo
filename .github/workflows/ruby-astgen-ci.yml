@@ -79,7 +79,7 @@ jobs:
         if: runner.os == 'Windows'
         shell: msys2 {0}
         run: |
-          cd ruby-astgen
+          cd "$GITHUB_WORKSPACE/ruby-astgen"
           mkdir -p vendor/bundle/jruby/3.1.0
           export GEM_HOME=$(pwd)/vendor/bundle/jruby/3.1.0
           export GEM_PATH=$(pwd)/vendor/bundle/jruby/3.1.0
@@ -99,7 +99,7 @@ jobs:
         if: runner.os == 'Windows'
         shell: msys2 {0}
         run: |
-          cd ruby-astgen
+          cd "$GITHUB_WORKSPACE/ruby-astgen"
           export GEM_HOME=$(pwd)/vendor/bundle/jruby/3.1.0
           export GEM_PATH=$(pwd)/vendor/bundle/jruby/3.1.0
           export PATH=$GEM_HOME/bin:$PATH
