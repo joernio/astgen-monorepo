@@ -1,7 +1,10 @@
 //! The actual JSON shape we emit per Rust source file.
 
 use crate::adjustments::{Adjustment, adjustments_for_node};
-use crate::names::{method_full_name_for_node, type_full_name_for_node};
+use crate::names::{
+    implemented_traits_for_node, method_full_name_for_node, supertraits_for_node,
+    type_full_name_for_node,
+};
 use crate::receivers::has_self_receiver_for_node;
 use ra_ap_hir::{
     CfgExpr, CfgOptions, Crate, HirFileId, Semantics, db::ExpandDatabase, prettify_macro_expansion,
@@ -45,6 +48,12 @@ pub(crate) struct RustAstGenJsonNode {
     pub(crate) method_full_name: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub(crate) type_full_name: Option<String>,
+    // Only applicable when node_kind is Struct.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(crate) implemented_traits: Option<Vec<String>>,
+    // Only applicable when node_kind is Trait.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(crate) supertraits: Option<Vec<String>>,
     // Only applicable when node_kind is MacroCall.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub(crate) macro_expansion: Option<Box<RustAstGenJsonNode>>,
@@ -109,6 +118,8 @@ impl RustAstGenJsonNode {
         let text = macro_text(node, hir_file_id, semantics, target_crate);
         let method_full_name = method_full_name_for_node(node, semantics);
         let type_full_name = type_full_name_for_node(node, semantics);
+        let implemented_traits = implemented_traits_for_node(node, semantics);
+        let supertraits = supertraits_for_node(node, semantics);
         let adjustments = adjustments_for_node(node, semantics);
         let has_self_receiver = has_self_receiver_for_node(node, semantics);
 
@@ -152,6 +163,8 @@ impl RustAstGenJsonNode {
             macro_expansion,
             method_full_name,
             type_full_name,
+            implemented_traits,
+            supertraits,
             adjustments,
             has_self_receiver,
             children,
@@ -176,6 +189,8 @@ impl RustAstGenJsonNode {
             macro_expansion: None,
             method_full_name: None,
             type_full_name: None,
+            implemented_traits: None,
+            supertraits: None,
             adjustments: None,
             has_self_receiver: None,
         }

@@ -216,6 +216,28 @@ impl<'a> NodeSelector<'a> {
             .get("hasSelfReceiver")
             .and_then(Value::as_bool)
     }
+
+    pub fn implemented_traits(self) -> Vec<String> {
+        self.string_list("implementedTraits")
+    }
+
+    pub fn supertraits(self) -> Vec<String> {
+        self.string_list("supertraits")
+    }
+
+    fn string_list(self, field: &str) -> Vec<String> {
+        self.one_node()
+            .get(field)
+            .and_then(Value::as_array)
+            .map(|values| {
+                values
+                    .iter()
+                    .filter_map(Value::as_str)
+                    .map(str::to_owned)
+                    .collect()
+            })
+            .unwrap_or_default()
+    }
 }
 
 fn node<'a>(json: &'a Value, kind: &'static str, text: &'static str) -> NodeSelector<'a> {
@@ -245,6 +267,10 @@ pub fn ident_pat<'a>(json: &'a Value, text: &'static str) -> NodeSelector<'a> {
 
 pub fn struct_decl<'a>(json: &'a Value, text: &'static str) -> NodeSelector<'a> {
     node(json, "STRUCT", text)
+}
+
+pub fn trait_decl<'a>(json: &'a Value, text: &'static str) -> NodeSelector<'a> {
+    node(json, "TRAIT", text)
 }
 
 pub fn fn_decl<'a>(json: &'a Value, text: &'static str) -> NodeSelector<'a> {
