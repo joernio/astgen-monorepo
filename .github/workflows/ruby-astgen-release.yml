@@ -115,7 +115,7 @@ jobs:
       - name: Set up JRuby
         uses: ruby/setup-ruby@v1
         with:
-          ruby-version: jruby-9.4.8.0
+          ruby-version: jruby-10.0.6.0
           bundler-cache: false
           working-directory: ruby-astgen
 
@@ -123,10 +123,13 @@ jobs:
         shell: bash
         working-directory: ruby-astgen
         run: |
-          mkdir -p ${PWD}/vendor/bundle/jruby/3.1.0
-          echo "GEM_HOME=${PWD}/vendor/bundle/jruby/3.1.0" >> "$GITHUB_ENV"
-          echo "GEM_PATH=${PWD}/vendor/bundle/jruby/3.1.0" >> "$GITHUB_ENV"
-          echo "${PWD}/vendor/bundle/jruby/3.1.0/bin" >> "$GITHUB_PATH"
+          RUBY_ABI=$(ruby -e 'print Gem.ruby_api_version')
+          BUNDLE_BASE="${PWD}/vendor/bundle/jruby/${RUBY_ABI}"
+          mkdir -p "${BUNDLE_BASE}"
+          echo "GEM_HOME=${BUNDLE_BASE}" >> "$GITHUB_ENV"
+          echo "GEM_PATH=${BUNDLE_BASE}" >> "$GITHUB_ENV"
+          echo "${BUNDLE_BASE}/bin" >> "$GITHUB_PATH"
+          echo "RUBY_ABI=${RUBY_ABI}" >> "$GITHUB_ENV"
 
       - name: Install dependencies
         shell: bash
@@ -139,7 +142,7 @@ jobs:
         shell: bash
         working-directory: ruby-astgen
         run: |
-          find vendor/bundle/jruby/3.1.0 -mindepth 1 -maxdepth 1 -type \
+          find vendor/bundle/jruby/${RUBY_ABI} -mindepth 1 -maxdepth 1 -type \
             d ! -name "gems" ! -name "bin" ! -name "specifications" \
             -exec rm -rf {} +
           zip -r ${{ matrix.asset_name }}_${{ needs.verify.outputs.new_tag }}.zip \

@@ -61,7 +61,7 @@ jobs:
       - name: Set up JRuby
         uses: ruby/setup-ruby@v1
         with:
-          ruby-version: jruby-9.4.8.0
+          ruby-version: jruby-10.0.6.0
           bundler-cache: false
           working-directory: ruby-astgen
 
@@ -69,10 +69,12 @@ jobs:
         shell: bash
         working-directory: ruby-astgen
         run: |
-          mkdir -p ${PWD}/vendor/bundle/jruby/3.1.0
-          echo "GEM_HOME=${PWD}/vendor/bundle/jruby/3.1.0" >> "$GITHUB_ENV"
-          echo "GEM_PATH=${PWD}/vendor/bundle/jruby/3.1.0" >> "$GITHUB_ENV"
-          echo "${PWD}/vendor/bundle/jruby/3.1.0/bin" >> "$GITHUB_PATH"
+          RUBY_ABI=$(ruby -e 'print Gem.ruby_api_version')
+          BUNDLE_BASE="${PWD}/vendor/bundle/jruby/${RUBY_ABI}"
+          mkdir -p "${BUNDLE_BASE}"
+          echo "GEM_HOME=${BUNDLE_BASE}" >> "$GITHUB_ENV"
+          echo "GEM_PATH=${BUNDLE_BASE}" >> "$GITHUB_ENV"
+          echo "${BUNDLE_BASE}/bin" >> "$GITHUB_PATH"
 
       - name: Install dependencies
         shell: bash
@@ -80,23 +82,6 @@ jobs:
         run: |
           gem install bundler -v 2.5.21 --install-dir ${GEM_HOME}
           bundle install
-
-      - name: Diagnose prism (Windows)
-        if: runner.os == 'Windows'
-        shell: bash
-        working-directory: ruby-astgen
-        run: |
-          LIBDIR="$(bundle exec ruby -e "print RbConfig::CONFIG['libdir']")"
-          echo "=== JRuby libdir prism dll ==="
-          ls -la "$LIBDIR/prism" || echo "no libdir prism"
-          echo "=== vendored build dll ==="
-          ls -la vendor/bundle/jruby/3.1.0/gems/prism-*/build/ || echo "no vendored build"
-          echo "=== symbols in the JRuby-libdir dll (the one being loaded) ==="
-          nm -D "$LIBDIR/prism/libprism.dll" 2>/dev/null | grep -iE 'pm_serialize|pm_version|pm_parse' || echo "expected pm_* symbols NOT found"
-          echo "=== symbols in the vendored dll ==="
-          nm -D vendor/bundle/jruby/3.1.0/gems/prism-*/build/libprism.dll 2>/dev/null | grep -iE 'pm_serialize|pm_version|pm_parse' || echo "vendored: pm_* NOT found"
-          echo "=== dependent DLLs of vendored build ==="
-          objdump -p vendor/bundle/jruby/3.1.0/gems/prism-*/build/libprism.dll 2>/dev/null | grep -i 'DLL Name' || true
 
       - name: Run tests with JRuby
         shell: bash
