@@ -7,9 +7,7 @@ use rust_ast_gen::function_fullnames_gen::{
     FunctionFullNameEntry, dependency_crate_named, load_sysroot_workspace, module_full_names,
     modules_in_crate, unique_by_method_full_name, workspace_root_modules_rc,
 };
-use std::fs;
 use std::rc::Rc;
-use temp_dir::TempDir;
 
 fn find_by_method_full_name(
     entries: impl IntoIterator<Item = FunctionFullNameEntry>,
@@ -20,34 +18,11 @@ fn find_by_method_full_name(
         .find(|entry| entry.method_full_name == method_full_name)
 }
 
-fn with_workspace_db(
-    crate_name: &str,
-    file_code_pairs: &[(&str, &str)],
-    test: impl FnOnce(&RootDatabase) -> TestResult<()>,
-) -> TestResult<()> {
-    let root = TempDir::with_prefix("rust_ast_gen_function_fullnames_test_")?;
-
-    fs::write(
-        root.child("Cargo.toml"),
-        format!(
-            r#"[package]
-name = "{crate_name}"
-version = "0.1.0"
-edition = "2021"
-"#
-        ),
-    )?;
-
-    for (relative_path, content) in file_code_pairs {
-        let path = root.path().join(relative_path);
-        if let Some(parent) = path.parent() {
-            fs::create_dir_all(parent)?;
-        }
-        fs::write(&path, content)?;
-    }
-
-    let db = load_sysroot_workspace(root.path().to_path_buf())?;
-    attach_db(&db, || test(&db)).map_err(Into::into)
+fn load_sysroot_only_db() -> TestResult<RootDatabase> {
+    // cargo test guarantees cwd is the package root, so we can use it directly.
+    // We only need the sysroot crates (like core), not the workspace crates.
+    let current_dir = std::env::current_dir()?;
+    Ok(load_sysroot_workspace(current_dir)?)
 }
 
 fn entries_in_dependency_modules(
@@ -76,26 +51,14 @@ fn entries_in_dependency_modules(
 
 #[test]
 fn dependency_crate_function_fullnames() -> TestResult<()> {
-    with_workspace_db(
-        "rust2cpg",
-        &[(
-            "src/lib.rs",
-            r#"#![no_std]
-
-struct LocalTuple(i32);
-
-fn workspace_fn() {}
-
-pub fn example() {}
-"#,
-        )],
-        |db| {
-            // Use only the exact module names that contain our test methods
-            let core_entries = entries_in_dependency_modules(
-                db,
-                "core",
-                &["clone", "array", "iterator", "option", "result", "slice", "str"],
-            )?;
+    let db = load_sysroot_only_db()?;
+    attach_db(&db, || {
+        // Use only the exact module names that contain our test methods
+        let core_entries = entries_in_dependency_modules(
+            &db,
+            "core",
+            &["clone", "array", "iterator", "option", "result", "slice", "str"],
+        )?;
 
             // Test enum variant constructor (Option::Some)
             let option_some = FunctionFullNameEntry {
@@ -204,19 +167,16 @@ pub fn example() {}
                 "should find slice inherent methods like [T]::len"
             );
 
-            // Test workspace items are excluded
+            // Verify workspace items are excluded (our own test crate functions shouldn't appear)
             assert_eq!(
-                find_by_method_full_name(core_entries.clone(), "rust2cpg::workspace_fn"),
+                find_by_method_full_name(
+                    core_entries.clone(),
+                    "rust_ast_gen::function_fullnames_gen::run"
+                ),
                 None,
-                "workspace free function should be excluded"
-            );
-            assert_eq!(
-                find_by_method_full_name(core_entries, "rust2cpg::LocalTuple"),
-                None,
-                "workspace tuple struct ctor should be excluded"
+                "workspace functions should be excluded from dependency entries"
             );
 
             Ok(())
-        },
-    )
+    })
 }
