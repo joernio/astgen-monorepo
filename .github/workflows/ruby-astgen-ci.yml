@@ -79,6 +79,8 @@ jobs:
       - name: Install dependencies
         shell: bash
         working-directory: ruby-astgen
+        env:
+          JAVA_OPTS: "-Xrs"
         run: |
           jruby -S gem install bundler -v 2.5.21 --install-dir ${GEM_HOME}
           jruby -S bundle install
