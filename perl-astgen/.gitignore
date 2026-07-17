@@ -1,0 +1,13 @@
+.DS_Store
+.build/
+ast_out/
+.vscode/
+PerlNodeSyntax.scala
+target/
+.idea/
+.worktrees/
+regression-diffs/
+__pycache__/
+tests/ScalaPerlNodeSyntaxTests/.bsp/
+tests/ScalaPerlNodeSyntaxTests/project/target/
+tests/ScalaPerlNodeSyntaxTests/target/

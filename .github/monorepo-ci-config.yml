@@ -42,6 +42,12 @@ languages:
       - 'abap-astgen/**'
       - '.github/workflows/abap-astgen-ci.yml'
 
+  - name: perl
+    workflow: .github/workflows/perl-astgen-ci.yml
+    paths:
+      - 'perl-astgen/**'
+      - '.github/workflows/perl-astgen-ci.yml'
+
   - name: regression
     workflow: .github/workflows/astgen-regression-ci.yml
     paths:
