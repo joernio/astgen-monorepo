@@ -83,15 +83,6 @@ jobs:
           gem install bundler -v 2.5.21 --install-dir ${GEM_HOME}
           bundle install
 
-      - name: Fix prism native library (Windows)
-        if: runner.os == 'Windows'
-        shell: bash
-        working-directory: ruby-astgen
-        run: |
-          JRUBY_PRISM_LIB="$(ruby -e 'print RbConfig::CONFIG["libdir"]')/prism"
-          RUBY_ABI=$(ruby -e 'print Gem.ruby_api_version')
-          cp vendor/bundle/jruby/${RUBY_ABI}/gems/prism-*/build/libprism.dll "$JRUBY_PRISM_LIB/libprism.dll"
-
       - name: Diagnose prism (Windows)
         if: runner.os == 'Windows'
         shell: bash
@@ -108,6 +99,15 @@ jobs:
           objdump -p "$DLL" 2>/dev/null | grep -i 'DLL Name'
           echo "=== is this DLL prism's, or JRuby's own internal one? ==="
           nm -D "$DLL" 2>/dev/null | wc -l
+
+      - name: Fix prism native library (Windows)
+        if: runner.os == 'Windows'
+        shell: bash
+        working-directory: ruby-astgen
+        run: |
+          JRUBY_PRISM_LIB="$(ruby -e 'print RbConfig::CONFIG["libdir"]')/prism"
+          RUBY_ABI=$(ruby -e 'print Gem.ruby_api_version')
+          cp vendor/bundle/jruby/${RUBY_ABI}/gems/prism-*/build/libprism.dll "$JRUBY_PRISM_LIB/libprism.dll"
 
       - name: Run tests with JRuby
         shell: bash
