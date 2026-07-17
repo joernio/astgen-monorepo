@@ -85,6 +85,22 @@ jobs:
           jruby -S gem install bundler -v 2.5.21 --install-dir ${GEM_HOME}
           jruby -S bundle install
 
+      - name: Inspect prism build (Windows)
+        if: runner.os == 'Windows'
+        shell: bash
+        working-directory: ruby-astgen
+        run: |
+          GEM=$(ls -d vendor/bundle/jruby/3.4.0/gems/prism-*)
+          echo "GEM=$GEM"
+          find "$GEM" -name 'Makefile' -o -name 'Rakefile' -o -iname 'libprism*' -o -name 'extconf.rb' | sort
+          echo "=== SOEXT ==="
+          ruby -e 'print RbConfig::CONFIG["SOEXT"]'
+          echo
+          echo "=== is there a build dir at all ==="
+          ls -la "$GEM/build" 2>/dev/null || echo "no build dir"
+          echo "=== ext build logs ==="
+          find vendor/bundle/jruby/3.4.0/extensions -iname '*prism*' 2>/dev/null || echo "no compiled extension recorded"
+
       - name: Run tests with JRuby
         shell: bash
         working-directory: ruby-astgen
