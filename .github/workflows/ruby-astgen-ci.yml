@@ -63,6 +63,7 @@ jobs:
           echo "${BUNDLE_BASE}/bin" >> "$GITHUB_PATH"
 
       - name: Setup tmate session
+        if: matrix.os == 'windows-latest'
         uses: mxschmitt/action-tmate@v3
 
       - name: Run tests with JRuby
