@@ -5,7 +5,7 @@ use crate::{cargo, config};
 use anyhow::Context;
 use ra_ap_hir::{
     Adt, AsAssocItem, AssocItem, AssocItemContainer, Crate, Enum, EnumVariant, Function,
-    HasVisibility, Impl, Module, ModuleDef, StructKind, Trait, attach_db,
+    HasAttrs, HasVisibility, Impl, Module, ModuleDef, StructKind, Trait, attach_db,
 };
 use ra_ap_ide::RootDatabase;
 use serde::{Deserialize, Serialize};
@@ -48,9 +48,11 @@ pub fn dependency_full_names<'db>(
     unique_by_method_full_name(dependency_crates(db).into_iter().flat_map({
         let workspace_roots = Rc::clone(&workspace_roots);
         move |krate| {
-            let workspace_roots = Rc::clone(&workspace_roots);
-            modules_in_crate(db, krate)
-                .flat_map(move |module| module_full_names(db, module, Rc::clone(&workspace_roots)))
+            let workspace_roots_for_modules = Rc::clone(&workspace_roots);
+            modules_in_crate(db, krate, Rc::clone(&workspace_roots))
+                .flat_map(move |(module, parent_is_unstable)| {
+                    module_full_names(db, module, Rc::clone(&workspace_roots_for_modules), parent_is_unstable)
+                })
         }
     }))
 }
@@ -87,25 +89,63 @@ pub fn dependency_crate_named(db: &RootDatabase, name: &str) -> Option<Crate> {
     })
 }
 
-pub fn modules_in_crate(db: &RootDatabase, krate: Crate) -> impl Iterator<Item = Module> + '_ {
-    krate.modules(db).into_iter()
+pub fn modules_in_crate<'db>(
+    db: &'db RootDatabase,
+    krate: Crate,
+    workspace_roots: Rc<[Module]>,
+) -> Box<dyn Iterator<Item = (Module, bool)> + 'db> {
+    let root = krate.root_module(db);
+    modules_recursive(db, root, workspace_roots, false)
+}
+
+fn modules_recursive<'db>(
+    db: &'db RootDatabase,
+    module: Module,
+    workspace_roots: Rc<[Module]>,
+    parent_is_unstable: bool,
+) -> Box<dyn Iterator<Item = (Module, bool)> + 'db> {
+    let is_accessible = is_available_from_workspace(&module, db, workspace_roots.as_ref());
+
+    if !is_accessible {
+        return Box::new(std::iter::empty());
+    }
+
+    let module_is_unstable = parent_is_unstable || is_module_unstable(module, db);
+
+    let children_iter = module.children(db).flat_map(move |child| {
+        modules_recursive(db, child, Rc::clone(&workspace_roots), module_is_unstable)
+    });
+
+    Box::new(std::iter::once((module, module_is_unstable)).chain(children_iter))
 }
 
 pub fn module_full_names<'db>(
     db: &'db RootDatabase,
     module: Module,
     workspace_roots: Rc<[Module]>,
+    parent_is_unstable: bool,
 ) -> impl Iterator<Item = FunctionFullNameEntry> + 'db {
+    module_full_names_with_unstable(db, module, workspace_roots, parent_is_unstable)
+}
+
+fn module_full_names_with_unstable<'db>(
+    db: &'db RootDatabase,
+    module: Module,
+    workspace_roots: Rc<[Module]>,
+    parent_is_unstable: bool,
+) -> impl Iterator<Item = FunctionFullNameEntry> + 'db {
+    // Check if this module is unstable
+    let module_is_unstable = parent_is_unstable || is_module_unstable(module, db);
     let decl_roots = Rc::clone(&workspace_roots);
     let decls = module
         .declarations(db)
         .into_iter()
-        .flat_map(move |def| module_def_full_names(db, def, Rc::clone(&decl_roots)));
+        .flat_map(move |def| module_def_full_names(db, def, Rc::clone(&decl_roots), module_is_unstable));
 
     let impls = module
         .impl_defs(db)
         .into_iter()
-        .flat_map(move |impl_| impl_full_names(db, impl_, Rc::clone(&workspace_roots)));
+        .flat_map(move |impl_| impl_full_names(db, impl_, Rc::clone(&workspace_roots), module_is_unstable));
 
     decls.chain(impls)
 }
@@ -114,18 +154,20 @@ fn module_def_full_names<'db>(
     db: &'db RootDatabase,
     def: ModuleDef,
     workspace_roots: Rc<[Module]>,
+    module_is_unstable: bool,
 ) -> Box<dyn Iterator<Item = FunctionFullNameEntry> + 'db> {
     match def {
         ModuleDef::Function(function) => {
-            option_entry(function_entry(db, function, workspace_roots.as_ref()))
+            option_entry(function_entry(db, function, workspace_roots.as_ref(), module_is_unstable))
         }
         ModuleDef::Adt(Adt::Struct(struct_)) => option_entry(tuple_struct_ctor_entry(
             db,
             struct_,
             workspace_roots.as_ref(),
+            module_is_unstable,
         )),
-        ModuleDef::Adt(Adt::Enum(enum_)) => Box::new(enum_full_names(db, enum_, workspace_roots)),
-        ModuleDef::Trait(trait_) => Box::new(trait_full_names(db, trait_, workspace_roots)),
+        ModuleDef::Adt(Adt::Enum(enum_)) => Box::new(enum_full_names(db, enum_, workspace_roots, module_is_unstable)),
+        ModuleDef::Trait(trait_) => Box::new(trait_full_names(db, trait_, workspace_roots, module_is_unstable)),
         _ => Box::new(std::iter::empty()),
     }
 }
@@ -134,23 +176,26 @@ fn enum_full_names<'db>(
     db: &'db RootDatabase,
     enum_: Enum,
     workspace_roots: Rc<[Module]>,
+    module_is_unstable: bool,
 ) -> impl Iterator<Item = FunctionFullNameEntry> + 'db {
     enum_
         .variants(db)
         .into_iter()
-        .filter_map(move |variant| enum_variant_ctor_entry(db, variant, workspace_roots.as_ref()))
+        .filter_map(move |variant| enum_variant_ctor_entry(db, variant, workspace_roots.as_ref(), module_is_unstable))
 }
 
 fn trait_full_names<'db>(
     db: &'db RootDatabase,
     trait_: Trait,
     workspace_roots: Rc<[Module]>,
+    module_is_unstable: bool,
 ) -> impl Iterator<Item = FunctionFullNameEntry> + 'db {
+    let trait_is_unstable = module_is_unstable || trait_.attrs(db).is_unstable();
     trait_
         .items(db)
         .into_iter()
         .filter_map(move |item| match item {
-            AssocItem::Function(function) => function_entry(db, function, workspace_roots.as_ref()),
+            AssocItem::Function(function) => function_entry(db, function, workspace_roots.as_ref(), trait_is_unstable),
             _ => None,
         })
 }
@@ -159,12 +204,14 @@ fn impl_full_names<'db>(
     db: &'db RootDatabase,
     impl_: Impl,
     workspace_roots: Rc<[Module]>,
+    module_is_unstable: bool,
 ) -> impl Iterator<Item = FunctionFullNameEntry> + 'db {
+    let impl_is_unstable = module_is_unstable || impl_.attrs(db).is_unstable();
     impl_
         .items(db)
         .into_iter()
         .filter_map(move |item| match item {
-            AssocItem::Function(function) => function_entry(db, function, workspace_roots.as_ref()),
+            AssocItem::Function(function) => function_entry(db, function, workspace_roots.as_ref(), impl_is_unstable),
             _ => None,
         })
 }
@@ -173,6 +220,7 @@ fn function_entry(
     db: &RootDatabase,
     function: Function,
     workspace_roots: &[Module],
+    module_is_unstable: bool,
 ) -> Option<FunctionFullNameEntry> {
     if !is_function_available_from_workspace(function, db, workspace_roots) {
         return None;
@@ -190,7 +238,7 @@ fn function_entry(
         has_self_receiver: function.has_self_param(db),
         is_trait_impl,
         is_trait_method_def,
-        is_nightly_only: function.is_unstable(db),
+        is_nightly_only: module_is_unstable || function.is_unstable(db),
     })
 }
 
@@ -198,12 +246,23 @@ fn tuple_struct_ctor_entry(
     db: &RootDatabase,
     struct_: ra_ap_hir::Struct,
     workspace_roots: &[Module],
+    module_is_unstable: bool,
 ) -> Option<FunctionFullNameEntry> {
     if !is_available_from_workspace(&struct_, db, workspace_roots) {
         return None;
     }
 
-    if struct_.kind(db) != StructKind::Tuple {
+    match struct_.kind(db) {
+        StructKind::Tuple => {}
+        StructKind::Unit | StructKind::Record => return None,
+    }
+
+    // Only emit the constructor if all fields are accessible
+    if !struct_
+        .fields(db)
+        .iter()
+        .all(|field| is_available_from_workspace(field, db, workspace_roots))
+    {
         return None;
     }
 
@@ -214,7 +273,7 @@ fn tuple_struct_ctor_entry(
         has_self_receiver: false,
         is_trait_impl: false,
         is_trait_method_def: false,
-        is_nightly_only: struct_.is_unstable(db),
+        is_nightly_only: module_is_unstable || struct_.is_unstable(db),
     })
 }
 
@@ -222,14 +281,24 @@ fn enum_variant_ctor_entry(
     db: &RootDatabase,
     enum_variant: EnumVariant,
     workspace_roots: &[Module],
+    module_is_unstable: bool,
 ) -> Option<FunctionFullNameEntry> {
     if !is_available_from_workspace(&enum_variant, db, workspace_roots) {
         return None;
     }
 
     match enum_variant.kind(db) {
-        StructKind::Tuple | StructKind::Unit => {}
-        StructKind::Record => return None,
+        StructKind::Tuple => {}
+        StructKind::Unit | StructKind::Record => return None,
+    }
+
+    // Only emit the constructor if all fields are accessible
+    if !enum_variant
+        .fields(db)
+        .iter()
+        .all(|field| is_available_from_workspace(field, db, workspace_roots))
+    {
+        return None;
     }
 
     let method_full_name = format_enum_variant_full_name(enum_variant, db)?;
@@ -239,7 +308,7 @@ fn enum_variant_ctor_entry(
         has_self_receiver: false,
         is_trait_impl: false,
         is_trait_method_def: false,
-        is_nightly_only: enum_variant.is_unstable(db),
+        is_nightly_only: module_is_unstable || enum_variant.is_unstable(db),
     })
 }
 
@@ -311,8 +380,10 @@ fn write_function_fullnames_by_crate<W: Write>(
             .context("failed to write array opening")?;
 
         let entries = unique_by_method_full_name(
-            modules_in_crate(db, krate)
-                .flat_map(|module| module_full_names(db, module, Rc::clone(&workspace_roots))),
+            modules_in_crate(db, krate, Rc::clone(&workspace_roots))
+                .flat_map(|(module, parent_is_unstable)| {
+                    module_full_names(db, module, Rc::clone(&workspace_roots), parent_is_unstable)
+                }),
         );
 
         let mut first_entry = true;
@@ -354,6 +425,10 @@ fn is_available_from_workspace<T: HasVisibility>(
     workspace_roots
         .iter()
         .any(|module| item.is_visible_from(db, *module))
+}
+
+fn is_module_unstable(module: Module, db: &RootDatabase) -> bool {
+    module.attrs(db).is_unstable()
 }
 
 fn is_function_available_from_workspace(
