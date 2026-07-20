@@ -57,8 +57,9 @@ jobs:
           RUBY_ABI=$(ruby -e 'print Gem.ruby_api_version')
           BUNDLE_BASE="${PWD}/vendor/bundle/jruby/${RUBY_ABI}"
           mkdir -p "${BUNDLE_BASE}"
+          
           echo "GEM_HOME=${BUNDLE_BASE}" >> "$GITHUB_ENV"
-          echo "GEM_PATH=${BUNDLE_BASE}" >> "$GITHUB_ENV"
+          echo "GEM_PATH=${BUNDLE_BASE}:${GEM_PATH}" >> "$GITHUB_ENV"
           echo "${BUNDLE_BASE}/bin" >> "$GITHUB_PATH"
 
       - name: Patch Prism native library path
