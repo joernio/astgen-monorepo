@@ -43,13 +43,6 @@ jobs:
           distribution: temurin
           java-version: "21"
 
-      - name: Add MSYS2 to PATH (Windows)
-        if: runner.os == 'Windows'
-        shell: bash
-        run: |
-          echo "${RUNNER_TEMP}/msys64/mingw64/bin" >> "$GITHUB_PATH"
-          echo "${RUNNER_TEMP}/msys64/usr/bin" >> "$GITHUB_PATH"
-
       - name: Set up JRuby
         uses: ruby/setup-ruby@v1
         with:
