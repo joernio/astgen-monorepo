@@ -61,6 +61,24 @@ jobs:
           echo "GEM_PATH=${BUNDLE_BASE}" >> "$GITHUB_ENV"
           echo "${BUNDLE_BASE}/bin" >> "$GITHUB_PATH"
 
+      - name: Patch Prism native library path
+        if: matrix.os == 'windows-latest'
+        shell: bash
+        working-directory: ruby-astgen
+        run: |
+          PRISM_VERSION="1.9.0"
+          
+          # Fetch the pre-compiled Windows DLL
+          gem fetch prism -v $PRISM_VERSION --platform x64-mingw-ucrt
+          gem unpack prism-${PRISM_VERSION}-x64-mingw-ucrt.gem
+          
+          # Locate the installed prism gem inside vendor/bundle
+          GEM_DIR=$(find "${PWD}/vendor/bundle" -type d -name "prism-${PRISM_VERSION}" | head -n 1)
+          
+          # Create the expected build directory and copy the DLL
+          mkdir -p "${GEM_DIR}/build"
+          cp "prism-${PRISM_VERSION}-x64-mingw-ucrt/libprism.dll" "${GEM_DIR}/build/libprism.dll"
+
       - name: Run tests with JRuby
         shell: bash
         working-directory: ruby-astgen
