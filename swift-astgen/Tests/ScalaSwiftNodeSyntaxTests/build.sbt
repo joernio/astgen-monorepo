@@ -1,6 +1,6 @@
 ThisBuild / version := "0.1.0-SNAPSHOT"
 
-ThisBuild / scalaVersion := "3.3.1"
+ThisBuild / scalaVersion := "3.8.4"
 
 lazy val copyFile = taskKey[Unit]("Copy SwiftNodeSyntax.scala")
 
@@ -11,13 +11,13 @@ copyFile := {
   IO.copyFile(from, to)
 }
 
-Compile / compile := ((Compile / compile) dependsOn copyFile).value
+Compile / compile := Def.uncached((Compile / compile).dependsOn(copyFile)).value
 
 lazy val root = (project in file("."))
   .settings(name := "ScalaSwiftNodeSyntaxTests")
 
 libraryDependencies ++= Seq(
-  "com.lihaoyi"          %% "ujson"        % "3.1.3",
+  "com.lihaoyi"          %% "ujson"        % "4.4.3",
   "com.github.pathikrit" %% "better-files" % "3.9.2"  % Test,
-  "org.scalatest"        %% "scalatest"    % "3.2.17" % Test
+  "org.scalatest"        %% "scalatest"    % "3.2.20" % Test
 )

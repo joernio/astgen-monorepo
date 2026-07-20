@@ -29,9 +29,14 @@ copying. If you need to diverge, document the change inline with a comment block
 
 When bumping the `swift-syntax` dependency in `Package.swift`:
 
-1. Check out the matching tag from `swift-syntax`.
-2. Replace the contents of `Sources/CodeGeneration/SyntaxSupport/` with
-   `CodeGeneration/Sources/SyntaxSupport/` from that checkout.
-3. Run `swift build` and `swift test` from `swift-astgen/`.
-4. Regenerate `SwiftNodeSyntax.scala` (`./SwiftAstGen --scala-ast-only`) and verify
+1. Run `swift package resolve` to update `Package.resolved` to the new version.
+2. Run the refresh script from the `swift-astgen/` directory:
+   ```bash
+   scripts/refresh-codegen.sh
+   ```
+   The script reads the pinned version from `Package.resolved`, clones that tag from
+   `swiftlang/swift-syntax`, and syncs `CodeGeneration/Sources/SyntaxSupport/` into
+   `Sources/CodeGeneration/SyntaxSupport/`. Requires `git` and `jq` on `PATH`.
+3. Run `swift build && swift test`.
+4. Regenerate `SwiftNodeSyntax.scala` (`swift run SwiftAstGen --scala-ast-only`) and verify
    `Tests/ScalaSwiftNodeSyntaxTests/` still passes against the new wrapper.
