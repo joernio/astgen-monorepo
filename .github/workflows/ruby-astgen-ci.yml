@@ -47,7 +47,7 @@ jobs:
         uses: ruby/setup-ruby@v1
         with:
           ruby-version: jruby-10.0.6.0
-          bundler-cache: false
+          bundler-cache: true
           working-directory: ruby-astgen
 
       - name: Set up JRuby environment
@@ -60,15 +60,6 @@ jobs:
           echo "GEM_HOME=${BUNDLE_BASE}" >> "$GITHUB_ENV"
           echo "GEM_PATH=${BUNDLE_BASE}" >> "$GITHUB_ENV"
           echo "${BUNDLE_BASE}/bin" >> "$GITHUB_PATH"
-
-      - name: Install dependencies
-        shell: bash
-        working-directory: ruby-astgen
-        env:
-          JAVA_OPTS: "-Xrs"
-        run: |
-          jruby -S gem install bundler --install-dir ${GEM_HOME}
-          jruby -S bundle install
 
       - name: Run tests with JRuby
         shell: bash
