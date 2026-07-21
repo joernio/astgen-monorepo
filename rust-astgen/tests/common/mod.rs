@@ -39,7 +39,12 @@ pub fn sysroot_function_fullnames_json(
     crate_name: &str,
     file_code_pairs: &[(&str, &str)],
 ) -> TestResult<Value> {
-    function_fullnames_run(crate_name, file_code_pairs, true, &FunctionFullnamesRunOptions::default())
+    function_fullnames_run(
+        crate_name,
+        file_code_pairs,
+        true,
+        &FunctionFullnamesRunOptions::default(),
+    )
 }
 
 pub struct FunctionFullnamesRunOptions {

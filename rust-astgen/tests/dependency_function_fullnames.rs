@@ -35,18 +35,20 @@ fn entries_in_dependency_modules(
         .ok_or_else(|| format!("dependency crate `{crate_name}` not found in sysroot workspace"))?;
 
     let edition = krate.edition(db);
-    let selected_modules = modules_in_crate(db, krate, Rc::clone(&workspace_roots)).filter(|(module, _)| {
-        module.name(db).is_some_and(|name| {
-            let name_str = name.display(db, edition).to_string();
-            module_names.contains(&name_str.as_str())
-        })
-    });
+    let selected_modules =
+        modules_in_crate(db, krate, Rc::clone(&workspace_roots)).filter(|(module, _)| {
+            module.name(db).is_some_and(|name| {
+                let name_str = name.display(db, edition).to_string();
+                module_names.contains(&name_str.as_str())
+            })
+        });
 
-    Ok(unique_by_method_full_name(
-        selected_modules
-            .flat_map(|(module, parent_is_unstable)| module_full_names(db, module, Rc::clone(&workspace_roots), parent_is_unstable)),
+    Ok(
+        unique_by_method_full_name(selected_modules.flat_map(|(module, parent_is_unstable)| {
+            module_full_names(db, module, Rc::clone(&workspace_roots), parent_is_unstable)
+        }))
+        .collect(),
     )
-    .collect())
 }
 
 #[test]
@@ -58,8 +60,17 @@ fn dependency_crate_function_fullnames() -> TestResult<()> {
             &db,
             "core",
             &[
-                "clone", "array", "iterator", "option", "result", "slice", "str", "wtf8",
-                "marker", "net::ip_addr", "cell",
+                "clone",
+                "array",
+                "iterator",
+                "option",
+                "result",
+                "slice",
+                "str",
+                "wtf8",
+                "marker",
+                "net::ip_addr",
+                "cell",
             ],
         )?;
 
@@ -260,10 +271,8 @@ fn dependency_crate_function_fullnames() -> TestResult<()> {
         );
 
         // PhantomData is a unit struct and should NOT have a constructor
-        let phantom_data = find_by_method_full_name(
-            core_entries.iter().cloned(),
-            "core::marker::PhantomData<T>",
-        );
+        let phantom_data =
+            find_by_method_full_name(core_entries.iter().cloned(), "core::marker::PhantomData<T>");
         assert!(
             phantom_data.is_none(),
             "PhantomData should not have a constructor (unit struct)"

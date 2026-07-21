@@ -14,9 +14,7 @@ fn windows_target_installed() -> bool {
     Command::new("rustup")
         .args(["target", "list", "--installed"])
         .output()
-        .map(|output| {
-            String::from_utf8_lossy(&output.stdout).contains(WINDOWS_TARGET)
-        })
+        .map(|output| String::from_utf8_lossy(&output.stdout).contains(WINDOWS_TARGET))
         .unwrap_or(false)
 }
 
@@ -45,12 +43,7 @@ fn host_target_does_not_include_windows_os_modules_on_non_windows_hosts() -> Tes
         return Ok(());
     }
 
-    let db = load_sysroot_workspace(
-        std::env::current_dir()?,
-        None,
-        vec![],
-        false,
-    )?;
+    let db = load_sysroot_workspace(std::env::current_dir()?, None, vec![], false)?;
 
     attach_db(&db, || {
         let module_names = std_module_names(&db);

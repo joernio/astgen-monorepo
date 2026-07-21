@@ -4,8 +4,8 @@ use crate::names::{
 use crate::{cargo, config};
 use anyhow::Context;
 use ra_ap_hir::{
-    Adt, AsAssocItem, AssocItem, AssocItemContainer, Crate, Enum, EnumVariant, Function,
-    HasAttrs, HasVisibility, Impl, Module, ModuleDef, StructKind, Trait, attach_db,
+    Adt, AsAssocItem, AssocItem, AssocItemContainer, Crate, Enum, EnumVariant, Function, HasAttrs,
+    HasVisibility, Impl, Module, ModuleDef, StructKind, Trait, attach_db,
 };
 use ra_ap_ide::RootDatabase;
 use serde::{Deserialize, Serialize};
@@ -49,10 +49,16 @@ pub fn dependency_full_names<'db>(
         let workspace_roots = Rc::clone(&workspace_roots);
         move |krate| {
             let workspace_roots_for_modules = Rc::clone(&workspace_roots);
-            modules_in_crate(db, krate, Rc::clone(&workspace_roots))
-                .flat_map(move |(module, parent_is_unstable)| {
-                    module_full_names(db, module, Rc::clone(&workspace_roots_for_modules), parent_is_unstable)
-                })
+            modules_in_crate(db, krate, Rc::clone(&workspace_roots)).flat_map(
+                move |(module, parent_is_unstable)| {
+                    module_full_names(
+                        db,
+                        module,
+                        Rc::clone(&workspace_roots_for_modules),
+                        parent_is_unstable,
+                    )
+                },
+            )
         }
     }))
 }
@@ -151,15 +157,13 @@ fn module_full_names_with_unstable<'db>(
     // Check if this module is unstable
     let module_is_unstable = parent_is_unstable || is_module_unstable(module, db);
     let decl_roots = Rc::clone(&workspace_roots);
-    let decls = module
-        .declarations(db)
-        .into_iter()
-        .flat_map(move |def| module_def_full_names(db, def, Rc::clone(&decl_roots), module_is_unstable));
+    let decls = module.declarations(db).into_iter().flat_map(move |def| {
+        module_def_full_names(db, def, Rc::clone(&decl_roots), module_is_unstable)
+    });
 
-    let impls = module
-        .impl_defs(db)
-        .into_iter()
-        .flat_map(move |impl_| impl_full_names(db, impl_, Rc::clone(&workspace_roots), module_is_unstable));
+    let impls = module.impl_defs(db).into_iter().flat_map(move |impl_| {
+        impl_full_names(db, impl_, Rc::clone(&workspace_roots), module_is_unstable)
+    });
 
     decls.chain(impls)
 }
@@ -171,17 +175,30 @@ fn module_def_full_names<'db>(
     module_is_unstable: bool,
 ) -> Box<dyn Iterator<Item = FunctionFullNameEntry> + 'db> {
     match def {
-        ModuleDef::Function(function) => {
-            option_entry(function_entry(db, function, workspace_roots.as_ref(), module_is_unstable))
-        }
+        ModuleDef::Function(function) => option_entry(function_entry(
+            db,
+            function,
+            workspace_roots.as_ref(),
+            module_is_unstable,
+        )),
         ModuleDef::Adt(Adt::Struct(struct_)) => option_entry(tuple_struct_ctor_entry(
             db,
             struct_,
             workspace_roots.as_ref(),
             module_is_unstable,
         )),
-        ModuleDef::Adt(Adt::Enum(enum_)) => Box::new(enum_full_names(db, enum_, workspace_roots, module_is_unstable)),
-        ModuleDef::Trait(trait_) => Box::new(trait_full_names(db, trait_, workspace_roots, module_is_unstable)),
+        ModuleDef::Adt(Adt::Enum(enum_)) => Box::new(enum_full_names(
+            db,
+            enum_,
+            workspace_roots,
+            module_is_unstable,
+        )),
+        ModuleDef::Trait(trait_) => Box::new(trait_full_names(
+            db,
+            trait_,
+            workspace_roots,
+            module_is_unstable,
+        )),
         _ => Box::new(std::iter::empty()),
     }
 }
@@ -192,10 +209,9 @@ fn enum_full_names<'db>(
     workspace_roots: Rc<[Module]>,
     module_is_unstable: bool,
 ) -> impl Iterator<Item = FunctionFullNameEntry> + 'db {
-    enum_
-        .variants(db)
-        .into_iter()
-        .filter_map(move |variant| enum_variant_ctor_entry(db, variant, workspace_roots.as_ref(), module_is_unstable))
+    enum_.variants(db).into_iter().filter_map(move |variant| {
+        enum_variant_ctor_entry(db, variant, workspace_roots.as_ref(), module_is_unstable)
+    })
 }
 
 fn trait_full_names<'db>(
@@ -209,7 +225,9 @@ fn trait_full_names<'db>(
         .items(db)
         .into_iter()
         .filter_map(move |item| match item {
-            AssocItem::Function(function) => function_entry(db, function, workspace_roots.as_ref(), trait_is_unstable),
+            AssocItem::Function(function) => {
+                function_entry(db, function, workspace_roots.as_ref(), trait_is_unstable)
+            }
             _ => None,
         })
 }
@@ -225,7 +243,9 @@ fn impl_full_names<'db>(
         .items(db)
         .into_iter()
         .filter_map(move |item| match item {
-            AssocItem::Function(function) => function_entry(db, function, workspace_roots.as_ref(), impl_is_unstable),
+            AssocItem::Function(function) => {
+                function_entry(db, function, workspace_roots.as_ref(), impl_is_unstable)
+            }
             _ => None,
         })
 }
@@ -394,10 +414,11 @@ fn write_function_fullnames_by_crate<W: Write>(
             .context("failed to write array opening")?;
 
         let entries = unique_by_method_full_name(
-            modules_in_crate(db, krate, Rc::clone(&workspace_roots))
-                .flat_map(|(module, parent_is_unstable)| {
+            modules_in_crate(db, krate, Rc::clone(&workspace_roots)).flat_map(
+                |(module, parent_is_unstable)| {
                     module_full_names(db, module, Rc::clone(&workspace_roots), parent_is_unstable)
-                }),
+                },
+            ),
         );
 
         let mut first_entry = true;

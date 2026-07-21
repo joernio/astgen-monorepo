@@ -52,10 +52,7 @@ pub fn gated() {}
     Ok(())
 }
 
-fn load_fixture_db(
-    root: &TempDir,
-    features: Vec<String>,
-) -> TestResult<RootDatabase> {
+fn load_fixture_db(root: &TempDir, features: Vec<String>) -> TestResult<RootDatabase> {
     Ok(load_sysroot_workspace(
         root.path().to_path_buf(),
         None,
@@ -77,9 +74,11 @@ fn entries_for_crate(db: &RootDatabase, crate_name: &str) -> Vec<FunctionFullNam
     let krate = crate_named(db, crate_name).expect("crate should exist in loaded workspace");
 
     unique_by_method_full_name(
-        modules_in_crate(db, krate, Rc::clone(&workspace_roots)).flat_map(|(module, parent_is_unstable)| {
-            module_full_names(db, module, Rc::clone(&workspace_roots), parent_is_unstable)
-        }),
+        modules_in_crate(db, krate, Rc::clone(&workspace_roots)).flat_map(
+            |(module, parent_is_unstable)| {
+                module_full_names(db, module, Rc::clone(&workspace_roots), parent_is_unstable)
+            },
+        ),
     )
     .collect()
 }
