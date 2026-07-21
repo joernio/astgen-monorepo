@@ -27,6 +27,21 @@ struct CliArgs {
     #[arg(help = "Input directory containing a Rust project")]
     #[arg(short = 'i', long = "input-dir")]
     input_dir: PathBuf,
+
+    #[arg(help = "rustc target triple override (e.g. x86_64-pc-windows-msvc)")]
+    #[arg(long = "target")]
+    target: Option<String>,
+
+    #[arg(
+        help = "Cargo features to enable on the workspace crate",
+        long = "features",
+        value_delimiter = ','
+    )]
+    features: Vec<String>,
+
+    #[arg(help = "Do not enable default features on the workspace crate")]
+    #[arg(long = "no-default-features", default_value_t = false)]
+    no_default_features: bool,
 }
 
 impl CliArgs {
@@ -56,5 +71,8 @@ fn config_from_args(args: CliArgs) -> Result<RustAstGenConfig> {
         available_threads,
         true,
         false,
+        args.target,
+        args.features,
+        args.no_default_features,
     )
 }

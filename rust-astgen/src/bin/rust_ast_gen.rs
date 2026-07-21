@@ -37,6 +37,21 @@ struct RustAstGenCliArgs {
     #[arg(help = "Resolve #[cfg(...)] attributes, dropping inactive items.")]
     #[arg(long = "resolve-cfg", default_value_t = false)]
     resolve_cfg: bool,
+
+    #[arg(help = "rustc target triple override (e.g. x86_64-pc-windows-msvc)")]
+    #[arg(long = "target")]
+    target: Option<String>,
+
+    #[arg(
+        help = "Cargo features to enable on the workspace crate",
+        long = "features",
+        value_delimiter = ','
+    )]
+    features: Vec<String>,
+
+    #[arg(help = "Do not enable default features on the workspace crate")]
+    #[arg(long = "no-default-features", default_value_t = false)]
+    no_default_features: bool,
 }
 
 impl RustAstGenCliArgs {
@@ -92,6 +107,9 @@ impl TryFrom<RustAstGenCliArgs> for RustAstGenConfig {
             available_threads,
             !args.no_sysroot,
             args.resolve_cfg,
+            args.target,
+            args.features,
+            args.no_default_features,
         )
     }
 }

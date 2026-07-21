@@ -22,7 +22,7 @@ fn load_sysroot_only_db() -> TestResult<RootDatabase> {
     // cargo test guarantees cwd is the package root, so we can use it directly.
     // We only need the sysroot crates (like core), not the workspace crates.
     let current_dir = std::env::current_dir()?;
-    Ok(load_sysroot_workspace(current_dir)?)
+    Ok(load_sysroot_workspace(current_dir, None, vec![], false)?)
 }
 
 fn entries_in_dependency_modules(
@@ -35,18 +35,20 @@ fn entries_in_dependency_modules(
         .ok_or_else(|| format!("dependency crate `{crate_name}` not found in sysroot workspace"))?;
 
     let edition = krate.edition(db);
-    let selected_modules = modules_in_crate(db, krate).filter(|module| {
-        module.name(db).is_some_and(|name| {
-            let name_str = name.display(db, edition).to_string();
-            module_names.contains(&name_str.as_str())
-        })
-    });
+    let selected_modules =
+        modules_in_crate(db, krate, Rc::clone(&workspace_roots)).filter(|(module, _)| {
+            module.name(db).is_some_and(|name| {
+                let name_str = name.display(db, edition).to_string();
+                module_names.contains(&name_str.as_str())
+            })
+        });
 
-    Ok(unique_by_method_full_name(
-        selected_modules
-            .flat_map(|module| module_full_names(db, module, Rc::clone(&workspace_roots))),
+    Ok(
+        unique_by_method_full_name(selected_modules.flat_map(|(module, parent_is_unstable)| {
+            module_full_names(db, module, Rc::clone(&workspace_roots), parent_is_unstable)
+        }))
+        .collect(),
     )
-    .collect())
 }
 
 #[test]
@@ -58,7 +60,17 @@ fn dependency_crate_function_fullnames() -> TestResult<()> {
             &db,
             "core",
             &[
-                "clone", "array", "iterator", "option", "result", "slice", "str",
+                "clone",
+                "array",
+                "iterator",
+                "option",
+                "result",
+                "slice",
+                "str",
+                "wtf8",
+                "marker",
+                "net::ip_addr",
+                "cell",
             ],
         )?;
 
@@ -180,6 +192,112 @@ fn dependency_crate_function_fullnames() -> TestResult<()> {
             ),
             None,
             "workspace functions should be excluded from dependency entries"
+        );
+
+        // Test that items in unstable modules are marked as nightly_only
+        // wtf8 is a public module but marked #![unstable]
+        let wtf8_items: Vec<_> = core_entries
+            .iter()
+            .filter(|entry| entry.method_full_name.contains("wtf8"))
+            .collect();
+
+        assert!(
+            !wtf8_items.is_empty(),
+            "Should find items in the wtf8 module"
+        );
+
+        for entry in wtf8_items {
+            assert!(
+                entry.is_nightly_only,
+                "Item {} in unstable module wtf8 should be marked as nightly_only",
+                entry.method_full_name
+            );
+        }
+
+        // Test that items in unstable impl blocks are marked as nightly_only
+        // Cell::get_cloned is in an impl block marked #[unstable(feature = "cell_get_cloned")]
+        let cell_get_cloned = find_by_method_full_name(
+            core_entries.iter().cloned(),
+            "core::cell::Cell<T>::get_cloned",
+        );
+        assert!(
+            cell_get_cloned.is_some(),
+            "Should find Cell::get_cloned method"
+        );
+        assert!(
+            cell_get_cloned.unwrap().is_nightly_only,
+            "Cell::get_cloned in unstable impl block should be marked as nightly_only"
+        );
+
+        // Test constructor field visibility checks
+        // Option::Some has all public fields and should have a constructor
+        let option_some = find_by_method_full_name(
+            core_entries.iter().cloned(),
+            "core::option::Option<T>::Some",
+        );
+        assert!(
+            option_some.is_some(),
+            "Option::Some should have a constructor (tuple variant with public field)"
+        );
+
+        // Option::None is a unit variant and should NOT have a constructor
+        let option_none = find_by_method_full_name(
+            core_entries.iter().cloned(),
+            "core::option::Option<T>::None",
+        );
+        assert!(
+            option_none.is_none(),
+            "Option::None should not have a constructor (unit variant)"
+        );
+
+        // Result::Ok has a public field and should have a constructor
+        let result_ok = find_by_method_full_name(
+            core_entries.iter().cloned(),
+            "core::result::Result<T, E>::Ok",
+        );
+        assert!(
+            result_ok.is_some(),
+            "Result::Ok should have a constructor (tuple variant with public field)"
+        );
+
+        // Result::Err has a public field and should have a constructor
+        let result_err = find_by_method_full_name(
+            core_entries.iter().cloned(),
+            "core::result::Result<T, E>::Err",
+        );
+        assert!(
+            result_err.is_some(),
+            "Result::Err should have a constructor (tuple variant with public field)"
+        );
+
+        // PhantomData is a unit struct and should NOT have a constructor
+        let phantom_data =
+            find_by_method_full_name(core_entries.iter().cloned(), "core::marker::PhantomData<T>");
+        assert!(
+            phantom_data.is_none(),
+            "PhantomData should not have a constructor (unit struct)"
+        );
+
+        // IpAddr::V4 has private fields and should NOT have a constructor
+        let ipaddr_v4 = find_by_method_full_name(
+            core_entries.iter().cloned(),
+            "core::net::ip_addr::IpAddr::V4",
+        );
+        assert!(
+            ipaddr_v4.is_none(),
+            "IpAddr::V4 should not have a constructor (tuple variant with private fields), but found: {:?}",
+            ipaddr_v4
+        );
+
+        // IpAddr::V6 has private fields and should NOT have a constructor
+        let ipaddr_v6 = find_by_method_full_name(
+            core_entries.iter().cloned(),
+            "core::net::ip_addr::IpAddr::V6",
+        );
+        assert!(
+            ipaddr_v6.is_none(),
+            "IpAddr::V6 should not have a constructor (tuple variant with private fields), but found: {:?}",
+            ipaddr_v6
         );
 
         Ok(())
