@@ -385,3 +385,25 @@ fn main() {
 
     Ok(())
 }
+
+#[test]
+fn emits_trait_full_name_for_self_in_generic_trait_decl() -> TestResult<()> {
+    let json = no_sysroot_ast_json(
+        "rust2cpg",
+        &[(
+            "src/main.rs",
+            r#"
+trait Tr<T> {
+    fn m() -> Self;
+}
+
+fn main() {}
+"#,
+        )],
+        "src/main.rs",
+    )?;
+
+    assert_eq!(name_ref(&json, "Self").type_full_name(), "rust2cpg::Tr<T>");
+
+    Ok(())
+}

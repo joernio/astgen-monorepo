@@ -2,8 +2,9 @@
 
 use super::{
     rust_name_formatter::{
-        format_item_name, format_member_full_name, format_module_def_full_name,
-        format_name_with_generic_args, format_trait_impl_member_full_name,
+        format_generic_args_for_def, format_item_name, format_member_full_name,
+        format_module_def_full_name, format_name_with_generic_args,
+        format_trait_impl_member_full_name,
     },
     type_formatter,
 };
@@ -169,29 +170,6 @@ fn format_generic_name(
 ) -> String {
     let generic_args = format_generic_args_for_def(generic_def, module, db);
     format_name_with_generic_args(base, generic_args)
-}
-
-fn format_generic_args_for_def(
-    generic_def: GenericDef,
-    module: Module,
-    db: &RootDatabase,
-) -> Vec<String> {
-    let mut args = Vec::new();
-
-    for param in generic_def.type_or_const_params(db) {
-        if let Some(type_param) = param.as_type_param(db) {
-            if type_param.is_implicit(db) {
-                continue;
-            }
-
-            let name = format_item_name(type_param.name(db), module, db);
-            args.push(name);
-        } else if let Some(const_param) = param.as_const_param(db) {
-            args.push(format_item_name(const_param.name(db), module, db));
-        }
-    }
-
-    args
 }
 
 pub(crate) fn format_tuple_struct_ctor_full_name(
