@@ -22,7 +22,7 @@ fn load_sysroot_only_db() -> TestResult<RootDatabase> {
     // cargo test guarantees cwd is the package root, so we can use it directly.
     // We only need the sysroot crates (like core), not the workspace crates.
     let current_dir = std::env::current_dir()?;
-    Ok(load_sysroot_workspace(current_dir)?)
+    Ok(load_sysroot_workspace(current_dir, None, vec![], false)?)
 }
 
 fn entries_in_dependency_modules(

@@ -3,7 +3,7 @@ use anyhow::{Context, Result};
 use log::info;
 use ra_ap_ide::RootDatabase;
 use ra_ap_load_cargo::{LoadCargoConfig, ProcMacroServerChoice, load_workspace_at};
-use ra_ap_project_model::{CargoConfig, RustLibSource};
+use ra_ap_project_model::{CargoConfig, CargoFeatures, RustLibSource};
 use ra_ap_vfs::{FileId, Vfs, VfsPath};
 use std::path::Path;
 
@@ -22,6 +22,11 @@ pub(crate) fn load_workspace(config: &RustAstGenConfig) -> Result<(RootDatabase,
             RustLibSource::Discover.into()
         } else {
             None
+        },
+        target: config.target.clone(),
+        features: CargoFeatures::Selected {
+            features: config.features.clone(),
+            no_default_features: config.no_default_features,
         },
         ..CargoConfig::default()
     };

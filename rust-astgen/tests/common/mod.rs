@@ -2,7 +2,6 @@
 //! parses back the generated JSON. Currently only one crate is supported.
 #![allow(dead_code)]
 
-use rust_ast_gen::function_fullnames_gen::{FunctionFullNameEntry, FunctionFullNamesOutput};
 use serde_json::Value;
 use std::fs;
 use std::process::Command;
@@ -39,15 +38,40 @@ pub fn sysroot_ast_json(crate_name: &str, source: &str) -> TestResult<Value> {
 pub fn sysroot_function_fullnames_json(
     crate_name: &str,
     file_code_pairs: &[(&str, &str)],
-) -> TestResult<Vec<FunctionFullNameEntry>> {
-    function_fullnames_run(crate_name, file_code_pairs, true)
+) -> TestResult<Value> {
+    function_fullnames_run(crate_name, file_code_pairs, true, &FunctionFullnamesRunOptions::default())
+}
+
+pub struct FunctionFullnamesRunOptions {
+    pub target: Option<String>,
+    pub features: Vec<String>,
+    pub no_default_features: bool,
+}
+
+impl Default for FunctionFullnamesRunOptions {
+    fn default() -> Self {
+        Self {
+            target: None,
+            features: Vec::new(),
+            no_default_features: false,
+        }
+    }
+}
+
+pub fn function_fullnames_by_crate(
+    crate_name: &str,
+    file_code_pairs: &[(&str, &str)],
+    options: &FunctionFullnamesRunOptions,
+) -> TestResult<Value> {
+    function_fullnames_run(crate_name, file_code_pairs, true, options)
 }
 
 fn function_fullnames_run(
     crate_name: &str,
     file_code_pairs: &[(&str, &str)],
     with_sysroot: bool,
-) -> TestResult<Vec<FunctionFullNameEntry>> {
+    options: &FunctionFullnamesRunOptions,
+) -> TestResult<Value> {
     let root = TempDir::with_prefix("rust_ast_gen_function_fullnames_test_")?;
 
     fs::write(
@@ -74,6 +98,15 @@ edition = "2021"
     if !with_sysroot {
         command.arg("--no-sysroot");
     }
+    if let Some(target) = &options.target {
+        command.arg("--target").arg(target);
+    }
+    if !options.features.is_empty() {
+        command.arg("--features").arg(options.features.join(","));
+    }
+    if options.no_default_features {
+        command.arg("--no-default-features");
+    }
     let output = command.output()?;
 
     if !output.stderr.is_empty() {
@@ -87,9 +120,8 @@ edition = "2021"
         String::from_utf8_lossy(&output.stderr)
     );
 
-    let parsed: FunctionFullNamesOutput =
-        serde_json::from_str(&String::from_utf8_lossy(&output.stdout))?;
-    Ok(parsed.functions)
+    let parsed: Value = serde_json::from_str(&String::from_utf8_lossy(&output.stdout))?;
+    Ok(parsed)
 }
 
 fn run(

@@ -57,9 +57,23 @@ pub fn dependency_full_names<'db>(
     }))
 }
 
-pub fn load_sysroot_workspace(input_dir: std::path::PathBuf) -> anyhow::Result<RootDatabase> {
+pub fn load_sysroot_workspace(
+    input_dir: std::path::PathBuf,
+    target: Option<String>,
+    features: Vec<String>,
+    no_default_features: bool,
+) -> anyhow::Result<RootDatabase> {
     let input_dir = input_dir.canonicalize()?;
-    let config = config::RustAstGenConfig::new(input_dir.clone(), input_dir, 1, true, false)?;
+    let config = config::RustAstGenConfig::new(
+        input_dir.clone(),
+        input_dir,
+        1,
+        true,
+        false,
+        target,
+        features,
+        no_default_features,
+    )?;
     Ok(cargo::load_workspace(&config)?.0)
 }
 
