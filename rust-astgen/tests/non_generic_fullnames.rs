@@ -509,7 +509,7 @@ fn main() {}
         self_param(&json, "&self")
             .on_line("fn trait_value(&self) -> bool;")
             .type_full_name(),
-        "&Self"
+        "&rust2cpg::imported::Trait"
     );
     assert_eq!(
         self_param(&json, "&self")
@@ -835,6 +835,85 @@ fn main() {
         ident_pat(&json, "multi_arg_ptr").type_full_name(),
         "fn(u32, bool) -> u32"
     );
+
+    Ok(())
+}
+
+#[test]
+fn emits_trait_full_name_for_self_return_type_in_trait_decl() -> TestResult<()> {
+    let json = no_sysroot_ast_json(
+        "rust2cpg",
+        &[(
+            "src/main.rs",
+            r#"
+trait Tr {
+    fn m() -> Self;
+}
+
+fn main() {}
+"#,
+        )],
+        "src/main.rs",
+    )?;
+
+    assert_eq!(name_ref(&json, "Self").type_full_name(), "rust2cpg::Tr");
+
+    Ok(())
+}
+
+#[test]
+fn emits_trait_full_name_for_self_typed_expr_in_trait_default_method() -> TestResult<()> {
+    let json = no_sysroot_ast_json(
+        "rust2cpg",
+        &[(
+            "src/main.rs",
+            r#"
+trait Tr {
+    fn m() -> Self;
+    fn d() -> Self {
+        Self::m()
+    }
+}
+
+fn main() {}
+"#,
+        )],
+        "src/main.rs",
+    )?;
+
+    assert_eq!(
+        call_expr(&json, "Self::m()").type_full_name(),
+        "rust2cpg::Tr"
+    );
+
+    Ok(())
+}
+
+#[test]
+fn emits_trait_full_name_for_self_param_in_trait_decl() -> TestResult<()> {
+    let json = no_sysroot_ast_json(
+        "rust2cpg",
+        &[(
+            "src/main.rs",
+            r#"
+trait Tr {
+    fn m(&self);
+    fn n(&mut self);
+    fn o(self);
+}
+
+fn main() {}
+"#,
+        )],
+        "src/main.rs",
+    )?;
+
+    assert_eq!(self_param(&json, "&self").type_full_name(), "&rust2cpg::Tr");
+    assert_eq!(
+        self_param(&json, "&mut self").type_full_name(),
+        "&mut rust2cpg::Tr"
+    );
+    assert_eq!(self_param(&json, "self").type_full_name(), "rust2cpg::Tr");
 
     Ok(())
 }

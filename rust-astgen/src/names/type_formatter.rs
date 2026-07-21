@@ -5,10 +5,12 @@
 //! `display_source_code` do not emit fully qualified paths.
 
 use super::rust_name_formatter::{
-    format_item_name, format_module_def_full_name, format_name_with_generic_args,
+    format_generic_args_for_def, format_item_name, format_module_def_full_name,
+    format_name_with_generic_args,
 };
 use ra_ap_hir::{
-    Adt, AssocItem, Callable, DisplayTarget, HirDisplay, Module, ModuleDef, Mutability, Trait, Type,
+    Adt, AssocItem, Callable, DisplayTarget, GenericDef, HirDisplay, Module, ModuleDef, Mutability,
+    Trait, Type,
 };
 use ra_ap_ide::RootDatabase;
 
@@ -65,7 +67,21 @@ impl<'db> TypeFormatter<'db> {
         if let Some(trait_) = typ.as_dyn_trait() {
             return self.format_dyn_trait(typ, trait_);
         }
+        // Replace implicit `Self` with the trait's name.
+        if let Some(type_param) = typ.as_type_param(self.db)
+            && type_param.is_implicit(self.db)
+            && let GenericDef::Trait(trait_) = type_param.parent(self.db)
+        {
+            return self.format_trait_self(trait_);
+        }
         Some(self.format_fallback(typ))
+    }
+
+    fn format_trait_self(&self, trait_: Trait) -> Option<String> {
+        let base = format_module_def_full_name(ModuleDef::from(trait_), self.db)?;
+        let args =
+            format_generic_args_for_def(GenericDef::from(trait_), trait_.module(self.db), self.db);
+        Some(format_name_with_generic_args(base, args))
     }
 
     fn format_reference(&self, inner: &Type, mutability: Mutability) -> Option<String> {

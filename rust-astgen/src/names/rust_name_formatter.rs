@@ -3,7 +3,7 @@
 //! Essentially, uses `::` for separators, and follows the same
 //! naming conventions for generics and traits.
 
-use ra_ap_hir::{Module, ModuleDef};
+use ra_ap_hir::{GenericDef, Module, ModuleDef};
 use ra_ap_ide::RootDatabase;
 
 pub(crate) const PATH_SEPARATOR: &str = "::";
@@ -38,4 +38,27 @@ pub(crate) fn format_name_with_generic_args(base: String, generic_args: Vec<Stri
     } else {
         format!("{base}<{}>", generic_args.join(", "))
     }
+}
+
+pub(super) fn format_generic_args_for_def(
+    generic_def: GenericDef,
+    module: Module,
+    db: &RootDatabase,
+) -> Vec<String> {
+    let mut args = Vec::new();
+
+    for param in generic_def.type_or_const_params(db) {
+        if let Some(type_param) = param.as_type_param(db) {
+            if type_param.is_implicit(db) {
+                continue;
+            }
+
+            let name = format_item_name(type_param.name(db), module, db);
+            args.push(name);
+        } else if let Some(const_param) = param.as_const_param(db) {
+            args.push(format_item_name(const_param.name(db), module, db));
+        }
+    }
+
+    args
 }
