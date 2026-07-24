@@ -17,6 +17,8 @@ pub struct RustAstGenConfig {
     pub(crate) features: Vec<String>,
     /// When true, do not enable default features on the workspace crate.
     pub(crate) no_default_features: bool,
+    /// When true, pretty-print JSON output.
+    pub(crate) pretty_print: bool,
 }
 
 impl RustAstGenConfig {
@@ -29,6 +31,7 @@ impl RustAstGenConfig {
         target: Option<String>,
         features: Vec<String>,
         no_default_features: bool,
+        pretty_print: bool,
     ) -> Result<Self> {
         Self::ensure_paths_are_absolute(&input_dir_full_path, &output_dir_full_path)?;
 
@@ -41,6 +44,7 @@ impl RustAstGenConfig {
             target,
             features,
             no_default_features,
+            pretty_print,
         };
 
         Ok(config)
@@ -103,6 +107,7 @@ mod tests {
             None,
             vec![],
             false,
+            false,
         )?;
 
         let input_file = input_dir.join("subdir").join("file.rs");
@@ -128,6 +133,7 @@ mod tests {
             None,
             vec![],
             false,
+            false,
         )?;
 
         let input_file = input_dir.join("subdir").join("file.rs");
@@ -144,8 +150,17 @@ mod tests {
     fn test_make_output_path_for_input_file_not_under_input_dir_unix() -> Result<()> {
         let input_dir = PathBuf::from("/input");
         let output_dir = PathBuf::from("/output");
-        let config =
-            RustAstGenConfig::new(input_dir, output_dir, 1, true, false, None, vec![], false)?;
+        let config = RustAstGenConfig::new(
+            input_dir,
+            output_dir,
+            1,
+            true,
+            false,
+            None,
+            vec![],
+            false,
+            false,
+        )?;
 
         let other_file = PathBuf::from("/other/file.rs");
         let result = config.make_output_path_for_input_file(&other_file);
@@ -162,8 +177,17 @@ mod tests {
     fn test_make_output_path_for_input_file_not_under_input_dir_windows() -> Result<()> {
         let input_dir = PathBuf::from(r"C:\input");
         let output_dir = PathBuf::from(r"C:\output");
-        let config =
-            RustAstGenConfig::new(input_dir, output_dir, 1, true, false, None, vec![], false)?;
+        let config = RustAstGenConfig::new(
+            input_dir,
+            output_dir,
+            1,
+            true,
+            false,
+            None,
+            vec![],
+            false,
+            false,
+        )?;
 
         let other_file = PathBuf::from(r"C:\other\file.rs");
         let result = config.make_output_path_for_input_file(&other_file);

@@ -130,7 +130,11 @@ fn process_file(
 
     info!("writing to: {}", output_file.display());
 
-    let json_tree = serde_json::to_string_pretty(&envelope)?;
+    let json_tree = if config.pretty_print {
+        serde_json::to_string_pretty(&envelope)?
+    } else {
+        serde_json::to_string(&envelope)?
+    };
     write_json_to_file(&json_tree, &output_file)?;
 
     Ok(())

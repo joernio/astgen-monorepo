@@ -52,6 +52,10 @@ struct RustAstGenCliArgs {
     #[arg(help = "Do not enable default features on the workspace crate")]
     #[arg(long = "no-default-features", default_value_t = false)]
     no_default_features: bool,
+
+    #[arg(help = "Pretty-print JSON output")]
+    #[arg(long = "pretty-print", default_value_t = false)]
+    pretty_print: bool,
 }
 
 impl RustAstGenCliArgs {
@@ -110,6 +114,7 @@ impl TryFrom<RustAstGenCliArgs> for RustAstGenConfig {
             args.target,
             args.features,
             args.no_default_features,
+            args.pretty_print,
         )
     }
 }
