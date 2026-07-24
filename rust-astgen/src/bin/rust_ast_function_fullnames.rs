@@ -74,5 +74,6 @@ fn config_from_args(args: CliArgs) -> Result<RustAstGenConfig> {
         args.target,
         args.features,
         args.no_default_features,
+        false,
     )
 }

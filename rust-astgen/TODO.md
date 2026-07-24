@@ -13,10 +13,6 @@ For instance in,
 Currently, if we can't load via cargo, the entire process fails.
 We don't have to: we can at least emit an AST with missing types/method fullnames.
 
-## Don't pretty print JSON
-
-No need, unless we ask it to. Shouldn't be the default.
-
 ## Scala codegen: handle labels
 
 Labels for sub-rules are not lowered. We handle this manually in Joern with
