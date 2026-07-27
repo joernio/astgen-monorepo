@@ -34,11 +34,12 @@ mv .build/debug/SwiftAstGen.exe SwiftAstGen-win.exe  # Windows
 
 ```bash
 cd Tests/ScalaSwiftNodeSyntaxTests
-sbt test
+sbt copyFile test
 ```
 
-The `copyFile` task in `build.sbt` runs as a `compile` dependency and pulls
+The `copyFile` task in `build.sbt` pulls
 `swift-astgen/SwiftNodeSyntax.scala` into `src/main/scala/SwiftNodeSyntax.scala`.
+It must be run explicitly before (or together with) `test`.
 
 ## Layout
 
