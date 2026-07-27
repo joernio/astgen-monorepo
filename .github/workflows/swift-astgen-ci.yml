@@ -16,22 +16,22 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: '0'
 
       - name: Install sbt
-        uses: sbt/setup-sbt@v1
+        uses: sbt/setup-sbt@f6db8ab474efba716fc7f04441ab33714e4825af # v1.5.4
 
       - name: Install Swift (macos-latest)
         if: matrix.os == 'macos-latest'
-        uses: SwiftyLab/setup-swift@latest
+        uses: SwiftyLab/setup-swift@38f54a76b70d989321de9dc7c840618c08cf56e9 # v1.14.0
         with:
           swift-version: "6.3"
 
       - name: Install Swift
         if: matrix.os != 'macos-latest'
-        uses: SwiftyLab/setup-swift@latest
+        uses: SwiftyLab/setup-swift@38f54a76b70d989321de9dc7c840618c08cf56e9 # v1.14.0
         with:
           swift-version: "6.1"
 
@@ -76,7 +76,7 @@ jobs:
 
       - name: Run UPX for Windows Build
         if: matrix.os == 'windows-latest'
-        uses: crazy-max/ghaction-upx@v4
+        uses: crazy-max/ghaction-upx@c83f378efc804f828e988debb88ed6116feb2368 # v4.0.0
         with:
           version: latest
           files: |
@@ -88,7 +88,7 @@ jobs:
 
       - name: Set up JDK
         if: matrix.os != 'windows-latest'
-        uses: actions/setup-java@v5
+        uses: actions/setup-java@03ad4de0992f5dab5e18fcb136590ce7c4a0ac95 # v5.6.0
         with:
           distribution: temurin
           java-version: 21
@@ -96,6 +96,10 @@ jobs:
           cache-dependency-path: |
             swift-astgen/Tests/ScalaSwiftNodeSyntaxTests/build.sbt
             swift-astgen/Tests/ScalaSwiftNodeSyntaxTests/project/build.properties
+
+      - name: Copy SwiftNodeSyntax.scala to sbt source tree
+        shell: bash
+        run: cp SwiftNodeSyntax.scala Tests/ScalaSwiftNodeSyntaxTests/src/main/scala/SwiftNodeSyntax.scala
 
       - name: Run Scala Tests
         run: sbt test

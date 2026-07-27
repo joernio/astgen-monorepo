@@ -302,7 +302,7 @@ def write_diff_files(
             diff_file = diffs_dir / f"{name}-{art_name}.diff"
             try:
                 diff_file.write_text("".join(parts), encoding="utf-8")
-            except IOError as e:
+            except OSError as e:
                 import sys
 
                 print(f"WARNING: Failed to write {diff_file}: {e}", file=sys.stderr)

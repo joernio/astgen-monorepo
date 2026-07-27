@@ -1,7 +1,9 @@
 import tempfile
 from pathlib import Path
+
 import pytest
-from astgen_regression.config import load_config, ConfigError
+
+from astgen_regression.config import ConfigError, load_config
 
 
 def test_load_config_valid():

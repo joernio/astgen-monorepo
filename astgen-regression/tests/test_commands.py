@@ -1,7 +1,9 @@
 import tempfile
 from pathlib import Path
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
+
 import pytest
+
 from astgen_regression.commands.compare import cmd_compare
 
 
@@ -62,35 +64,36 @@ def test_cmd_compare_exits_with_code_1_on_regressions():
             }
         ]
 
-        with patch(
-            "astgen_regression.commands.compare.load_config", return_value=mock_config
-        ):
-            with patch(
+        with (
+            patch(
+                "astgen_regression.commands.compare.load_config",
+                return_value=mock_config,
+            ),
+            patch(
                 "astgen_regression.commands.compare.clone_corpus",
                 return_value=Path("/tmp/corpus"),
-            ):
-                with patch(
-                    "astgen_regression.commands.compare.execute_astgen_repeated",
-                    return_value=(True, 1.0, [1.0]),
-                ):
-                    with patch(
-                        "astgen_regression.commands.compare.collect_metrics",
-                        return_value={},
-                    ):
-                        with patch(
-                            "astgen_regression.commands.compare.compare_outputs",
-                            return_value={
-                                "diffs": {"ast": [("file.json", ["diff"], "summary")]}
-                            },
-                        ):
-                            with patch(
-                                "astgen_regression.commands.compare.render_report",
-                                return_value="# Report",
-                            ):
-                                with pytest.raises(SystemExit) as exc_info:
-                                    cmd_compare(args)
+            ),
+            patch(
+                "astgen_regression.commands.compare.execute_astgen_repeated",
+                return_value=(True, 1.0, [1.0]),
+            ),
+            patch(
+                "astgen_regression.commands.compare.collect_metrics",
+                return_value={},
+            ),
+            patch(
+                "astgen_regression.commands.compare.compare_outputs",
+                return_value={"diffs": {"ast": [("file.json", ["diff"], "summary")]}},
+            ),
+            patch(
+                "astgen_regression.commands.compare.render_report",
+                return_value="# Report",
+            ),
+        ):
+            with pytest.raises(SystemExit) as exc_info:
+                cmd_compare(args)
 
-                                assert exc_info.value.code == 1
+            assert exc_info.value.code == 1
 
 
 def test_cmd_compare_exits_with_code_0_when_no_regressions():
@@ -144,34 +147,37 @@ def test_cmd_compare_exits_with_code_0_when_no_regressions():
             }
         ]
 
-        with patch(
-            "astgen_regression.commands.compare.load_config", return_value=mock_config
-        ):
-            with patch(
+        with (
+            patch(
+                "astgen_regression.commands.compare.load_config",
+                return_value=mock_config,
+            ),
+            patch(
                 "astgen_regression.commands.compare.clone_corpus",
                 return_value=Path("/tmp/corpus"),
-            ):
-                with patch(
-                    "astgen_regression.commands.compare.execute_astgen_repeated",
-                    return_value=(True, 1.0, [1.0]),
-                ):
-                    with patch(
-                        "astgen_regression.commands.compare.collect_metrics",
-                        return_value={},
-                    ):
-                        with patch(
-                            "astgen_regression.commands.compare.compare_outputs",
-                            return_value={"diffs": {"ast": []}},
-                        ):
-                            with patch(
-                                "astgen_regression.commands.compare.render_report",
-                                return_value="# Report",
-                            ):
-                                # Should complete without raising SystemExit
-                                # (or if it does, code should be 0)
-                                try:
-                                    cmd_compare(args)
-                                    # If no exception, that's success (exit code 0)
-                                except SystemExit as e:
-                                    # If it exits, should be with code 0 or None
-                                    assert e.code in (0, None)
+            ),
+            patch(
+                "astgen_regression.commands.compare.execute_astgen_repeated",
+                return_value=(True, 1.0, [1.0]),
+            ),
+            patch(
+                "astgen_regression.commands.compare.collect_metrics",
+                return_value={},
+            ),
+            patch(
+                "astgen_regression.commands.compare.compare_outputs",
+                return_value={"diffs": {"ast": []}},
+            ),
+            patch(
+                "astgen_regression.commands.compare.render_report",
+                return_value="# Report",
+            ),
+        ):
+            # Should complete without raising SystemExit
+            # (or if it does, code should be 0)
+            try:
+                cmd_compare(args)
+                # If no exception, that's success (exit code 0)
+            except SystemExit as e:
+                # If it exits, should be with code 0 or None
+                assert e.code in (0, None)

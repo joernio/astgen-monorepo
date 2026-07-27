@@ -5,9 +5,9 @@ import sys
 
 from astgen_regression.config import load_config
 from astgen_regression.worktree import (
+    create_worktree,
     get_repo_root,
     get_short_sha,
-    create_worktree,
     remove_worktree,
 )
 
@@ -21,7 +21,7 @@ def cmd_local(args) -> None:
     # Load config
     try:
         config = load_config(args.config)
-    except Exception as e:
+    except (OSError, ValueError) as e:
         print(f"ERROR: {e}", file=sys.stderr)
         sys.exit(1)
 

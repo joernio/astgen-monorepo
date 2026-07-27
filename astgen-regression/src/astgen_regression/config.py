@@ -2,13 +2,12 @@
 
 from pathlib import Path
 from typing import Any
+
 import yaml
 
 
 class ConfigError(Exception):
     """Configuration validation error."""
-
-    pass
 
 
 def load_config(config_path: Path) -> dict[str, Any]:

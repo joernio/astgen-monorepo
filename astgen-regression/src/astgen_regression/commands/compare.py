@@ -1,15 +1,15 @@
 """Compare command implementation."""
 
-from pathlib import Path
-import tempfile
 import shutil
 import sys
+import tempfile
+from pathlib import Path
 
+from astgen_regression.compare import compare_outputs
 from astgen_regression.config import load_config
 from astgen_regression.corpus import clone_corpus
 from astgen_regression.executor import execute_astgen_repeated
 from astgen_regression.metrics import collect_metrics
-from astgen_regression.compare import compare_outputs
 from astgen_regression.report import render_report, write_diff_files
 
 
@@ -22,7 +22,7 @@ def cmd_compare(args) -> None:
     # Load config
     try:
         config = load_config(args.config)
-    except Exception as e:
+    except (OSError, ValueError) as e:
         print(f"ERROR: {e}", file=sys.stderr)
         sys.exit(1)
 

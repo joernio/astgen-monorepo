@@ -1,8 +1,8 @@
 """CLI argument parsing and subcommand dispatch."""
 
 import argparse
-from pathlib import Path
 import sys
+from pathlib import Path
 
 from astgen_regression.commands.init import LANGUAGE_DEFAULTS
 
