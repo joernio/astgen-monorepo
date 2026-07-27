@@ -12,6 +12,7 @@ copyFile := {
 }
 
 Compile / compile := Def.uncached((Compile / compile).dependsOn(copyFile)).value
+Test / compile := Def.uncached((Test / compile).dependsOn(copyFile)).value
 
 lazy val root = (project in file("."))
   .settings(name := "ScalaSwiftNodeSyntaxTests")
