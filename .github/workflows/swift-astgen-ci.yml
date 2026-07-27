@@ -97,6 +97,10 @@ jobs:
             swift-astgen/Tests/ScalaSwiftNodeSyntaxTests/build.sbt
             swift-astgen/Tests/ScalaSwiftNodeSyntaxTests/project/build.properties
 
+      - name: Copy SwiftNodeSyntax.scala to sbt source tree
+        shell: bash
+        run: cp SwiftNodeSyntax.scala Tests/ScalaSwiftNodeSyntaxTests/src/main/scala/SwiftNodeSyntax.scala
+
       - name: Run Scala Tests
         run: sbt test
         working-directory: swift-astgen/Tests/ScalaSwiftNodeSyntaxTests
