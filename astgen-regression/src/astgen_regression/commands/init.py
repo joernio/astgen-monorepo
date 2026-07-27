@@ -29,7 +29,7 @@ LANGUAGE_DEFAULTS: dict[str, dict[str, Any]] = {
         "base_branch": "main",
         "python_version": "3.12",
         "setup_action": {
-            "uses": "actions/setup-node@v6",
+            "uses": "actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0",
             "with": {"node-version": "24", "cache": "yarn"},
         },
     },
@@ -50,8 +50,8 @@ LANGUAGE_DEFAULTS: dict[str, dict[str, Any]] = {
         "base_branch": "main",
         "python_version": "3.12",
         "setup_action": {
-            "uses": "actions-rust-lang/setup-rust-toolchain@v1",
-            "with": None,
+            "uses": "actions-rust-lang/setup-rust-toolchain@166cdcfd11aee3cb47222f9ddb555ce30ddb9659 # v1.17.0",
+            "with": {"toolchain": "stable"},
         },
     },
     "swift": {
@@ -72,7 +72,7 @@ LANGUAGE_DEFAULTS: dict[str, dict[str, Any]] = {
         "python_version": "3.12",
         "runs_on": "macos-latest",
         "setup_action": {
-            "uses": "SwiftyLab/setup-swift@latest",
+            "uses": "SwiftyLab/setup-swift@38f54a76b70d989321de9dc7c840618c08cf56e9 # v1.14.0",
             "with": {"swift-version": "6.3"},
         },
     },
@@ -98,7 +98,7 @@ LANGUAGE_DEFAULTS: dict[str, dict[str, Any]] = {
         "base_branch": "main",
         "python_version": "3.12",
         "setup_action": {
-            "uses": "actions/setup-dotnet@v4",
+            "uses": "actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0",
             "with": {"dotnet-version": "8.0.x"},
         },
     },
@@ -118,7 +118,10 @@ LANGUAGE_DEFAULTS: dict[str, dict[str, Any]] = {
         ],
         "base_branch": "main",
         "python_version": "3.12",
-        "setup_action": {"uses": "ruby/setup-ruby@v1", "with": {"ruby-version": "3.3"}},
+        "setup_action": {
+            "uses": "ruby/setup-ruby@95ef2b042f9d7a56d8268cba8559e2842e2ad01b # v1.321.0",
+            "with": {"ruby-version": "3.3"},
+        },
     },
     "go": {
         "project_name": "goastgen",
@@ -136,7 +139,10 @@ LANGUAGE_DEFAULTS: dict[str, dict[str, Any]] = {
         ],
         "base_branch": "main",
         "python_version": "3.12",
-        "setup_action": {"uses": "actions/setup-go@v5", "with": {"go-version": "1.22"}},
+        "setup_action": {
+            "uses": "actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0",
+            "with": {"go-version": "1.22"},
+        },
     },
     "abap": {
         "project_name": "abapastgen",
