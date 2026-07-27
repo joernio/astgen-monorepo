@@ -1,15 +1,14 @@
 """Output comparison and diffing functionality."""
 
-from concurrent.futures import ThreadPoolExecutor
-from pathlib import Path
-from typing import Any
 import difflib
 import filecmp
 import fnmatch
 import json
 import os
 import re
-
+from concurrent.futures import ThreadPoolExecutor
+from pathlib import Path
+from typing import Any
 
 # Skip emitting a full unified diff once the combined normalized line count
 # exceeds this threshold. Prevents pathological SequenceMatcher slowdowns on
@@ -80,7 +79,7 @@ def normalize_json(path: Path) -> list[str]:
     try:
         obj = json.loads(path.read_bytes())
         return _normalize_obj_to_lines(obj)
-    except Exception:
+    except (ValueError, OSError):
         return path.read_text(errors="replace").splitlines(keepends=True)
 
 
@@ -98,7 +97,7 @@ def json_diff_summary(base_path: Path, pr_path: Path) -> str:
     try:
         base_obj = json.loads(base_path.read_bytes())
         pr_obj = json.loads(pr_path.read_bytes())
-    except Exception:
+    except (ValueError, OSError):
         return ""
 
     return _diff_summary_from_objs(base_obj, pr_obj)
@@ -139,7 +138,7 @@ def _compare_one(
         base_lines = _normalize_obj_to_lines(base_obj)
         pr_lines = _normalize_obj_to_lines(pr_obj)
         summary = _diff_summary_from_objs(base_obj, pr_obj)
-    except Exception:
+    except ValueError:
         base_lines = base_bytes.decode(errors="replace").splitlines(keepends=True)
         pr_lines = pr_bytes.decode(errors="replace").splitlines(keepends=True)
         summary = ""

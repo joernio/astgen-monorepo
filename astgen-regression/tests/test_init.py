@@ -3,8 +3,10 @@
 import tempfile
 from pathlib import Path
 from unittest.mock import patch
+
 import pytest
-from astgen_regression.commands.init import cmd_init, LANGUAGE_DEFAULTS
+
+from astgen_regression.commands.init import LANGUAGE_DEFAULTS, cmd_init
 
 
 def test_language_defaults_contains_seven_languages():

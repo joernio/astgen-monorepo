@@ -1,8 +1,8 @@
 """Corpus cloning functionality."""
 
-from pathlib import Path
 import subprocess
 import sys
+from pathlib import Path
 
 
 def clone_corpus(corpus_config: dict, temp_dir: Path) -> Path | None:
@@ -33,8 +33,7 @@ def clone_corpus(corpus_config: dict, temp_dir: Path) -> Path | None:
     try:
         subprocess.run(
             cmd,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
+            capture_output=True,
             check=True,
             timeout=300,  # 5 minutes
         )
@@ -45,7 +44,7 @@ def clone_corpus(corpus_config: dict, temp_dir: Path) -> Path | None:
     except subprocess.TimeoutExpired:
         print(f"WARNING: Clone timeout for {clone_url} (5 minutes)", file=sys.stderr)
         return None
-    except Exception as e:
+    except OSError as e:
         print(f"WARNING: Clone failed for {clone_url}: {e}", file=sys.stderr)
         return None
 

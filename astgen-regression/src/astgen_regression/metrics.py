@@ -1,7 +1,7 @@
 """Metrics collection functionality."""
 
-from pathlib import Path
 import fnmatch
+from pathlib import Path
 
 
 def collect_metrics(output_dir: Path, artifacts_config: list[dict] | None) -> dict:

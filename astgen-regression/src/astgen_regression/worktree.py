@@ -1,8 +1,8 @@
 """Git worktree management functionality."""
 
-from pathlib import Path
 import subprocess
 import sys
+from pathlib import Path
 
 
 def get_repo_root() -> Path:
@@ -16,8 +16,7 @@ def get_repo_root() -> Path:
     """
     result = subprocess.run(
         ["git", "rev-parse", "--show-toplevel"],
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
+        capture_output=True,
         check=True,
     )
     return Path(result.stdout.decode().strip())
@@ -35,8 +34,7 @@ def get_short_sha(repo_root: Path, ref: str) -> str:
     """
     result = subprocess.run(
         ["git", "rev-parse", "--short", ref],
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
+        capture_output=True,
         check=True,
         cwd=str(repo_root),
     )
@@ -79,8 +77,7 @@ def remove_worktree(repo_root: Path, worktree_path: Path) -> None:
         subprocess.run(
             ["git", "worktree", "remove", "--force", str(worktree_path)],
             cwd=str(repo_root),
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
+            capture_output=True,
             check=True,
         )
     except subprocess.CalledProcessError:

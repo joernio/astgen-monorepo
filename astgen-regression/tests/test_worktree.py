@@ -1,11 +1,12 @@
 import subprocess
 from pathlib import Path
 from unittest.mock import MagicMock, patch
+
 from astgen_regression.worktree import (
     create_worktree,
-    remove_worktree,
     get_repo_root,
     get_short_sha,
+    remove_worktree,
 )
 
 

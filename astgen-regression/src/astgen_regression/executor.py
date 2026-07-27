@@ -1,11 +1,11 @@
 """Astgen execution functionality."""
 
-from pathlib import Path
 import shutil
 import statistics
 import subprocess
 import sys
 import time
+from pathlib import Path
 
 
 def render_command(
@@ -57,8 +57,8 @@ def execute_astgen(
         result = subprocess.run(
             cmd_str,
             shell=True,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
+            capture_output=True,
+            check=False,
             timeout=timeout,
         )
         elapsed = time.monotonic() - t0
@@ -78,7 +78,7 @@ def execute_astgen(
         print(f"WARNING: astgen timed out after {elapsed:.1f}s", file=sys.stderr)
         return False, elapsed
 
-    except Exception as e:
+    except OSError as e:
         elapsed = time.monotonic() - t0
         print(f"WARNING: astgen execution failed: {e}", file=sys.stderr)
         return False, elapsed

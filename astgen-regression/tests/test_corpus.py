@@ -1,7 +1,8 @@
+import subprocess
 import tempfile
 from pathlib import Path
-from unittest.mock import patch, MagicMock
-import subprocess
+from unittest.mock import MagicMock, patch
+
 from astgen_regression.corpus import clone_corpus
 
 

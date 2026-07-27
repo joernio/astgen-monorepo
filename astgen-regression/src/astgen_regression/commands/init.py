@@ -1,11 +1,10 @@
 """Init command implementation."""
 
-from pathlib import Path
 import sys
+from pathlib import Path
 from typing import Any
 
 from jinja2 import Environment, PackageLoader, select_autoescape
-
 
 LANGUAGE_DEFAULTS: dict[str, dict[str, Any]] = {
     "javascript": {
