@@ -137,7 +137,7 @@ jobs:
         working-directory: ruby-astgen
         run: |
           find vendor/bundle/jruby/${RUBY_ABI} -mindepth 1 -maxdepth 1 -type \
-            d ! -name "gems" ! -name "bin" ! -name "specifications" \
+            d ! -name "gems" ! -name "bin" ! -name "specifications" ! -name "extensions" \
             -exec rm -rf {} +
           zip -r ${{ matrix.asset_name }}_${{ needs.verify.outputs.new_tag }}.zip \
             lib exe vendor Gemfile ruby_ast_gen.gemspec
