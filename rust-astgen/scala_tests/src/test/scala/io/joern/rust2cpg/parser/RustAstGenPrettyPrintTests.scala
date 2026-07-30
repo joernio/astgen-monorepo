@@ -326,4 +326,26 @@ class RustAstGenPrettyPrintTests extends AnyFunSuite with RustAstGenTestFixture 
         }
     }
   }
+
+  test("expansion of unparseable statement is None") {
+    val snippet =
+      """
+        |macro_rules! m {
+        |    () => {
+        |        let
+        |    };
+        |}
+        |
+        |fn main() {
+        |    m!();
+        |}
+        |""".stripMargin
+    val srcFile = code(snippet)
+
+    val main = srcFile.item.collectFirst { case fn: Fn => fn }.get
+    inside(macroCalls(main)) {
+      case m :: Nil =>
+        m.macroExpansion shouldBe None
+    }
+  }
 }
