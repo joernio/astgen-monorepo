@@ -237,6 +237,10 @@ impl<'a> NodeSelector<'a> {
         self
     }
 
+    pub fn exists(self) -> bool {
+        !self.nodes().is_empty()
+    }
+
     pub fn type_full_name(self) -> String {
         self.field("typeFullName")
     }

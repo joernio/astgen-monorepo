@@ -1,6 +1,8 @@
 mod common;
 
-use crate::common::{TestResult, fn_decl, no_sysroot_resolve_cfg_ast_json, nodes_by_kind};
+use crate::common::{
+    TestResult, call_expr, fn_decl, no_sysroot_resolve_cfg_ast_json, nodes_by_kind,
+};
 
 #[test]
 fn cfg_test_module_is_dropped() -> TestResult<()> {
@@ -77,6 +79,86 @@ fn plain() {}
         fn_decl(&json, "fn plain() {}").method_full_name(),
         "rust2cpg::plain"
     );
+
+    Ok(())
+}
+
+#[test]
+fn inactive_call_stmt_is_dropped_with_its_expr_stmt() -> TestResult<()> {
+    let json = no_sysroot_resolve_cfg_ast_json(
+        "rust2cpg",
+        &[(
+            "src/lib.rs",
+            r#"
+fn f() {}
+fn g() {}
+
+fn h() {
+    #[cfg(any())]
+    f();
+    g();
+}
+"#,
+        )],
+        "src/lib.rs",
+    )?;
+
+    assert_eq!(nodes_by_kind(&json, "EXPR_STMT").len(), 1);
+    assert!(call_expr(&json, "g()").exists());
+    assert!(!call_expr(&json, "f()").exists());
+
+    Ok(())
+}
+
+#[test]
+fn active_cfg_call_stmt_is_kept() -> TestResult<()> {
+    let json = no_sysroot_resolve_cfg_ast_json(
+        "rust2cpg",
+        &[(
+            "src/lib.rs",
+            r#"
+fn f() {}
+
+fn h() {
+    #[cfg(all())]
+    f();
+}
+"#,
+        )],
+        "src/lib.rs",
+    )?;
+
+    assert!(call_expr(&json, "#[cfg(all())]\n    f()").exists());
+
+    Ok(())
+}
+
+#[test]
+fn inactive_match_arm_is_dropped_from_kept_match() -> TestResult<()> {
+    let json = no_sysroot_resolve_cfg_ast_json(
+        "rust2cpg",
+        &[(
+            "src/lib.rs",
+            r#"
+fn f() {}
+fn g() {}
+
+fn h(x: i32) {
+    match x {
+        #[cfg(any())]
+        0 => f(),
+        _ => g(),
+    }
+}
+"#,
+        )],
+        "src/lib.rs",
+    )?;
+
+    assert_eq!(nodes_by_kind(&json, "MATCH_EXPR").len(), 1);
+    assert_eq!(nodes_by_kind(&json, "MATCH_ARM").len(), 1);
+    assert_eq!(nodes_by_kind(&json, "CALL_EXPR").len(), 1);
+    assert!(call_expr(&json, "g()").exists());
 
     Ok(())
 }
