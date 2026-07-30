@@ -217,6 +217,19 @@ fn is_cfg_inactive(child: &SyntaxElement, cfg_options: Option<&CfgOptions>) -> b
     let (Some(cfg_options), NodeOrToken::Node(node)) = (cfg_options, child) else {
         return false;
     };
+
+    // EXPR_STMT nodes don't have attrs, but their children might.
+    // If an EXPR_STMT child is cfg-inactive, we must drop the entire EXPR_STMT, otherwise
+    // we'd build an invalid EXPR_STMT AST.
+
+    has_inactive_cfg_attr(node, cfg_options)
+        || (ast::ExprStmt::can_cast(node.kind())
+            && node
+                .children()
+                .any(|child| has_inactive_cfg_attr(&child, cfg_options)))
+}
+
+fn has_inactive_cfg_attr(node: &SyntaxNode, cfg_options: &CfgOptions) -> bool {
     node.children()
         .filter_map(ast::Attr::cast)
         .filter_map(|attr| match attr.meta()? {
