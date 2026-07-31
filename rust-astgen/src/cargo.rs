@@ -1,10 +1,14 @@
 use crate::config::RustAstGenConfig;
 use anyhow::{Context, Result};
-use log::info;
+use log::{error, info};
 use ra_ap_ide::RootDatabase;
-use ra_ap_load_cargo::{LoadCargoConfig, ProcMacroServerChoice, load_workspace_at};
-use ra_ap_project_model::{CargoConfig, CargoFeatures, RustLibSource};
-use ra_ap_vfs::{FileId, Vfs, VfsPath};
+use ra_ap_load_cargo::{
+    LoadCargoConfig, ProcMacroServerChoice, load_workspace as load_workspace_into_db,
+};
+use ra_ap_project_model::{
+    CargoConfig, CargoFeatures, ProjectManifest, ProjectWorkspace, RustLibSource,
+};
+use ra_ap_vfs::{AbsPathBuf, FileId, Vfs, VfsPath};
 use std::path::Path;
 
 pub(crate) fn load_workspace(config: &RustAstGenConfig) -> Result<(RootDatabase, Vfs)> {
@@ -37,18 +41,36 @@ pub(crate) fn load_workspace(config: &RustAstGenConfig) -> Result<(RootDatabase,
         config.input_dir_full_path.display()
     );
 
-    let (root_db, vfs, _) = load_workspace_at(
-        config.input_dir_full_path.as_path(),
-        &cargo_config,
-        &load_cargo_config,
-        &|progress_msg| info!("progress: {}", progress_msg),
-    )
-    .with_context(|| {
-        format!(
-            "failed to load the Rust project at `{}`. Are `cargo` and `rustc` on your PATH?",
-            config.input_dir_full_path.display()
-        )
+    let (root_db, vfs) = load_workspace_at(config, &cargo_config, &load_cargo_config)
+        .with_context(|| {
+            format!(
+                "failed to load the Rust project at `{}`. Are `cargo` and `rustc` on your PATH?",
+                config.input_dir_full_path.display()
+            )
+        })?;
+
+    Ok((root_db, vfs))
+}
+
+fn load_workspace_at(
+    config: &RustAstGenConfig,
+    cargo_config: &CargoConfig,
+    load_cargo_config: &LoadCargoConfig,
+) -> Result<(RootDatabase, Vfs)> {
+    let root = AbsPathBuf::assert_utf8(config.input_dir_full_path.clone());
+    let manifest = ProjectManifest::discover_single(&root)?;
+    let workspace = ProjectWorkspace::load(manifest, cargo_config, &|progress_msg| {
+        info!("progress: {}", progress_msg)
     })?;
+
+    if config.load_sysroot
+        && let Some(reason) = workspace.sysroot.error()
+    {
+        error!("failed to load the Rust sysroot: {}", reason);
+    }
+
+    let (root_db, vfs, _) =
+        load_workspace_into_db(workspace, &cargo_config.extra_env, load_cargo_config)?;
 
     Ok((root_db, vfs))
 }
