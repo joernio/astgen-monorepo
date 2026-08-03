@@ -1,6 +1,6 @@
 mod common;
 
-use crate::common::{TestResult, call_expr, name_ref, no_sysroot_ast_json};
+use crate::common::{TestResult, call_expr, name_ref, no_sysroot_ast_json, sysroot_ast_json};
 
 #[test]
 fn emits_names_for_impl_trait_with_associated_type() -> TestResult<()> {
@@ -271,6 +271,29 @@ fn main() {
     assert_eq!(
         call_expr(&json, "make()").type_full_name(),
         "impl rust2cpg::Trait<First = i32, Second = u32>"
+    );
+
+    Ok(())
+}
+
+#[test]
+fn emits_names_for_async_fn_return_type() -> TestResult<()> {
+    let json = sysroot_ast_json(
+        "rust2cpg",
+        r#"
+async fn f() -> i32 {
+    1
+}
+
+fn main() {
+    f();
+}
+"#,
+    )?;
+
+    assert_eq!(
+        call_expr(&json, "f()").type_full_name(),
+        "impl core::future::future::Future<Output = i32> + core::marker::Sized"
     );
 
     Ok(())
