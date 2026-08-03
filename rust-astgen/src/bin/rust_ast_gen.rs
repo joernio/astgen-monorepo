@@ -9,7 +9,12 @@ use std::thread::available_parallelism;
 fn main() -> Result<()> {
     // We can use RUST_LOG={debug,info,trace,error,warn} in the environment
     // to control the log level.
-    env_logger::init();
+    env_logger::Builder::new()
+        .filter_level(log::LevelFilter::Info)
+        .parse_default_env()
+        .format_timestamp(None)
+        .format_level(false)
+        .init();
 
     // `parse` will exit the program if there are any errors.
     let cli_args = RustAstGenCliArgs::parse();

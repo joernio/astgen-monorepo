@@ -1,7 +1,7 @@
 use crate::json_ast::{RustAstGenJsonFile, RustAstGenJsonNode};
 use crate::{cargo, config};
 use anyhow::Context;
-use log::{error, info};
+use log::{debug, error};
 use ra_ap_hir::{Crate, Semantics, attach_db};
 use ra_ap_ide::{Analysis, AnalysisHost, RootDatabase};
 use ra_ap_syntax::{AstNode, SyntaxNode};
@@ -86,12 +86,12 @@ fn process_file(
     semantics: &Semantics<RootDatabase>,
     config: &config::RustAstGenConfig,
 ) -> anyhow::Result<()> {
-    info!("parsing: {}", input_file_path.display());
+    debug!("parsing: {}", input_file_path.display());
     let source_file = semantics.parse_guess_edition(file_id);
     let syntax_tree = source_file.syntax();
     let file_line_index = analysis.file_line_index(file_id)?;
 
-    info!("building the JSON tree: {}", input_file_path.display());
+    debug!("building the JSON tree: {}", input_file_path.display());
 
     let hir_file_id = semantics.hir_file_for(syntax_tree);
     let target_crate = crate_for_file(syntax_tree, semantics);
@@ -128,7 +128,7 @@ fn process_file(
 
     let output_file = config.make_output_path_for_input_file(input_file_path)?;
 
-    info!("writing to: {}", output_file.display());
+    debug!("writing to: {}", output_file.display());
 
     let json_tree = if config.pretty_print {
         serde_json::to_string_pretty(&envelope)?

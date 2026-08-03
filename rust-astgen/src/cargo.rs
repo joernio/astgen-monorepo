@@ -59,14 +59,32 @@ fn load_workspace_at(
 ) -> Result<(RootDatabase, Vfs)> {
     let root = AbsPathBuf::assert_utf8(config.input_dir_full_path.clone());
     let manifest = ProjectManifest::discover_single(&root)?;
+
+    info!("manifest: {}", manifest);
+    if let Some(target) = &config.target {
+        info!("target: {}", target);
+    }
+    if !config.features.is_empty() || config.no_default_features {
+        info!(
+            "features: [{}], no-default-features={}",
+            config.features.join(", "),
+            config.no_default_features
+        );
+    }
+
     let workspace = ProjectWorkspace::load(manifest, cargo_config, &|progress_msg| {
         info!("progress: {}", progress_msg)
     })?;
 
-    if config.load_sysroot
-        && let Some(reason) = workspace.sysroot.error()
-    {
-        error!("failed to load the Rust sysroot: {}", reason);
+    if config.load_sysroot {
+        match workspace.sysroot.error() {
+            Some(reason) => error!("failed to load the Rust sysroot: {}", reason),
+            None => {
+                if let Some(sysroot_root) = workspace.sysroot.root() {
+                    info!("sysroot: {}", sysroot_root);
+                }
+            }
+        }
     }
 
     let (root_db, vfs, _) =
