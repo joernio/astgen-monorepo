@@ -1,6 +1,6 @@
 use crate::config::RustAstGenConfig;
 use anyhow::{Context, Result};
-use log::{error, info};
+use log::{debug, error, info};
 use ra_ap_ide::RootDatabase;
 use ra_ap_load_cargo::{
     LoadCargoConfig, ProcMacroServerChoice, load_workspace as load_workspace_into_db,
@@ -113,13 +113,17 @@ pub(crate) fn collect_input_files(
 }
 
 fn should_collect_file(config: &RustAstGenConfig, vfs_path: &VfsPath) -> bool {
-    let vfs_path = vfs_path.as_path();
+    let abs_path = vfs_path.as_path();
 
-    let is_rust_file = vfs_path.filter(|p| p.extension() == Some("rs")).is_some();
+    let is_rust_file = abs_path.filter(|p| p.extension() == Some("rs")).is_some();
 
-    let is_inside_input_dir = vfs_path
+    let is_inside_input_dir = abs_path
         .filter(|p| AsRef::<Path>::as_ref(p).starts_with(&config.input_dir_full_path))
         .is_some();
+
+    if is_rust_file && !is_inside_input_dir {
+        debug!("not collecting: {}", vfs_path);
+    }
 
     is_rust_file && is_inside_input_dir
 }

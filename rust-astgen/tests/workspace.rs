@@ -45,7 +45,7 @@ fn workspace_with_crates_emits_all_files() -> TestResult<()> {
         .arg("-o")
         .arg(&output_dir)
         .arg("--resolve-cfg")
-        .env("RUST_LOG", "debug")
+        .env("RUST_LOG", "rust_ast_gen=debug")
         .output()?;
 
     let mut emitted = Vec::new();
