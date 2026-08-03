@@ -63,7 +63,7 @@ impl RustAstGenConfig {
     }
 
     pub(crate) fn relativize_input_file<'a>(&self, input_file_path: &'a Path) -> Result<&'a Path> {
-        input_file_path
+        dunce::simplified(input_file_path)
             .strip_prefix(&self.input_dir_full_path)
             .with_context(|| {
                 format!(
@@ -137,6 +137,35 @@ mod tests {
         )?;
 
         let input_file = input_dir.join("subdir").join("file.rs");
+        let output_file = config.make_output_path_for_input_file(&input_file)?;
+
+        let expected_output_file = output_dir.join("subdir").join("file.rs.json");
+        assert_eq!(output_file, expected_output_file);
+
+        Ok(())
+    }
+
+    #[test]
+    #[cfg(windows)]
+    // On Windows, we may get paths starting with `\\?\` (UNC path), which might
+    // cause problems when collecting input files. This is mainly to assert our
+    // canonicalization of paths works correctly - using dunce for that.
+    fn test_make_output_path_for_verbatim_input_file_windows() -> Result<()> {
+        let input_dir = PathBuf::from(r"C:\input");
+        let output_dir = PathBuf::from(r"C:\output");
+        let config = RustAstGenConfig::new(
+            input_dir,
+            output_dir.clone(),
+            1,
+            true,
+            false,
+            None,
+            vec![],
+            false,
+            false,
+        )?;
+
+        let input_file = PathBuf::from(r"\\?\C:\input\subdir\file.rs");
         let output_file = config.make_output_path_for_input_file(&input_file)?;
 
         let expected_output_file = output_dir.join("subdir").join("file.rs.json");
