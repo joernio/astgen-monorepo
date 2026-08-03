@@ -11,8 +11,10 @@ defaults:
 jobs:
   rust-ci-test:
     strategy:
+      fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
+        os: [windows-latest]
+        run: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
     runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout
