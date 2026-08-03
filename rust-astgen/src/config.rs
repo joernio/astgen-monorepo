@@ -63,7 +63,7 @@ impl RustAstGenConfig {
     }
 
     pub(crate) fn relativize_input_file<'a>(&self, input_file_path: &'a Path) -> Result<&'a Path> {
-        input_file_path
+        dunce::simplified(input_file_path)
             .strip_prefix(&self.input_dir_full_path)
             .with_context(|| {
                 format!(

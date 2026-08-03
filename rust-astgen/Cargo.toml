@@ -6,6 +6,7 @@ edition = "2024"
 [dependencies]
 anyhow = "1.0.102"
 clap = { version = "4.6.0", features = ["derive"] }
+dunce = "1.0.5"
 env_logger = "0.11.10"
 ra_ap_hir = "0.0.332"
 ra_ap_ide = "0.0.332"

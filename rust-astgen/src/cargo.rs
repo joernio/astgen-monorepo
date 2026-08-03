@@ -9,7 +9,6 @@ use ra_ap_project_model::{
     CargoConfig, CargoFeatures, ProjectManifest, ProjectWorkspace, RustLibSource,
 };
 use ra_ap_vfs::{AbsPathBuf, FileId, Vfs, VfsPath};
-use std::path::Path;
 
 pub(crate) fn load_workspace(config: &RustAstGenConfig) -> Result<(RootDatabase, Vfs)> {
     let load_cargo_config = LoadCargoConfig {
@@ -118,7 +117,7 @@ fn should_collect_file(config: &RustAstGenConfig, vfs_path: &VfsPath) -> bool {
     let is_rust_file = abs_path.filter(|p| p.extension() == Some("rs")).is_some();
 
     let is_inside_input_dir = abs_path
-        .filter(|p| AsRef::<Path>::as_ref(p).starts_with(&config.input_dir_full_path))
+        .filter(|p| dunce::simplified(p.as_ref()).starts_with(&config.input_dir_full_path))
         .is_some();
 
     if is_rust_file && !is_inside_input_dir {
