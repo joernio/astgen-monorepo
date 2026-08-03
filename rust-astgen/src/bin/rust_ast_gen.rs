@@ -106,8 +106,8 @@ impl TryFrom<RustAstGenCliArgs> for RustAstGenConfig {
     fn try_from(args: RustAstGenCliArgs) -> Result<Self> {
         args.ensure_provided_dirs_exist()?;
 
-        let input_dir_full_path = args.input_dir.canonicalize()?;
-        let output_dir_full_path = args.output_dir.canonicalize()?;
+        let input_dir_full_path = dunce::canonicalize(&args.input_dir)?;
+        let output_dir_full_path = dunce::canonicalize(&args.output_dir)?;
         let available_threads = available_parallelism().map(NonZero::get).unwrap_or(1);
 
         RustAstGenConfig::new(
