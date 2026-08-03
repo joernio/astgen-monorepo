@@ -1,6 +1,6 @@
 mod common;
 
-use crate::common::{TestResult, no_sysroot_ast_json, struct_decl};
+use crate::common::{TestResult, no_sysroot_ast_json, struct_decl, sysroot_ast_json};
 
 #[test]
 fn emits_implemented_trait_for_struct() -> TestResult<()> {
@@ -183,6 +183,26 @@ impl Tr for S {}
     assert_eq!(
         struct_decl(&json, "struct S;").implemented_traits(),
         vec!["rust2cpg::Tr"]
+    );
+
+    Ok(())
+}
+
+#[test]
+fn emits_derived_trait_impls() -> TestResult<()> {
+    let json = sysroot_ast_json(
+        "rust2cpg",
+        r#"
+#[derive(Clone)]
+struct S;
+
+fn main() {}
+"#,
+    )?;
+
+    assert_eq!(
+        struct_decl(&json, "#[derive(Clone)]\nstruct S;").implemented_traits(),
+        vec!["core::clone::Clone"]
     );
 
     Ok(())
