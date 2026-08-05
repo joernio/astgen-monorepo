@@ -4,7 +4,7 @@ use std::path::{Path, PathBuf};
 pub struct RustAstGenConfig {
     pub(crate) input_dir_full_path: PathBuf,
     pub(crate) output_dir_full_path: PathBuf,
-    pub(crate) cargo_worker_threads: usize,
+    pub(crate) worker_threads: usize,
     // When false, skips sysroot discovery/loading.
     // It's faster but will not resolve std symbols.
     // Mainly useful for testing when std symbols are not needed.
@@ -38,7 +38,7 @@ impl RustAstGenConfig {
         let config = Self {
             input_dir_full_path,
             output_dir_full_path,
-            cargo_worker_threads: num_threads,
+            worker_threads: num_threads,
             load_sysroot,
             resolve_cfg,
             target,
