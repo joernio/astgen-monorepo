@@ -467,3 +467,244 @@ fn main() {
 
     Ok(())
 }
+
+#[test]
+fn emits_type_full_name_for_lifetime_parameterized_impl_self_type() -> TestResult<()> {
+    let json = no_sysroot_ast_json(
+        "rust2cpg",
+        &[(
+            "src/main.rs",
+            r#"
+trait Tr {
+    fn m(&self);
+}
+
+struct Mix<'a, T> {
+    value: &'a T,
+}
+
+impl<'a, T> Tr for Mix<'a, T> {
+    fn m(&self) {}
+}
+
+fn main() {}
+"#,
+        )],
+        "src/main.rs",
+    )?;
+
+    assert_eq!(
+        fn_decl(&json, "fn m(&self) {}").method_full_name(),
+        "<rust2cpg::Mix<'a, T> as rust2cpg::Tr>::m"
+    );
+    assert_eq!(
+        name_ref(&json, "Mix")
+            .on_line("impl<'a, T> Tr for Mix<'a, T> {")
+            .type_full_name(),
+        "rust2cpg::Mix<'a, T>"
+    );
+
+    Ok(())
+}
+
+#[test]
+fn emits_type_full_name_for_const_param_impl_self_type() -> TestResult<()> {
+    let json = no_sysroot_ast_json(
+        "rust2cpg",
+        &[(
+            "src/main.rs",
+            r#"
+trait Tr {
+    fn m(&self);
+}
+
+struct Foo<const N: usize>;
+
+struct Pair<T, const N: usize> {
+    value: T,
+}
+
+impl<const N: usize> Tr for Foo<N> {
+    fn m(&self) {}
+}
+
+fn concrete(value: &Foo<3>) {}
+
+fn expression(value: &Foo<{ 2 + 1 }>) {}
+
+fn mixed<const N: usize>(value: &Pair<u32, N>) {}
+
+fn main() {}
+"#,
+        )],
+        "src/main.rs",
+    )?;
+
+    assert_eq!(
+        name_ref(&json, "Foo")
+            .on_line("fn concrete(value: &Foo<3>) {}")
+            .type_full_name(),
+        "rust2cpg::Foo<3>"
+    );
+    assert_eq!(
+        name_ref(&json, "Foo")
+            .on_line("fn expression(value: &Foo<{ 2 + 1 }>) {}")
+            .type_full_name(),
+        "rust2cpg::Foo<{ 2 + 1 }>"
+    );
+    assert_eq!(
+        fn_decl(&json, "fn m(&self) {}").method_full_name(),
+        "<rust2cpg::Foo<N> as rust2cpg::Tr>::m"
+    );
+    assert_eq!(
+        name_ref(&json, "Foo")
+            .on_line("impl<const N: usize> Tr for Foo<N> {")
+            .type_full_name(),
+        "rust2cpg::Foo<N>"
+    );
+    assert_eq!(
+        name_ref(&json, "Pair")
+            .on_line("fn mixed<const N: usize>(value: &Pair<u32, N>) {}")
+            .type_full_name(),
+        "rust2cpg::Pair<u32, N>"
+    );
+
+    Ok(())
+}
+
+#[test]
+fn emits_type_full_name_for_path_with_associated_type_binding() -> TestResult<()> {
+    let json = no_sysroot_ast_json(
+        "rust2cpg",
+        &[(
+            "src/main.rs",
+            r#"
+trait Tr {
+    type Assoc;
+}
+
+struct Foo;
+
+impl Tr for Foo {
+    type Assoc = u32;
+}
+
+fn bare(value: &dyn Tr) {}
+
+fn bound(value: &dyn Tr<Assoc = u32>) {}
+
+fn main() {}
+"#,
+        )],
+        "src/main.rs",
+    )?;
+
+    assert_eq!(
+        name_ref(&json, "Tr")
+            .on_line("fn bare(value: &dyn Tr) {}")
+            .type_full_name(),
+        "rust2cpg::Tr"
+    );
+    assert_eq!(
+        name_ref(&json, "Tr")
+            .on_line("fn bound(value: &dyn Tr<Assoc = u32>) {}")
+            .type_full_name(),
+        "rust2cpg::Tr<Assoc = u32>"
+    );
+
+    Ok(())
+}
+
+#[test]
+fn emits_type_full_name_for_lifetime_parameterized_path_outside_impl() -> TestResult<()> {
+    let json = no_sysroot_ast_json(
+        "rust2cpg",
+        &[(
+            "src/main.rs",
+            r#"
+struct Foo<'a> {
+    value: &'a str,
+}
+
+fn named<'a>(value: &Foo<'a>) {}
+
+fn elided(value: &Foo<'_>) {}
+
+fn borrowed_static(value: &'static Foo<'static>) {}
+
+fn main() {}
+"#,
+        )],
+        "src/main.rs",
+    )?;
+
+    assert_eq!(
+        name_ref(&json, "Foo")
+            .on_line("fn named<'a>(value: &Foo<'a>) {}")
+            .type_full_name(),
+        "rust2cpg::Foo<'a>"
+    );
+    assert_eq!(
+        name_ref(&json, "Foo")
+            .on_line("fn elided(value: &Foo<'_>) {}")
+            .type_full_name(),
+        "rust2cpg::Foo<'_>"
+    );
+    assert_eq!(
+        name_ref(&json, "Foo")
+            .on_line("fn borrowed_static(value: &'static Foo<'static>) {}")
+            .type_full_name(),
+        "rust2cpg::Foo<'static>"
+    );
+
+    Ok(())
+}
+
+#[test]
+fn emits_distinct_type_full_names_for_distinct_lifetime_parameterized_impls() -> TestResult<()> {
+    let json = no_sysroot_ast_json(
+        "rust2cpg",
+        &[(
+            "src/main.rs",
+            r#"
+trait Tr {
+    fn m(&self);
+}
+
+struct Alpha<'a> {
+    value: &'a str,
+}
+
+struct Beta<'a> {
+    value: &'a str,
+}
+
+impl<'a> Tr for Alpha<'a> {
+    fn m(&self) {}
+}
+
+impl<'a> Tr for Beta<'a> {
+    fn m(&self) {}
+}
+
+fn main() {}
+"#,
+        )],
+        "src/main.rs",
+    )?;
+
+    assert_eq!(
+        name_ref(&json, "Alpha")
+            .on_line("impl<'a> Tr for Alpha<'a> {")
+            .type_full_name(),
+        "rust2cpg::Alpha<'a>"
+    );
+    assert_eq!(
+        name_ref(&json, "Beta")
+            .on_line("impl<'a> Tr for Beta<'a> {")
+            .type_full_name(),
+        "rust2cpg::Beta<'a>"
+    );
+
+    Ok(())
+}
