@@ -17,7 +17,7 @@ pub(crate) fn load_workspace(config: &RustAstGenConfig) -> Result<(RootDatabase,
         // doesn't seem necessary? slight runtime performance improvement by disabling it
         prefill_caches: false,
         proc_macro_processes: 0,
-        num_worker_threads: config.cargo_worker_threads,
+        num_worker_threads: config.worker_threads,
     };
 
     let cargo_config = CargoConfig {

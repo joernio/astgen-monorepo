@@ -47,9 +47,28 @@ fn process_inputs(
     input_rust_files: Vec<(FileId, VfsPath)>,
     config: &config::RustAstGenConfig,
 ) {
-    let analysis = analysis_host.analysis();
-    let root_db = analysis_host.raw_database();
-    let semantics = Semantics::new(root_db);
+    let files_per_worker = input_rust_files
+        .len()
+        .div_ceil(config.worker_threads)
+        .max(1);
+
+    std::thread::scope(|scope| {
+        for files in input_rust_files.chunks(files_per_worker) {
+            let analysis = analysis_host.analysis();
+            let root_db = analysis_host.raw_database().to_owned();
+
+            scope.spawn(move || process_files(files, analysis, root_db, config));
+        }
+    });
+}
+
+fn process_files(
+    input_rust_files: &[(FileId, VfsPath)],
+    analysis: Analysis,
+    root_db: RootDatabase,
+    config: &config::RustAstGenConfig,
+) {
+    let semantics = Semantics::new(&root_db);
 
     // Process each file
     attach_db(semantics.db, || {
@@ -58,7 +77,7 @@ fn process_inputs(
 
             let file_result = if let Some(input_file_path) = input_file_path {
                 if let Err(e) =
-                    process_file(file_id, input_file_path, &analysis, &semantics, config)
+                    process_file(*file_id, input_file_path, &analysis, &semantics, config)
                 {
                     error!("{e}");
                     None
