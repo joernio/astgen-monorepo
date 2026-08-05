@@ -1,7 +1,9 @@
 //! Where we finally build `typeFullName` for each (relevant) SyntaxNode.
 
 use super::{
-    rust_name_formatter::{format_module_def_full_name, format_name_with_generic_args},
+    rust_name_formatter::{
+        format_item_name, format_module_def_full_name, format_name_with_generic_args,
+    },
     type_formatter,
 };
 use ra_ap_hir::{Module, ModuleDef, PathResolution, Semantics, Type};
@@ -123,7 +125,7 @@ fn format_module_def_type_full_name<'db>(
     semantics: &Semantics<'db, RootDatabase>,
 ) -> Option<String> {
     let base = format_module_def_full_name(def, db)?;
-    let generic_args = generic_args_for_path(path, module, semantics)?;
+    let generic_args = generic_args_for_path(path, module, semantics);
     Some(format_name_with_generic_args(base, generic_args))
 }
 
@@ -131,29 +133,75 @@ fn generic_args_for_path<'db>(
     path: &ast::Path,
     module: Module,
     semantics: &Semantics<'db, RootDatabase>,
-) -> Option<Vec<String>> {
-    path.segment()?
-        .generic_arg_list()
-        .map(|arg_list| {
-            arg_list
-                .generic_args()
-                .map(|arg| format_generic_arg(arg, module, semantics))
-                .collect()
-        })
-        .unwrap_or_else(|| Some(Vec::new()))
+) -> Vec<String> {
+    let Some(arg_list) = path
+        .segment()
+        .and_then(|segment| segment.generic_arg_list())
+    else {
+        return Vec::new();
+    };
+    arg_list
+        .generic_args()
+        .map(|arg| format_generic_arg(&arg, module, semantics))
+        .collect()
 }
 
 fn format_generic_arg(
-    arg: ast::GenericArg,
+    arg: &ast::GenericArg,
+    module: Module,
+    semantics: &Semantics<RootDatabase>,
+) -> String {
+    match arg {
+        ast::GenericArg::TypeArg(type_arg) => type_arg
+            .ty()
+            .and_then(|ty| resolve_type_full_name(&ty, module, semantics))
+            .unwrap_or_else(|| type_arg.to_string()),
+        ast::GenericArg::AssocTypeArg(assoc_type_arg) => {
+            format_assoc_type_arg(assoc_type_arg, module, semantics)
+                .unwrap_or_else(|| assoc_type_arg.to_string())
+        }
+        ast::GenericArg::LifetimeArg(lifetime_arg) => lifetime_arg.to_string(),
+        ast::GenericArg::ConstArg(const_arg) => const_arg.to_string(),
+    }
+}
+
+fn format_assoc_type_arg(
+    assoc_type_arg: &ast::AssocTypeArg,
     module: Module,
     semantics: &Semantics<RootDatabase>,
 ) -> Option<String> {
-    match arg {
-        ast::GenericArg::TypeArg(type_arg) => {
-            let typ = semantics.resolve_type(&type_arg.ty()?)?;
-            type_formatter::format_type(&typ, module, semantics.db)
-        }
-        ast::GenericArg::ConstArg(const_arg) => Some(const_arg.syntax().text().to_string()),
+    let name = assoc_type_arg.name_ref()?;
+    let typ = resolve_type_full_name(&assoc_type_arg.ty()?, module, semantics)?;
+    Some(format!("{name} = {typ}"))
+}
+
+fn resolve_type_full_name(
+    ty: &ast::Type,
+    module: Module,
+    semantics: &Semantics<RootDatabase>,
+) -> Option<String> {
+    if let Some(resolved) = semantics.resolve_type(ty)
+        && let Some(formatted) = type_formatter::format_type(&resolved, module, semantics.db)
+    {
+        return Some(formatted);
+    }
+    resolve_const_param_name(ty, module, semantics)
+}
+
+fn resolve_const_param_name(
+    ty: &ast::Type,
+    module: Module,
+    semantics: &Semantics<RootDatabase>,
+) -> Option<String> {
+    let ast::Type::PathType(path_type) = ty else {
+        return None;
+    };
+    match semantics.resolve_path(&path_type.path()?)? {
+        PathResolution::ConstParam(const_param) => Some(format_item_name(
+            const_param.name(semantics.db),
+            module,
+            semantics.db,
+        )),
         _ => None,
     }
 }
