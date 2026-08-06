@@ -1,4 +1,4 @@
-use crate::common::{TestResult, no_sysroot_ast_json};
+use crate::common::{TestResult, no_sysroot_ast_json, no_sysroot_ast_json_generated};
 use std::path::Path;
 
 mod common;
@@ -125,4 +125,18 @@ pub fn bar() {}
     assert_eq!(json["modulePath"].as_str(), None);
 
     Ok(())
+}
+
+#[test]
+fn skips_a_file_outside_the_module_tree() {
+    let files = [
+        ("src/lib.rs", "pub fn foo() {}\n"),
+        ("src/bar.rs", "pub fn baz() {}\n"),
+    ];
+
+    assert!(!no_sysroot_ast_json_generated(
+        "my_crate",
+        &files,
+        "src/bar.rs"
+    ));
 }

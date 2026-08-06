@@ -108,17 +108,20 @@ fn process_file(
     debug!("parsing: {}", input_file_path.display());
     let source_file = semantics.parse_guess_edition(file_id);
     let syntax_tree = source_file.syntax();
+
+    // If there's no crate, we don't have any type information. Likely, an inactive `#[cfg(..)]`.
+    // Thus, skip it.
+    let Some(target_crate) = crate_for_file(syntax_tree, semantics) else {
+        println!("Skipped: {}", input_file_path.display());
+        return Ok(());
+    };
+
     let file_line_index = analysis.file_line_index(file_id)?;
 
     debug!("building the JSON tree: {}", input_file_path.display());
 
     let hir_file_id = semantics.hir_file_for(syntax_tree);
-    let target_crate = crate_for_file(syntax_tree, semantics);
-    let cfg_options = if config.resolve_cfg {
-        target_crate.map(|target_crate| target_crate.cfg(semantics.db))
-    } else {
-        None
-    };
+    let cfg_options = config.resolve_cfg.then(|| target_crate.cfg(semantics.db));
     let json_root = RustAstGenJsonNode::from_node(
         syntax_tree,
         hir_file_id,
@@ -133,7 +136,9 @@ fn process_file(
         .line;
     let relative_path = config.relativize_input_file(input_file_path)?;
 
-    let crate_name = crate_name_for_file(syntax_tree, semantics);
+    let crate_name = target_crate
+        .display_name(semantics.db)
+        .map(|name| name.to_string());
     let module_path = module_path_for_file(syntax_tree, semantics);
     let envelope = RustAstGenJsonFile {
         relative_file_path: relative_path.to_string_lossy().to_string(),
@@ -165,15 +170,6 @@ fn crate_for_file(syntax_tree: &SyntaxNode, semantics: &Semantics<RootDatabase>)
         .module()
         .krate(semantics.db)
         .into()
-}
-
-fn crate_name_for_file(
-    syntax_tree: &SyntaxNode,
-    semantics: &Semantics<RootDatabase>,
-) -> Option<String> {
-    crate_for_file(syntax_tree, semantics)?
-        .display_name(semantics.db)
-        .map(|name| name.to_string())
 }
 
 fn module_path_for_file(

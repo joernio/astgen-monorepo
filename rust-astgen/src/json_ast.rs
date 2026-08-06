@@ -111,7 +111,7 @@ impl RustAstGenJsonNode {
         hir_file_id: HirFileId,
         line_index: &LineIndex,
         semantics: &Semantics<RootDatabase>,
-        target_crate: Option<Crate>,
+        target_crate: Crate,
         cfg_options: Option<&CfgOptions>,
     ) -> Self {
         let node_kind = syntax_kind_to_json_name(node.kind());
@@ -255,13 +255,9 @@ fn macro_text(
     node: &SyntaxNode,
     hir_file_id: HirFileId,
     semantics: &Semantics<RootDatabase>,
-    target_crate: Option<Crate>,
+    target_crate: Crate,
 ) -> Option<String> {
     let macro_file = hir_file_id.macro_file()?;
-    let Some(target_crate) = target_crate else {
-        // Without a target crate, we can't invoke `prettify_macro_expansion`.
-        return Some(node.text().to_string());
-    };
     let span_map = semantics.db.expansion_span_map(macro_file);
     Some(
         prettify_macro_expansion(semantics.db, node.clone(), span_map, target_crate.into())
