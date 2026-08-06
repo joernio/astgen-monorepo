@@ -25,6 +25,14 @@ pub fn no_sysroot_resolve_cfg_ast_json(
     run(crate_name, file_code_pairs, false, true, target_file)
 }
 
+pub fn no_sysroot_ast_json_generated(
+    crate_name: &str,
+    file_code_pairs: &[(&str, &str)],
+    target_file: &str,
+) -> bool {
+    run(crate_name, file_code_pairs, false, false, target_file).is_ok()
+}
+
 pub fn sysroot_ast_json(crate_name: &str, source: &str) -> TestResult<Value> {
     run(
         crate_name,
