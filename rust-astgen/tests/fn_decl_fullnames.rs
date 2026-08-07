@@ -270,8 +270,6 @@ fn main() {}
     Ok(())
 }
 
-// TODO: local functions don't get a proper fully qualified name like downstream, i.e. they are
-//  missing the enclosing fn name. We may need to change this. For now, recording the status quo.
 #[test]
 fn local_function_decl_matches_call_site() -> TestResult<()> {
     let json = no_sysroot_ast_json(
@@ -290,11 +288,59 @@ fn main() {
 
     assert_eq!(
         fn_decl(&json, "fn helper() -> u32 { 1 }").method_full_name(),
-        "rust2cpg::helper"
+        "rust2cpg::main::helper"
     );
     assert_eq!(
         call_expr(&json, "helper()").method_full_name(),
-        "rust2cpg::helper"
+        "rust2cpg::main::helper"
+    );
+
+    Ok(())
+}
+
+#[test]
+fn local_functions_in_sibling_blocks_are_disambiguated() -> TestResult<()> {
+    let json = no_sysroot_ast_json(
+        "rust2cpg",
+        &[(
+            "src/main.rs",
+            r#"
+fn f() {
+    if true {
+        fn g() -> u32 { 1 }
+        let _a = g();
+    }
+    if false {
+        fn g() -> u8 { 2 }
+        let _b = g();
+    }
+}
+
+fn main() { f(); }
+"#,
+        )],
+        "src/main.rs",
+    )?;
+
+    assert_eq!(
+        fn_decl(&json, "fn g() -> u32 { 1 }").method_full_name(),
+        "rust2cpg::f::g#1"
+    );
+    assert_eq!(
+        fn_decl(&json, "fn g() -> u8 { 2 }").method_full_name(),
+        "rust2cpg::f::g#2"
+    );
+    assert_eq!(
+        call_expr(&json, "g()")
+            .on_line("        let _a = g();")
+            .method_full_name(),
+        "rust2cpg::f::g#1"
+    );
+    assert_eq!(
+        call_expr(&json, "g()")
+            .on_line("        let _b = g();")
+            .method_full_name(),
+        "rust2cpg::f::g#2"
     );
 
     Ok(())
