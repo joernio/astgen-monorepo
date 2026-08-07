@@ -2,7 +2,7 @@ mod common;
 
 use crate::common::{
     TestResult, bin_expr, call_expr, fn_decl, ident_pat, literal, method_call_expr, name_ref,
-    no_sysroot_ast_json, path_expr, self_param,
+    no_sysroot_ast_json, path_expr, self_param, struct_decl,
 };
 use serde_json::json;
 
@@ -914,6 +914,60 @@ fn main() {}
         "&mut rust2cpg::Tr"
     );
     assert_eq!(self_param(&json, "self").type_full_name(), "rust2cpg::Tr");
+
+    Ok(())
+}
+
+#[test]
+fn emits_disambiguators_for_same_named_structs_in_sibling_blocks() -> TestResult<()> {
+    let json = no_sysroot_ast_json(
+        "rust2cpg",
+        &[(
+            "src/main.rs",
+            r#"
+fn f() {
+    if true {
+        struct S { x: i32 }
+        impl S { fn new() -> S { S { x: 1 } } }
+        let a = S::new();
+        let _ = a.x;
+    }
+    if false {
+        struct S { x: u8 }
+        impl S { fn new() -> S { S { x: 2 } } }
+        let b = S::new();
+        let _ = b.x;
+    }
+}
+
+fn main() { f(); }
+"#,
+        )],
+        "src/main.rs",
+    )?;
+
+    assert_eq!(
+        struct_decl(&json, "struct S { x: i32 }").type_full_name(),
+        "rust2cpg::f::S#1"
+    );
+    assert_eq!(
+        struct_decl(&json, "struct S { x: u8 }").type_full_name(),
+        "rust2cpg::f::S#2"
+    );
+    assert_eq!(ident_pat(&json, "a").type_full_name(), "rust2cpg::f::S#1");
+    assert_eq!(ident_pat(&json, "b").type_full_name(), "rust2cpg::f::S#2");
+    assert_eq!(
+        call_expr(&json, "S::new()")
+            .on_line("        let a = S::new();")
+            .method_full_name(),
+        "rust2cpg::f::S#1::new"
+    );
+    assert_eq!(
+        call_expr(&json, "S::new()")
+            .on_line("        let b = S::new();")
+            .method_full_name(),
+        "rust2cpg::f::S#2::new"
+    );
 
     Ok(())
 }

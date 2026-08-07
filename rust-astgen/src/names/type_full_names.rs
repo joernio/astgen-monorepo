@@ -1,12 +1,13 @@
 //! Where we finally build `typeFullName` for each (relevant) SyntaxNode.
 
 use super::{
+    method_full_names::format_generic_module_def_full_name,
     rust_name_formatter::{
         format_item_name, format_module_def_full_name, format_name_with_generic_args,
     },
     type_formatter,
 };
-use ra_ap_hir::{Module, ModuleDef, PathResolution, Semantics, Type};
+use ra_ap_hir::{GenericDef, Module, ModuleDef, PathResolution, Semantics, Type};
 use ra_ap_ide::RootDatabase;
 use ra_ap_syntax::{AstNode, SyntaxNode, ast, ast::HasGenericArgs, match_ast};
 
@@ -20,9 +21,23 @@ pub(crate) fn type_full_name_for_node(
             ast::IdentPat(ident_pat) => resolve_ident_pat_type_full_name(&ident_pat, semantics),
             ast::NameRef(name_ref) => resolve_name_ref_type_full_name(&name_ref, semantics),
             ast::SelfParam(self_param) => resolve_self_param_type_full_name(&self_param, semantics),
+            ast::Struct(struct_) => resolve_struct_type_full_name(&struct_, semantics),
             _ => None,
         }
     }
+}
+
+fn resolve_struct_type_full_name(
+    struct_: &ast::Struct,
+    semantics: &Semantics<RootDatabase>,
+) -> Option<String> {
+    let struct_def = semantics.to_def(struct_)?;
+    format_generic_module_def_full_name(
+        ModuleDef::from(struct_def),
+        GenericDef::from(struct_def),
+        struct_def.module(semantics.db),
+        semantics.db,
+    )
 }
 
 fn resolve_expr_type_full_name(

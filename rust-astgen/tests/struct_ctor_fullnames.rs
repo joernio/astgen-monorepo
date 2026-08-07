@@ -284,3 +284,33 @@ fn main() {
 
     Ok(())
 }
+
+#[test]
+fn block_local_struct_is_named_through_enclosing_fn() -> TestResult<()> {
+    let json = no_sysroot_ast_json(
+        "rust2cpgtest",
+        &[(
+            "src/main.rs",
+            r#"
+fn f() {
+    struct S(i32);
+    let _ = S(1);
+}
+
+fn main() { f(); }
+"#,
+        )],
+        "src/main.rs",
+    )?;
+
+    assert_eq!(
+        struct_decl(&json, "struct S(i32);").type_full_name(),
+        "rust2cpgtest::f::S"
+    );
+    assert_eq!(
+        call_expr(&json, "S(1)").method_full_name(),
+        "rust2cpgtest::f::S"
+    );
+
+    Ok(())
+}

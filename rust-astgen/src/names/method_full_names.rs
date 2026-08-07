@@ -142,7 +142,7 @@ pub(crate) fn format_function_full_name(function: Function, db: &RootDatabase) -
     }
 }
 
-fn format_generic_module_def_full_name(
+pub(super) fn format_generic_module_def_full_name(
     def: ModuleDef,
     generic_def: GenericDef,
     module: Module,
