@@ -3,11 +3,15 @@
 use super::{
     method_full_names::format_generic_module_def_full_name,
     rust_name_formatter::{
-        format_item_name, format_module_def_full_name, format_name_with_generic_args,
+        format_item_name, format_member_full_name, format_module_def_full_name,
+        format_name_with_generic_args,
     },
     type_formatter,
 };
-use ra_ap_hir::{GenericDef, Module, ModuleDef, PathResolution, Semantics, Type};
+use ra_ap_hir::{
+    AsAssocItem, AssocItemContainer, GenericDef, Module, ModuleDef, PathResolution, Semantics,
+    Type, TypeAlias,
+};
 use ra_ap_ide::RootDatabase;
 use ra_ap_syntax::{AstNode, SyntaxNode, ast, ast::HasGenericArgs, match_ast};
 
@@ -105,13 +109,11 @@ pub(super) fn format_path_resolution_type_full_name<'db>(
             semantics.db,
             semantics,
         ),
-        PathResolution::Def(ModuleDef::TypeAlias(type_alias)) => format_module_def_type_full_name(
-            ModuleDef::from(type_alias),
-            path,
-            module,
-            semantics.db,
-            semantics,
-        ),
+        PathResolution::Def(ModuleDef::TypeAlias(type_alias)) => {
+            let base = format_type_alias_full_name(type_alias, semantics.db)?;
+            let generic_args = generic_args_for_path(path, module, semantics);
+            Some(format_name_with_generic_args(base, generic_args))
+        }
         PathResolution::Def(ModuleDef::Trait(trait_)) => format_module_def_type_full_name(
             ModuleDef::from(trait_),
             path,
@@ -126,10 +128,21 @@ pub(super) fn format_path_resolution_type_full_name<'db>(
             type_formatter::format_type(&type_param.ty(semantics.db), module, semantics.db)
         }
         PathResolution::SelfType(impl_) => {
-            type_formatter::format_type(&impl_.self_ty(semantics.db), module, semantics.db)
+            type_formatter::format_impl_self_ty(impl_, module, semantics.db)
         }
         _ => None,
     }
+}
+
+fn format_type_alias_full_name(type_alias: TypeAlias, db: &RootDatabase) -> Option<String> {
+    let Some(AssocItemContainer::Trait(trait_)) =
+        type_alias.as_assoc_item(db).map(|item| item.container(db))
+    else {
+        return format_module_def_full_name(ModuleDef::from(type_alias), db);
+    };
+    let trait_name = format_module_def_full_name(ModuleDef::from(trait_), db)?;
+    let name = format_item_name(type_alias.name(db), type_alias.module(db), db);
+    Some(format_member_full_name(&trait_name, &name))
 }
 
 fn format_module_def_type_full_name<'db>(

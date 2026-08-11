@@ -9,13 +9,42 @@ use super::rust_name_formatter::{
     format_name_with_generic_args,
 };
 use ra_ap_hir::{
-    Adt, AssocItem, Callable, DisplayTarget, GenericDef, HirDisplay, Module, ModuleDef, Mutability,
-    Trait, Type,
+    Adt, AssocItem, Callable, DisplayTarget, GenericDef, HirDisplay, Impl, Module, ModuleDef,
+    Mutability, PathResolution, Semantics, Trait, Type,
 };
 use ra_ap_ide::RootDatabase;
+use ra_ap_syntax::ast;
 
 pub(crate) fn format_type(typ: &Type, module: Module, db: &RootDatabase) -> Option<String> {
     TypeFormatter::new(module, db).format(typ)
+}
+
+pub(crate) fn format_impl_self_ty(
+    impl_: Impl,
+    module: Module,
+    db: &RootDatabase,
+) -> Option<String> {
+    let self_ty = impl_.self_ty(db);
+    let self_ty_is_associated_type = self_ty.as_associated_type_parent_trait(db).is_some();
+    if !self_ty_is_associated_type {
+        return format_type(&self_ty, module, db);
+    }
+
+    let semantics = Semantics::new(db);
+    if let Some(source) = semantics.source(impl_)
+        && let Some(ast::Type::PathType(path_type)) = source.value.self_ty()
+        && let Some(path) = path_type.path()
+        && let Some(segment) = path.qualifier().and_then(|qualifier| qualifier.segment())
+        && let Some(anchor) = segment.type_anchor().and_then(|anchor| anchor.ty())
+        && let Some(anchor) = semantics.resolve_type(&anchor)
+        && let Some(PathResolution::Def(ModuleDef::TypeAlias(assoc_type))) =
+            semantics.resolve_path(&path)
+        && let Some(normalized) = anchor.normalize_trait_assoc_type(db, &[], assoc_type)
+    {
+        return format_type(&normalized, module, db);
+    }
+
+    format_type(&self_ty, module, db)
 }
 
 struct TypeFormatter<'db> {

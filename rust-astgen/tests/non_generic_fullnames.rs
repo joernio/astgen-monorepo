@@ -971,3 +971,112 @@ fn main() { f(); }
 
     Ok(())
 }
+
+#[test]
+fn emits_impl_method_for_associated_type_self_type() -> TestResult<()> {
+    let json = no_sysroot_ast_json(
+        "rust2cpg",
+        &[(
+            "src/main.rs",
+            r#"
+struct S;
+struct T;
+trait Tr {
+    type A;
+}
+impl Tr for S {
+    type A = T;
+}
+trait Sink {
+    fn m(&self);
+}
+impl Sink for <S as Tr>::A {
+    fn m(&self) {}
+}
+fn f(t: T) {
+    t.m();
+}
+"#,
+        )],
+        "src/main.rs",
+    )?;
+
+    assert_eq!(
+        fn_decl(&json, "fn m(&self) {}").method_full_name(),
+        "<rust2cpg::T as rust2cpg::Sink>::m"
+    );
+    assert_eq!(
+        method_call_expr(&json, "t.m()").method_full_name(),
+        "<rust2cpg::T as rust2cpg::Sink>::m"
+    );
+
+    Ok(())
+}
+
+#[test]
+fn emits_type_full_name_for_self_in_associated_type_impl() -> TestResult<()> {
+    let json = no_sysroot_ast_json(
+        "rust2cpg",
+        &[(
+            "src/main.rs",
+            r#"
+struct S;
+struct T;
+trait Tr {
+    type A;
+}
+impl Tr for S {
+    type A = T;
+}
+trait Sink {
+    fn m() -> Self;
+}
+impl Sink for <S as Tr>::A {
+    fn m() -> Self { T }
+}
+"#,
+        )],
+        "src/main.rs",
+    )?;
+
+    assert_eq!(
+        name_ref(&json, "Self")
+            .on_line("    fn m() -> Self { T }")
+            .type_full_name(),
+        "rust2cpg::T"
+    );
+
+    Ok(())
+}
+
+#[test]
+fn emits_type_full_name_for_associated_type_in_self_type() -> TestResult<()> {
+    let json = no_sysroot_ast_json(
+        "rust2cpg",
+        &[(
+            "src/main.rs",
+            r#"
+struct S;
+struct T;
+trait Tr {
+    type A;
+}
+impl Tr for S {
+    type A = T;
+}
+trait Sink {}
+impl Sink for <S as Tr>::A {}
+"#,
+        )],
+        "src/main.rs",
+    )?;
+
+    assert_eq!(
+        name_ref(&json, "A")
+            .on_line("impl Sink for <S as Tr>::A {}")
+            .type_full_name(),
+        "rust2cpg::Tr::A"
+    );
+
+    Ok(())
+}
