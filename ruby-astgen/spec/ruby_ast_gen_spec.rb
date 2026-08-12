@@ -2,7 +2,7 @@
 
 require 'tempfile'
 
-RSpec.describe "Prism::Translation::Parser behaviour" do
+RSpec.describe "Prism::Translation::Parser behaviour", requires_prism: true do
   def parse_with_prism(code)
     require "prism"
     buffer = Parser::Source::Buffer.new("test")

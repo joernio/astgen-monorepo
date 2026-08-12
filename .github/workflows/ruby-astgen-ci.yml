@@ -79,7 +79,64 @@ jobs:
         working-directory: ruby-astgen
         run: jruby -S bundle exec rake
 
-      - name: Test prism fallback integration
+  # Reproduces the failure this repo actually ships: prism's native extensions are built for one
+  # Java version (universal-java-21) and the user runs a different JDK, so `require "prism"` raises
+  # LoadError and the whitequark parser gem has to take over. Gems are installed under JDK 21, then
+  # the suite runs under JDK 25 without reinstalling, which is what a released gem looks like.
+  jruby-jdk-mismatch-ci:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Set up JDK 21 (prism extensions get built for this version)
+        uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Set up JRuby
+        uses: ruby/setup-ruby@95ef2b042f9d7a56d8268cba8559e2842e2ad01b # v1.321.0
+        with:
+          ruby-version: jruby-9.4.15.0
+          # Deliberately uncached: the extensions must be built by this job, under JDK 21, for the
+          # mismatch below to be genuine.
+          bundler-cache: false
+          working-directory: ruby-astgen
+
+      - name: Install gems under JDK 21
         shell: bash
         working-directory: ruby-astgen
-        run: bash spec/integration/test_prism_fallback.sh
+        run: |
+          jruby -S bundle config set --local path vendor/bundle
+          jruby -S bundle install --jobs 4
+
+      - name: Switch to JDK 25 without reinstalling gems
+        uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
+        with:
+          distribution: temurin
+          java-version: "25"
+
+      - name: Show JRuby environment
+        shell: bash
+        working-directory: ruby-astgen
+        run: |
+          java -version
+          jruby -e 'puts RUBY_DESCRIPTION; puts "gem platforms: #{Gem.platforms.map(&:to_s).inspect}"'
+          ls vendor/bundle/jruby/*/extensions
+
+      # Deliberately not `bundle exec`: when prism's extensions do not match the running platform,
+      # `Bundler.setup` aborts the process before any of our code runs. Plain RubyGems ignores the
+      # gem instead, which is how a released gem behaves and what the fallback has to survive.
+      # EXPECT_PRISM=false fails the job if the mismatch did not actually happen, so this cannot
+      # start passing vacuously.
+      - name: Verify the parser falls back under a mismatched JDK
+        shell: bash
+        working-directory: ruby-astgen
+        env:
+          EXPECT_PRISM: "false"
+        run: |
+          RUBY_ABI=$(jruby -e 'print Gem.ruby_api_version')
+          export GEM_HOME="${PWD}/vendor/bundle/jruby/${RUBY_ABI}"
+          export GEM_PATH="${GEM_HOME}"
+          jruby -Ilib spec/integration/prism_fallback_smoke.rb
