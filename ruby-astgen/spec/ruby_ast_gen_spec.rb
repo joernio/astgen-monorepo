@@ -65,6 +65,17 @@ RSpec.describe "Parser::CurrentRuby behaviour" do
 end
 
 RSpec.describe RubyAstGen::ParserProvider do
+  it "falls back to parser gem when prism cannot be loaded (LoadError)" do
+    allow(Kernel).to receive(:require).and_call_original
+    allow(Kernel).to receive(:require).with("prism").and_raise(LoadError, "cannot load such file -- prism")
+
+    buffer = Parser::Source::Buffer.new("test")
+    buffer.source = "class Foo; end"
+    ast = described_class.parse(buffer)
+    expect(ast).not_to be_nil
+    expect(ast.type).to eq(:class)
+  end
+
   it "parses valid Ruby with Prism" do
     buffer = Parser::Source::Buffer.new("test")
     buffer.source = "class Foo; end"
