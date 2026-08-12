@@ -78,3 +78,8 @@ jobs:
         shell: bash
         working-directory: ruby-astgen
         run: jruby -S bundle exec rake
+
+      - name: Test prism fallback integration
+        shell: bash
+        working-directory: ruby-astgen
+        run: bash spec/integration/test_prism_fallback.sh
