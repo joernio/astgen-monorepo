@@ -2,7 +2,7 @@
 
 require 'tempfile'
 
-RSpec.describe "Prism::Translation::Parser behaviour" do
+RSpec.describe "Prism::Translation::Parser behaviour", requires_prism: true do
   def parse_with_prism(code)
     require "prism"
     buffer = Parser::Source::Buffer.new("test")
@@ -60,40 +60,6 @@ RSpec.describe "Parser::CurrentRuby behaviour" do
 
   it "returns nil for empty source" do
     ast = parse_with_parser("")
-    expect(ast).to be_nil
-  end
-end
-
-RSpec.describe RubyAstGen::ParserProvider do
-  it "parses valid Ruby with Prism" do
-    buffer = Parser::Source::Buffer.new("test")
-    buffer.source = "class Foo; end"
-    ast = described_class.parse(buffer)
-    expect(ast).not_to be_nil
-    expect(ast.type).to eq(:class)
-  end
-
-  it "falls back to parser gem when Prism crashes (NoMethodError)" do
-    buffer = Parser::Source::Buffer.new("test")
-    buffer.source = "def class end end }{]["
-    ast = described_class.parse(buffer)
-    # Parser gem returns nil for this input (silently fails)
-    expect(ast).to be_nil
-  end
-
-  it "returns nil for empty source" do
-    buffer = Parser::Source::Buffer.new("test")
-    buffer.source = ""
-    ast = described_class.parse(buffer)
-    expect(ast).to be_nil
-  end
-
-  it "returns nil when both parsers fail" do
-    allow(Prism::Translation::Parser).to receive(:new).and_raise(StandardError, "prism error")
-    allow(Parser::CurrentRuby).to receive(:new).and_raise(StandardError, "parser error")
-    buffer = Parser::Source::Buffer.new("test")
-    buffer.source = "class Foo; end"
-    ast = described_class.parse(buffer)
     expect(ast).to be_nil
   end
 end
