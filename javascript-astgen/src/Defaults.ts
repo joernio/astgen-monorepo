@@ -26,13 +26,6 @@ export const JS_TS_EXTENSIONS: string[] = [
 export const VUE_EXTENSION = ".vue"
 
 /**
- * Every source extension the pipeline knows how to handle. The worker
- * dispatches on extension to pick between plain Babel and the Vue cleaner +
- * Babel path (see [AstWorker.ts](./AstWorker.ts)).
- */
-export const ALL_PARSEABLE_EXTENSIONS: string[] = [...JS_TS_EXTENSIONS, VUE_EXTENSION]
-
-/**
  * Directory basenames that are always skipped during traversal. Grouped here
  * by intent so the rationale survives future edits:
  *
@@ -159,7 +152,13 @@ export const DEFAULT_TSC_OPTIONS: tsc.CompilerOptions = {
     alwaysStrict: false,
     noUncheckedIndexedAccess: false,
     noPropertyAccessFromIndexSignature: false,
-    removeComments: true
+    removeComments: true,
+    // Hidden TS 6.x option (absent from the public CompilerOptions typings,
+    // hence the spread-cast): orders union members, properties, and symbols by
+    // content instead of encounter-order type IDs, so typeToString output is
+    // deterministic across runtimes, machines, and checker query orders.
+    // Becomes the permanent, non-configurable default in TypeScript 7.
+    ...({ stableTypeOrdering: true } as tsc.CompilerOptions),
 }
 
 /**

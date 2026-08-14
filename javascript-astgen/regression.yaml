@@ -4,12 +4,12 @@ project:
   language: "javascript"
 
 build:
-  install_command: "yarn install"
-  build_command: "yarn build"
-  dist_dir: "dist"
+  install_command: "bun install"
+  build_command: ""
+  dist_dir: "src"
 
 execute:
-  command: "node {dist_dir}/astgen.js -i {input_dir} -o {output_dir} -t ts"
+  command: "bun {dist_dir}/astgen.ts -i {input_dir} -o {output_dir} -t ts"
   timeout: 600  # seconds
 
 artifacts:
@@ -36,7 +36,6 @@ github:
   base_branch: "main"
   python_version: "3.12"
   setup_action:
-    uses: "actions/setup-node@v6"
+    uses: "oven-sh/setup-bun@v2"
     with:
-      node-version: "24"
-      cache: "yarn"
+      bun-version: "latest"
