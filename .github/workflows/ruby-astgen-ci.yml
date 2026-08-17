@@ -79,10 +79,9 @@ jobs:
         working-directory: ruby-astgen
         run: jruby -S bundle exec rake
 
-  # Reproduces the failure this repo actually ships: prism's native extensions are built for one
-  # Java version (universal-java-21) and the user runs a different JDK, so `require "prism"` raises
-  # LoadError and the whitequark parser gem has to take over. Gems are installed under JDK 21, then
-  # the suite runs under JDK 25 without reinstalling, which is what a released gem looks like.
+  # Prism's native extensions are built for one Java version (e.g. universal-java-21), and RubyGems
+  # refuses to load the gem when the runtime JDK differs. Gems are installed under JDK 21, then the
+  # suite runs under JDK 25 without reinstalling, confirming prism loads despite the mismatch.
   jruby-jdk-mismatch-ci:
     runs-on: ubuntu-latest
     steps:
@@ -127,14 +126,13 @@ jobs:
 
       # Deliberately not `bundle exec`: when prism's extensions do not match the running platform,
       # `Bundler.setup` aborts the process before any of our code runs. Plain RubyGems ignores the
-      # gem instead, which is how a released gem behaves and what the fallback has to survive.
-      # EXPECT_PRISM=false fails the job if the mismatch did not actually happen, so this cannot
-      # start passing vacuously.
-      - name: Verify the parser falls back under a mismatched JDK
+      # gem instead, which is how a released gem behaves.
+      # EXPECT_PRISM=true fails the job if prism did not load.
+      - name: Verify prism loads despite mismatched JDK
         shell: bash
         working-directory: ruby-astgen
         env:
-          EXPECT_PRISM: "false"
+          EXPECT_PRISM: "true"
         run: |
           RUBY_ABI=$(jruby -e 'print Gem.ruby_api_version')
           export GEM_HOME="${PWD}/vendor/bundle/jruby/${RUBY_ABI}"

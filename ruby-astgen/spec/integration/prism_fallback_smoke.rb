@@ -1,14 +1,13 @@
 # frozen_string_literal: true
 
-# Smoke test for the parser fallback chain against a real JRuby/JDK combination.
+# Smoke test for prism loading against a real JRuby/JDK combination.
 #
-# prism ships native extensions built for a single Java version, so running a release under a
-# different JDK makes `require "prism"` raise LoadError. When that happens we must fall back to the
-# whitequark parser gem instead of letting the error escape to the caller.
+# Prism ships native extensions built for a single Java version, and RubyGems refuses to load the
+# gem when the runtime JDK differs. require_prism works around this by adding prism's lib/ directory
+# directly to $LOAD_PATH, so prism should load regardless of JDK version.
 #
-# Run it *without* bundler, the way a released gem is loaded: when prism's extensions do not match
-# the running platform, `Bundler.setup` refuses to start the process at all, so `bundle exec` cannot
-# reach this code. RubyGems on its own just ignores the gem, which is the situation we handle.
+# Run it *without* bundler: when prism's extensions do not match the running platform,
+# `Bundler.setup` aborts before any of our code runs, so `bundle exec` cannot reach this code.
 #
 #   GEM_HOME=<bundle path> GEM_PATH=<bundle path> jruby -Ilib spec/integration/prism_fallback_smoke.rb
 #
