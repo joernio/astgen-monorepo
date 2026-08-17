@@ -9,13 +9,54 @@ use super::rust_name_formatter::{
     format_name_with_generic_args,
 };
 use ra_ap_hir::{
-    Adt, AssocItem, Callable, DisplayTarget, GenericDef, HirDisplay, Module, ModuleDef, Mutability,
-    Trait, Type,
+    Adt, AssocItem, Callable, DisplayTarget, GenericDef, HirDisplay, Impl, Module, ModuleDef,
+    Mutability, PathResolution, Semantics, Trait, Type, TypeAlias,
 };
 use ra_ap_ide::RootDatabase;
+use ra_ap_syntax::ast;
 
 pub(crate) fn format_type(typ: &Type, module: Module, db: &RootDatabase) -> Option<String> {
     TypeFormatter::new(module, db).format(typ)
+}
+
+pub(crate) fn format_impl_self_ty(
+    impl_: Impl,
+    module: Module,
+    db: &RootDatabase,
+) -> Option<String> {
+    let self_ty = impl_.self_ty(db);
+    let self_ty_is_associated_type = self_ty.as_associated_type_parent_trait(db).is_some();
+    if !self_ty_is_associated_type {
+        return format_type(&self_ty, module, db);
+    }
+
+    let semantics = Semantics::new(db);
+    if let Some(source) = semantics.source(impl_)
+        && let Some(ast::Type::PathType(path_type)) = source.value.self_ty()
+        && let Some(path) = path_type.path()
+        && let Some(PathResolution::Def(ModuleDef::TypeAlias(assoc_type))) =
+            semantics.resolve_path(&path)
+        && let Some(normalized) = normalize_assoc_type(&path, assoc_type, &semantics)
+    {
+        return format_type(&normalized, module, db);
+    }
+
+    format_type(&self_ty, module, db)
+}
+
+pub(super) fn normalize_assoc_type<'db>(
+    path: &ast::Path,
+    assoc_type: TypeAlias,
+    semantics: &Semantics<'db, RootDatabase>,
+) -> Option<Type<'db>> {
+    let segment = path.qualifier().and_then(|qualifier| qualifier.segment())?;
+    let anchor = segment.type_anchor().and_then(|anchor| anchor.ty())?;
+    let anchor = semantics.resolve_type(&anchor)?;
+    let normalized = anchor.normalize_trait_assoc_type(semantics.db, &[], assoc_type)?;
+    normalized
+        .as_associated_type_parent_trait(semantics.db)
+        .is_none()
+        .then_some(normalized)
 }
 
 struct TypeFormatter<'db> {

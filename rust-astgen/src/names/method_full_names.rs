@@ -115,9 +115,8 @@ pub(crate) fn format_function_full_name(function: Function, db: &RootDatabase) -
     );
     match assoc_item.container(db) {
         AssocItemContainer::Impl(impl_) => {
-            let declared_self_ty = impl_.self_ty(db);
             let receiver_type_name =
-                type_formatter::format_type(&declared_self_ty, impl_.module(db), db)?;
+                type_formatter::format_impl_self_ty(impl_, impl_.module(db), db)?;
 
             if let Some(trait_ref) = impl_.trait_ref(db) {
                 let trait_name = format_trait_ref_full_name(trait_ref, impl_.module(db), db)?;
