@@ -33,7 +33,7 @@ module RubyAstGen
       # RubyGems refuses to load prism when the runtime JDK version differs from
       # the one used at build time (e.g. universal-java-25 vs universal-java-21).
       # Adding prism's lib to $LOAD_PATH lets Ruby's built-in require find it directly.
-      prism_libs = File.expand_path("../../../vendor/bundle/jruby/*/gems/prism-*/lib", __dir__)
+      prism_libs = File.expand_path("../../vendor/bundle/jruby/*/gems/prism-*/lib", __dir__)
       $LOAD_PATH.unshift(*Dir.glob(prism_libs))
       require "prism"
     end
