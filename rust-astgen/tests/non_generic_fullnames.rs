@@ -1075,8 +1075,29 @@ impl Sink for <S as Tr>::A {}
         name_ref(&json, "A")
             .on_line("impl Sink for <S as Tr>::A {}")
             .type_full_name(),
-        "rust2cpg::Tr::A"
+        "rust2cpg::T"
     );
+
+    Ok(())
+}
+
+#[test]
+fn emits_type_full_name_for_associated_type_of_type_param() -> TestResult<()> {
+    let json = no_sysroot_ast_json(
+        "rust2cpg",
+        &[(
+            "src/main.rs",
+            r#"
+trait Tr {
+    type A;
+}
+fn f<X: Tr>(x: <X as Tr>::A) {}
+"#,
+        )],
+        "src/main.rs",
+    )?;
+
+    assert_eq!(name_ref(&json, "A").type_full_name(), "rust2cpg::Tr::A");
 
     Ok(())
 }

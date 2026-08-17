@@ -110,9 +110,7 @@ pub(super) fn format_path_resolution_type_full_name<'db>(
             semantics,
         ),
         PathResolution::Def(ModuleDef::TypeAlias(type_alias)) => {
-            let base = format_type_alias_full_name(type_alias, semantics.db)?;
-            let generic_args = generic_args_for_path(path, module, semantics);
-            Some(format_name_with_generic_args(base, generic_args))
+            format_type_alias_type_full_name(type_alias, path, module, semantics)
         }
         PathResolution::Def(ModuleDef::Trait(trait_)) => format_module_def_type_full_name(
             ModuleDef::from(trait_),
@@ -132,6 +130,20 @@ pub(super) fn format_path_resolution_type_full_name<'db>(
         }
         _ => None,
     }
+}
+
+fn format_type_alias_type_full_name<'db>(
+    type_alias: TypeAlias,
+    path: &ast::Path,
+    module: Module,
+    semantics: &Semantics<'db, RootDatabase>,
+) -> Option<String> {
+    if let Some(normalized) = type_formatter::normalize_assoc_type(path, type_alias, semantics) {
+        return type_formatter::format_type(&normalized, module, semantics.db);
+    }
+    let base = format_type_alias_full_name(type_alias, semantics.db)?;
+    let generic_args = generic_args_for_path(path, module, semantics);
+    Some(format_name_with_generic_args(base, generic_args))
 }
 
 fn format_type_alias_full_name(type_alias: TypeAlias, db: &RootDatabase) -> Option<String> {
