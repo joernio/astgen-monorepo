@@ -22,7 +22,7 @@ module RubyAstGen
 
       require_prism
       @prism_available = true
-    rescue ScriptError, StandardError => e
+    rescue StandardError => e
       RubyAstGen::Logger::warn "Prism gem unavailable: #{e.class} - #{e.message}, using whitequark parser gem"
       @prism_available = false
     end
@@ -30,9 +30,9 @@ module RubyAstGen
     # Extracted so specs can simulate the gem being unavailable, e.g. when the shipped native
     # extensions were built for a different Java version than the one JRuby is running on.
     def self.require_prism
-      # Add prism's lib to $LOAD_PATH so Ruby's built-in require finds it directly,
-      # bypassing RubyGems' extension check which fails when the runtime JDK version
-      # differs from the one used at build time (e.g. universal-java-25 vs universal-java-21).
+      # RubyGems refuses to load prism when the runtime JDK version differs from
+      # the one used at build time (e.g. universal-java-25 vs universal-java-21).
+      # Adding prism's lib to $LOAD_PATH lets Ruby's built-in require find it directly.
       prism_libs = File.expand_path("../../../vendor/bundle/jruby/*/gems/prism-*/lib", __dir__)
       $LOAD_PATH.unshift(*Dir.glob(prism_libs))
       require "prism"
@@ -41,7 +41,7 @@ module RubyAstGen
     def self.parse_with_whitequark(buffer)
       require "parser/current"
       Parser::CurrentRuby.new.parse(buffer)
-    rescue ScriptError, StandardError => e
+    rescue StandardError => e
       RubyAstGen::Logger::error "Whitequark parser gem also failed: #{e.class} - #{e.message}"
       nil
     end
