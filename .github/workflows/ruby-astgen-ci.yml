@@ -79,9 +79,6 @@ jobs:
         working-directory: ruby-astgen
         run: jruby -S bundle exec rake
 
-  # Prism's native extensions are built for one Java version (e.g. universal-java-21), and RubyGems
-  # refuses to load the gem when the runtime JDK differs. Gems are installed under JDK 21, then the
-  # suite runs under JDK 25 without reinstalling, confirming prism loads despite the mismatch.
   jruby-jdk-mismatch-ci:
     runs-on: ubuntu-latest
     steps:
