@@ -53,4 +53,18 @@ RSpec.describe RubyAstGen::ParserProvider do
       expect(described_class.parse(buffer_for("def class end end }{]["))).to be_nil
     end
   end
+
+  describe "when both parsers fail" do
+    it "logs an error and returns nil when prism and whitequark both raise" do
+      allow(Prism::Translation::Parser).to receive(:new).and_raise(StandardError, "prism error")
+      allow(Parser::CurrentRuby).to receive(:new).and_raise(StandardError, "parser error")
+
+      expect(RubyAstGen::Logger).to receive(:warn)
+        .with("Prism parser failed: StandardError - prism error, trying whitequark parser gem")
+      expect(RubyAstGen::Logger).to receive(:error)
+        .with("Whitequark parser gem also failed: StandardError - parser error")
+
+      expect(described_class.parse(buffer_for("class Foo; end"))).to be_nil
+    end
+  end
 end
