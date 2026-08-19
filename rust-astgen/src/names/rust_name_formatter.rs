@@ -104,6 +104,7 @@ fn collect_block_local_defs(
 
 fn block_item_def(semantics: &Semantics<RootDatabase>, item: &ast::Item) -> Option<ModuleDef> {
     match item {
+        ast::Item::Enum(it) => Some(semantics.to_def(it)?.into()),
         ast::Item::Fn(it) => Some(semantics.to_def(it)?.into()),
         ast::Item::Struct(it) => Some(semantics.to_def(it)?.into()),
         _ => None,

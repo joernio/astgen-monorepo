@@ -1,8 +1,8 @@
 mod common;
 
 use crate::common::{
-    TestResult, call_expr, fn_decl, ident_pat, method_call_expr, name_ref, no_sysroot_ast_json,
-    sysroot_ast_json,
+    TestResult, call_expr, enum_decl, fn_decl, ident_pat, method_call_expr, name_ref,
+    no_sysroot_ast_json, sysroot_ast_json,
 };
 
 #[test]
@@ -704,6 +704,31 @@ fn main() {}
             .on_line("impl<'a> Tr for Beta<'a> {")
             .type_full_name(),
         "rust2cpg::Beta<'a>"
+    );
+
+    Ok(())
+}
+
+#[test]
+fn emits_type_full_name_for_generic_enum_declaration() -> TestResult<()> {
+    let json = no_sysroot_ast_json(
+        "rust2cpg",
+        &[(
+            "src/main.rs",
+            r#"
+enum E<T> { A(T) }
+
+fn main() {
+    let _ = E::A(1);
+}
+"#,
+        )],
+        "src/main.rs",
+    )?;
+
+    assert_eq!(
+        enum_decl(&json, "enum E<T> { A(T) }").type_full_name(),
+        "rust2cpg::E<T>"
     );
 
     Ok(())
