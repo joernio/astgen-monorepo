@@ -1,6 +1,6 @@
 mod common;
 
-use crate::common::{TestResult, no_sysroot_ast_json, struct_decl, sysroot_ast_json};
+use crate::common::{TestResult, enum_decl, no_sysroot_ast_json, struct_decl, sysroot_ast_json};
 
 #[test]
 fn emits_implemented_trait_for_struct() -> TestResult<()> {
@@ -28,6 +28,31 @@ impl Tr for S {}
 }
 
 #[test]
+fn emits_implemented_trait_for_enum() -> TestResult<()> {
+    let json = no_sysroot_ast_json(
+        "rust2cpg",
+        &[(
+            "src/main.rs",
+            r#"
+trait Tr {}
+
+enum E { A }
+
+impl Tr for E {}
+"#,
+        )],
+        "src/main.rs",
+    )?;
+
+    assert_eq!(
+        enum_decl(&json, "enum E { A }").implemented_traits(),
+        vec!["rust2cpg::Tr"]
+    );
+
+    Ok(())
+}
+
+#[test]
 fn emits_generic_args_of_implemented_trait() -> TestResult<()> {
     let json = no_sysroot_ast_json(
         "rust2cpg",
@@ -46,6 +71,31 @@ impl Tr<u8> for S {}
 
     assert_eq!(
         struct_decl(&json, "struct S;").implemented_traits(),
+        vec!["rust2cpg::Tr<u8>"]
+    );
+
+    Ok(())
+}
+
+#[test]
+fn emits_generic_args_of_trait_implemented_for_enum() -> TestResult<()> {
+    let json = no_sysroot_ast_json(
+        "rust2cpg",
+        &[(
+            "src/main.rs",
+            r#"
+trait Tr<T> {}
+
+enum E { A }
+
+impl Tr<u8> for E {}
+"#,
+        )],
+        "src/main.rs",
+    )?;
+
+    assert_eq!(
+        enum_decl(&json, "enum E { A }").implemented_traits(),
         vec!["rust2cpg::Tr<u8>"]
     );
 

@@ -375,6 +375,10 @@ pub fn struct_decl<'a>(json: &'a Value, text: &'static str) -> NodeSelector<'a> 
     node(json, "STRUCT", text)
 }
 
+pub fn enum_decl<'a>(json: &'a Value, text: &'static str) -> NodeSelector<'a> {
+    node(json, "ENUM", text)
+}
+
 pub fn trait_decl<'a>(json: &'a Value, text: &'static str) -> NodeSelector<'a> {
     node(json, "TRAIT", text)
 }
