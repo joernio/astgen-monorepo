@@ -1,8 +1,8 @@
 mod common;
 
 use crate::common::{
-    TestResult, bin_expr, call_expr, fn_decl, ident_pat, literal, method_call_expr, name_ref,
-    no_sysroot_ast_json, path_expr, self_param, struct_decl,
+    TestResult, bin_expr, call_expr, enum_decl, fn_decl, ident_pat, literal, method_call_expr,
+    name_ref, no_sysroot_ast_json, path_expr, self_param, struct_decl,
 };
 use serde_json::json;
 
@@ -967,6 +967,75 @@ fn main() { f(); }
             .on_line("        let b = S::new();")
             .method_full_name(),
         "rust2cpg::f::S#2::new"
+    );
+
+    Ok(())
+}
+
+#[test]
+fn emits_type_full_name_for_enum_declaration() -> TestResult<()> {
+    let json = no_sysroot_ast_json(
+        "rust2cpg",
+        &[(
+            "src/main.rs",
+            r#"
+enum E { A }
+
+fn main() {
+    let _ = E::A;
+}
+"#,
+        )],
+        "src/main.rs",
+    )?;
+
+    assert_eq!(
+        enum_decl(&json, "enum E { A }").type_full_name(),
+        "rust2cpg::E"
+    );
+
+    Ok(())
+}
+
+#[test]
+fn emits_disambiguators_for_same_named_enums_in_sibling_blocks() -> TestResult<()> {
+    let json = no_sysroot_ast_json(
+        "rust2cpg",
+        &[(
+            "src/main.rs",
+            r#"
+fn f() {
+    if true {
+        enum E { A }
+        let _ = E::A;
+    }
+    if false {
+        enum E { B }
+        let _ = E::B;
+    }
+}
+
+fn main() { f(); }
+"#,
+        )],
+        "src/main.rs",
+    )?;
+
+    assert_eq!(
+        enum_decl(&json, "enum E { A }").type_full_name(),
+        "rust2cpg::f::E#1"
+    );
+    assert_eq!(
+        enum_decl(&json, "enum E { B }").type_full_name(),
+        "rust2cpg::f::E#2"
+    );
+    assert_eq!(
+        path_expr(&json, "E::A").type_full_name(),
+        "rust2cpg::f::E#1"
+    );
+    assert_eq!(
+        path_expr(&json, "E::B").type_full_name(),
+        "rust2cpg::f::E#2"
     );
 
     Ok(())

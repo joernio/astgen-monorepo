@@ -21,6 +21,7 @@ pub(crate) fn type_full_name_for_node(
 ) -> Option<String> {
     match_ast! {
         match node {
+            ast::Enum(enum_) => resolve_enum_type_full_name(&enum_, semantics),
             ast::Expr(expr) => resolve_expr_type_full_name(&expr, semantics),
             ast::IdentPat(ident_pat) => resolve_ident_pat_type_full_name(&ident_pat, semantics),
             ast::NameRef(name_ref) => resolve_name_ref_type_full_name(&name_ref, semantics),
@@ -29,6 +30,19 @@ pub(crate) fn type_full_name_for_node(
             _ => None,
         }
     }
+}
+
+fn resolve_enum_type_full_name(
+    enum_: &ast::Enum,
+    semantics: &Semantics<RootDatabase>,
+) -> Option<String> {
+    let enum_def = semantics.to_def(enum_)?;
+    format_generic_module_def_full_name(
+        ModuleDef::from(enum_def),
+        GenericDef::from(enum_def),
+        enum_def.module(semantics.db),
+        semantics.db,
+    )
 }
 
 fn resolve_struct_type_full_name(
