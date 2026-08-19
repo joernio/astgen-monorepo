@@ -1,4 +1,4 @@
-//! Where we build `implementedTraits` for struct declarations and
+//! Where we build `implementedTraits` for struct/enum declarations and
 //! `supertraits` for trait declarations.
 
 use super::{
@@ -8,7 +8,7 @@ use super::{
 };
 use ra_ap_hir::{Adt, GenericDef, Impl, Module, ModuleDef, PathResolution, Semantics, TraitRef};
 use ra_ap_ide::RootDatabase;
-use ra_ap_syntax::{AstNode, SyntaxNode, ast, ast::HasTypeBounds};
+use ra_ap_syntax::{AstNode, SyntaxNode, ast, ast::HasTypeBounds, match_ast};
 
 // NB: This is approximate (cf. all_for_type's doc). In particular, `impl<T> Trait for T` are
 // excluded, as well as compiler marker traits (Send, Sync, Unpin, UnwindSafe, etc.), and
@@ -17,8 +17,13 @@ pub(crate) fn implemented_traits_for_node(
     node: &SyntaxNode,
     semantics: &Semantics<RootDatabase>,
 ) -> Option<Vec<String>> {
-    let struct_ = ast::Struct::cast(node.clone())?;
-    let adt = Adt::from(semantics.to_def(&struct_)?);
+    let adt = match_ast! {
+        match node {
+            ast::Struct(struct_) => Some(Adt::from(semantics.to_def(&struct_)?)),
+            ast::Enum(enum_) => Some(Adt::from(semantics.to_def(&enum_)?)),
+            _ => None,
+        }
+    }?;
     let module = semantics.scope(node)?.module();
 
     let mut names: Vec<String> = Impl::all_for_type(semantics.db, adt.ty(semantics.db))
