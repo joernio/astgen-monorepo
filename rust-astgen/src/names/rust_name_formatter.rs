@@ -17,6 +17,14 @@ pub(crate) fn format_module_def_full_name(def: ModuleDef, db: &RootDatabase) -> 
     if let ModuleSource::BlockExpr(block) = &source.value {
         return block_local_full_name(def, module, source.with_value(block.clone()), db);
     }
+    format_module_member_full_name(def, module, db)
+}
+
+fn format_module_member_full_name(
+    def: ModuleDef,
+    module: Module,
+    db: &RootDatabase,
+) -> Option<String> {
     let krate = module.krate(db);
     let crate_name = krate.display_name(db)?.to_string();
     let canonical_path = def.canonical_path(db, krate.edition(db))?;
@@ -30,14 +38,42 @@ fn block_local_full_name(
     db: &RootDatabase,
 ) -> Option<String> {
     let semantics = Semantics::new(db);
-    let fn_ = enclosing_fn(block, &semantics)?;
+    let Some(fn_) = enclosing_fn(block, &semantics) else {
+        return anonymous_const_local_full_name(def, module, &semantics);
+    };
     let parent = format_function_full_name(semantics.to_def(&fn_)?, db)?;
+    let body = fn_.body()?;
     let name = format_item_name(def.name(db)?, module, db);
-    let member = match block_local_disambiguator(def, &fn_, &semantics) {
+    let member = match block_local_disambiguator(def, body.syntax(), &semantics) {
         Some(disambiguator) => format_disambiguated_full_name(&name, disambiguator),
         None => name,
     };
     Some(format_member_full_name(&parent, &member))
+}
+
+fn anonymous_const_local_full_name(
+    def: ModuleDef,
+    module: Module,
+    semantics: &Semantics<RootDatabase>,
+) -> Option<String> {
+    let full_name = format_module_member_full_name(def, module, semantics.db)?;
+    let source = module
+        .nearest_non_block_module(semantics.db)
+        .definition_source(semantics.db);
+    semantics.parse_or_expand(source.file_id);
+    let scope = module_source_node(&source.value)?;
+    match block_local_disambiguator(def, &scope, semantics) {
+        Some(disambiguator) => Some(format_disambiguated_full_name(&full_name, disambiguator)),
+        None => Some(full_name),
+    }
+}
+
+fn module_source_node(source: &ModuleSource) -> Option<SyntaxNode> {
+    match source {
+        ModuleSource::SourceFile(it) => Some(it.syntax().clone()),
+        ModuleSource::Module(it) => Some(it.item_list()?.syntax().clone()),
+        ModuleSource::BlockExpr(it) => Some(it.syntax().clone()),
+    }
 }
 
 fn enclosing_fn(
@@ -55,22 +91,22 @@ fn enclosing_fn(
 
 fn block_local_disambiguator(
     def: ModuleDef,
-    fn_: &ast::Fn,
+    scope: &SyntaxNode,
     semantics: &Semantics<RootDatabase>,
 ) -> Option<usize> {
     let name = def.name(semantics.db)?;
-    let siblings = block_local_defs_named(&name, fn_.body()?, semantics);
+    let siblings = block_local_defs_named(&name, scope, semantics);
     let disambiguator = siblings.iter().position(|sibling| *sibling == def)? + 1;
     (siblings.len() > 1).then_some(disambiguator)
 }
 
 fn block_local_defs_named(
     name: &Name,
-    body: ast::BlockExpr,
+    scope: &SyntaxNode,
     semantics: &Semantics<RootDatabase>,
 ) -> Vec<ModuleDef> {
     let mut defs = Vec::new();
-    collect_block_local_defs(semantics, body.syntax(), name, &mut defs);
+    collect_block_local_defs(semantics, scope, name, &mut defs);
     defs
 }
 
