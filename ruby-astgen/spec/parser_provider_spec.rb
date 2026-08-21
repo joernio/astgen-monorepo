@@ -10,7 +10,7 @@ RSpec.describe RubyAstGen::ParserProvider do
     buffer
   end
 
-  describe "when prism is available", requires_prism: true do
+  describe "when prism is available" do
     it "parses valid Ruby with prism" do
       ast = described_class.parse(buffer_for("class Foo; end"))
       expect(ast).not_to be_nil
@@ -29,27 +29,13 @@ RSpec.describe RubyAstGen::ParserProvider do
         .and_raise(LoadError, "cannot load such file -- prism")
     end
 
-    it "logs a distinct warning and falls back to the parser gem" do
-      expect(RubyAstGen::Logger).to receive(:warn)
-        .with("Prism gem unavailable: LoadError - cannot load such file -- prism, using whitequark parser gem")
-
-      ast = described_class.parse(buffer_for("class Foo; end"))
-      expect(ast).not_to be_nil
-      expect(ast.type).to eq(:class)
-    end
-
-    it "warns and retries the require only once, however many files are parsed" do
-      expect(RubyAstGen::Logger).to receive(:warn).once
-
-      3.times do
-        expect(described_class.parse(buffer_for("class Foo; end")).type).to eq(:class)
-      end
-
-      expect(described_class).to have_received(:require_prism).once
+    it "lets the LoadError propagate so build problems surface loudly" do
+      expect { described_class.parse(buffer_for("class Foo; end")) }
+        .to raise_error(LoadError, /prism/)
     end
   end
 
-  describe "when prism is loaded but fails while parsing", requires_prism: true do
+  describe "when prism is loaded but fails while parsing" do
     it "logs a warning and falls back to the parser gem on StandardError" do
       expect(RubyAstGen::Logger).to receive(:warn)
         .with("Prism parser failed: StandardError - prism error, trying whitequark parser gem")
@@ -69,44 +55,16 @@ RSpec.describe RubyAstGen::ParserProvider do
   end
 
   describe "when both parsers fail" do
-    it "logs an error and returns nil when prism is missing and the parser gem raises" do
-      allow(described_class).to receive(:require_prism)
-        .and_raise(LoadError, "cannot load such file -- prism")
-      allow(Parser::CurrentRuby).to receive(:new).and_raise(StandardError, "parser error")
-
-      expect(RubyAstGen::Logger).to receive(:warn)
-        .with("Prism gem unavailable: LoadError - cannot load such file -- prism, using whitequark parser gem")
-      expect(RubyAstGen::Logger).to receive(:error)
-        .with("Whitequark parser gem also failed: StandardError - parser error")
-
-      expect(described_class.parse(buffer_for("class Foo; end"))).to be_nil
-    end
-
-    it "logs an error and returns nil when the parser gem raises LoadError", requires_prism: true do
+    it "logs an error and returns nil when prism and whitequark both raise" do
       allow(Prism::Translation::Parser).to receive(:new).and_raise(StandardError, "prism error")
-      allow(Parser::CurrentRuby).to receive(:new).and_raise(LoadError, "parser gem unavailable")
+      allow(Parser::CurrentRuby).to receive(:new).and_raise(StandardError, "parser error")
 
       expect(RubyAstGen::Logger).to receive(:warn)
         .with("Prism parser failed: StandardError - prism error, trying whitequark parser gem")
       expect(RubyAstGen::Logger).to receive(:error)
-        .with("Whitequark parser gem also failed: LoadError - parser gem unavailable")
+        .with("Whitequark parser gem also failed: StandardError - parser error")
 
       expect(described_class.parse(buffer_for("class Foo; end"))).to be_nil
-    end
-
-    # `LoadError` and `NotImplementedError` are both `ScriptError`, not `StandardError`: the bug this
-    # guards against is a bare `rescue StandardError` letting them escape to the caller.
-    it "logs an error and returns nil when the parser gem raises a non-StandardError ScriptError" do
-      allow(described_class).to receive(:require_prism)
-        .and_raise(LoadError, "cannot load such file -- prism")
-      allow(Parser::CurrentRuby).to receive(:new).and_raise(NotImplementedError, "no parser here")
-
-      expect(RubyAstGen::Logger).to receive(:warn)
-        .with("Prism gem unavailable: LoadError - cannot load such file -- prism, using whitequark parser gem")
-      expect(RubyAstGen::Logger).to receive(:error)
-        .with("Whitequark parser gem also failed: NotImplementedError - no parser here")
-
-      expect { described_class.parse(buffer_for("class Foo; end")) }.not_to raise_error
     end
   end
 end

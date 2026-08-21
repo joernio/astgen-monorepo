@@ -149,8 +149,52 @@ jobs:
           path: ruby-astgen/${{ matrix.asset_name }}_*.zip
           if-no-files-found: error
 
-  checksums:
+  smoke-test:
     needs: [verify, build]
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          sparse-checkout: ruby-astgen/spec/integration
+
+      - name: Download linux release artifact
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: asset-ruby_ast_gen-linux.zip
+          path: release-artifact
+
+      - name: Extract release artifact
+        shell: bash
+        run: |
+          cd release-artifact
+          unzip ruby_ast_gen-linux_${{ needs.verify.outputs.new_tag }}.zip -d extracted
+
+      - name: Set up JDK 25 (deliberately different from build-time JDK 21)
+        uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
+        with:
+          distribution: temurin
+          java-version: "25"
+
+      - name: Set up JRuby
+        uses: ruby/setup-ruby@95ef2b042f9d7a56d8268cba8559e2842e2ad01b # v1.321.0
+        with:
+          ruby-version: jruby-9.4.15.0
+          bundler-cache: false
+
+      - name: Verify prism loads from release artifact under mismatched JDK
+        shell: bash
+        env:
+          EXPECT_PRISM: "true"
+        run: |
+          ARTIFACT_DIR="${PWD}/release-artifact/extracted"
+          RUBY_ABI=$(jruby -e 'print Gem.ruby_api_version')
+          export GEM_HOME="${ARTIFACT_DIR}/vendor/bundle/jruby/${RUBY_ABI}"
+          export GEM_PATH="${GEM_HOME}"
+          jruby -I"${ARTIFACT_DIR}/lib" ruby-astgen/spec/integration/prism_fallback_smoke.rb
+
+  checksums:
+    needs: [verify, build, smoke-test]
     runs-on: ubuntu-24.04
     defaults:
       run:
@@ -178,7 +222,7 @@ jobs:
           path: release-artifacts/checksums/
 
   release:
-    needs: [verify, build, checksums]
+    needs: [verify, build, smoke-test, checksums]
     runs-on: ubuntu-24.04
     defaults:
       run:
