@@ -345,3 +345,57 @@ fn main() { f(); }
 
     Ok(())
 }
+
+#[test]
+fn local_functions_in_sibling_anonymous_consts_are_disambiguated() -> TestResult<()> {
+    let json = no_sysroot_ast_json(
+        "rust2cpg",
+        &[(
+            "src/main.rs",
+            r#"
+const _: () = {
+    fn helper() -> u32 { 1 }
+    fn __ctor() -> u32 { helper() }
+};
+const _: () = {
+    fn helper() -> u8 { 2 }
+    fn __ctor() -> u8 { helper() }
+};
+
+fn main() {}
+"#,
+        )],
+        "src/main.rs",
+    )?;
+
+    assert_eq!(
+        fn_decl(&json, "fn __ctor() -> u32 { helper() }").method_full_name(),
+        "rust2cpg::__ctor#1"
+    );
+    assert_eq!(
+        fn_decl(&json, "fn __ctor() -> u8 { helper() }").method_full_name(),
+        "rust2cpg::__ctor#2"
+    );
+    assert_eq!(
+        fn_decl(&json, "fn helper() -> u32 { 1 }").method_full_name(),
+        "rust2cpg::helper#1"
+    );
+    assert_eq!(
+        fn_decl(&json, "fn helper() -> u8 { 2 }").method_full_name(),
+        "rust2cpg::helper#2"
+    );
+    assert_eq!(
+        call_expr(&json, "helper()")
+            .on_line("    fn __ctor() -> u32 { helper() }")
+            .method_full_name(),
+        "rust2cpg::helper#1"
+    );
+    assert_eq!(
+        call_expr(&json, "helper()")
+            .on_line("    fn __ctor() -> u8 { helper() }")
+            .method_full_name(),
+        "rust2cpg::helper#2"
+    );
+
+    Ok(())
+}

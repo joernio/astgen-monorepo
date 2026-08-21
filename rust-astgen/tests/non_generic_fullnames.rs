@@ -973,6 +973,62 @@ fn main() { f(); }
 }
 
 #[test]
+fn emits_disambiguators_for_same_named_structs_in_sibling_anonymous_consts() -> TestResult<()> {
+    let json = no_sysroot_ast_json(
+        "rust2cpg",
+        &[(
+            "src/main.rs",
+            r#"
+const _: () = {
+    struct S { x: i32 }
+    impl S { fn new() -> S { S { x: 1 } } }
+    fn make_a() -> S { S::new() }
+};
+const _: () = {
+    struct S { x: u8 }
+    impl S { fn new() -> S { S { x: 2 } } }
+    fn make_b() -> S { S::new() }
+};
+
+fn main() {}
+"#,
+        )],
+        "src/main.rs",
+    )?;
+
+    assert_eq!(
+        struct_decl(&json, "struct S { x: i32 }").type_full_name(),
+        "rust2cpg::S#1"
+    );
+    assert_eq!(
+        struct_decl(&json, "struct S { x: u8 }").type_full_name(),
+        "rust2cpg::S#2"
+    );
+    assert_eq!(
+        fn_decl(&json, "fn new() -> S { S { x: 1 } }").method_full_name(),
+        "rust2cpg::S#1::new"
+    );
+    assert_eq!(
+        fn_decl(&json, "fn new() -> S { S { x: 2 } }").method_full_name(),
+        "rust2cpg::S#2::new"
+    );
+    assert_eq!(
+        call_expr(&json, "S::new()")
+            .on_line("    fn make_a() -> S { S::new() }")
+            .method_full_name(),
+        "rust2cpg::S#1::new"
+    );
+    assert_eq!(
+        call_expr(&json, "S::new()")
+            .on_line("    fn make_b() -> S { S::new() }")
+            .method_full_name(),
+        "rust2cpg::S#2::new"
+    );
+
+    Ok(())
+}
+
+#[test]
 fn emits_type_full_name_for_enum_declaration() -> TestResult<()> {
     let json = no_sysroot_ast_json(
         "rust2cpg",
