@@ -1,4 +1,4 @@
-use crate::common::{TestResult, no_sysroot_ast_json, no_sysroot_ast_json_generated};
+use crate::common::{TestResult, fn_decl, no_sysroot_ast_json, no_sysroot_ast_json_generated};
 use std::path::Path;
 
 mod common;
@@ -14,6 +14,23 @@ fn emits_crate_name() -> TestResult<()> {
     // crateName being in the wrapped AST
     assert_eq!(json["crateName"].as_str(), Some("my_crate_name"));
     assert_eq!(json["modulePath"].as_str(), None);
+
+    Ok(())
+}
+
+#[test]
+fn qualifies_build_script_crate_name_with_package_name() -> TestResult<()> {
+    let json = no_sysroot_ast_json(
+        "my-package",
+        &[("src/lib.rs", ""), ("build.rs", "fn main() {}")],
+        "build.rs",
+    )?;
+
+    assert_eq!(json["crateName"].as_str(), Some("my_package_build_script"));
+    assert_eq!(
+        fn_decl(&json, "fn main() {}").method_full_name(),
+        "my_package_build_script::main"
+    );
 
     Ok(())
 }

@@ -26,7 +26,7 @@ fn format_module_member_full_name(
     db: &RootDatabase,
 ) -> Option<String> {
     let krate = module.krate(db);
-    let crate_name = krate.display_name(db)?.to_string();
+    let crate_name = super::crate_name(krate, db)?;
     let canonical_path = def.canonical_path(db, krate.edition(db))?;
     Some(format_member_full_name(&crate_name, &canonical_path))
 }
