@@ -33,14 +33,20 @@ pub fn no_sysroot_ast_json_generated(
     run(crate_name, file_code_pairs, false, false, target_file).is_ok()
 }
 
-pub fn sysroot_ast_json(crate_name: &str, source: &str) -> TestResult<Value> {
-    run(
-        crate_name,
-        &[("src/main.rs", source)],
-        true,
-        false,
-        "src/main.rs",
-    )
+pub fn sysroot_ast_json(
+    crate_name: &str,
+    file_code_pairs: &[(&str, &str)],
+    target_file: &str,
+) -> TestResult<Value> {
+    run(crate_name, file_code_pairs, true, false, target_file)
+}
+
+pub fn sysroot_ast_json_generated(
+    crate_name: &str,
+    file_code_pairs: &[(&str, &str)],
+    target_file: &str,
+) -> bool {
+    run(crate_name, file_code_pairs, true, false, target_file).is_ok()
 }
 
 pub fn sysroot_function_fullnames_json(

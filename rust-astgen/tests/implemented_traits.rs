@@ -242,12 +242,16 @@ impl Tr for S {}
 fn emits_derived_trait_impls() -> TestResult<()> {
     let json = sysroot_ast_json(
         "rust2cpg",
-        r#"
+        &[(
+            "src/main.rs",
+            r#"
 #[derive(Clone)]
 struct S;
 
 fn main() {}
 "#,
+        )],
+        "src/main.rs",
     )?;
 
     assert_eq!(

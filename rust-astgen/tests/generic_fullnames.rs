@@ -413,7 +413,9 @@ fn main() {}
 fn emits_names_for_vec_and_dyn_trait() -> TestResult<()> {
     let json = sysroot_ast_json(
         "rust2cpg",
-        r#"
+        &[(
+            "src/main.rs",
+            r#"
 use std::vec::Vec;
 
 trait Sink<T> {
@@ -429,6 +431,8 @@ fn main() {
     let numbers_copy = numbers;
 }
 "#,
+        )],
+        "src/main.rs",
     )?;
 
     let vec_new_call = call_expr(&json, "Vec::<u32>::new()");

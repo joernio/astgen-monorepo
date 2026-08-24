@@ -258,7 +258,9 @@ fn main() {
 fn std_dependent_coercions() -> TestResult<()> {
     let json = sysroot_ast_json(
         "rust2cpg",
-        r#"
+        &[(
+            "src/main.rs",
+            r#"
 use std::fmt::Display;
 use std::ops::Deref;
 use std::rc::Rc;
@@ -305,6 +307,8 @@ fn main() {
     let _d: &dyn Display = &disp;
 }
 "#,
+        )],
+        "src/main.rs",
     )?;
 
     assert_eq!(
