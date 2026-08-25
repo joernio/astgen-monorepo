@@ -755,7 +755,7 @@ fn main() {
         )],
         "src/main.rs",
     )?;
-    
+
     assert_eq!(
         name_ref(&json, "A")
             .on_line("    if let E::A(v) = a {}")
