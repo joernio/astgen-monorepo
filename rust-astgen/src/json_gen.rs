@@ -2,7 +2,7 @@ use crate::json_ast::{RustAstGenJsonFile, RustAstGenJsonNode};
 use crate::{cargo, config};
 use anyhow::Context;
 use log::{debug, error};
-use ra_ap_hir::{Crate, Semantics, attach_db};
+use ra_ap_hir::{Crate, Semantics, attach_db, db::DefDatabase};
 use ra_ap_ide::{Analysis, AnalysisHost, RootDatabase};
 use ra_ap_syntax::{AstNode, SyntaxNode};
 use ra_ap_vfs::{FileId, VfsPath};
@@ -116,6 +116,12 @@ fn process_file(
         return Ok(());
     };
 
+    // `included!`-ed files are already macro-expanded. Skip them.
+    if is_include_target(file_id, target_crate, semantics) {
+        debug!("Skipped (include! target): {}", input_file_path.display());
+        return Ok(());
+    }
+
     let file_line_index = analysis.file_line_index(file_id)?;
 
     debug!("building the JSON tree: {}", input_file_path.display());
@@ -160,6 +166,18 @@ fn process_file(
     write_json_to_file(&json_tree, &output_file)?;
 
     Ok(())
+}
+
+fn is_include_target(
+    file_id: FileId,
+    target_crate: Crate,
+    semantics: &Semantics<RootDatabase>,
+) -> bool {
+    semantics
+        .db
+        .include_macro_invoc(target_crate.base())
+        .iter()
+        .any(|(_, included_file_id)| included_file_id.file_id(semantics.db) == file_id)
 }
 
 fn crate_for_file(syntax_tree: &SyntaxNode, semantics: &Semantics<RootDatabase>) -> Option<Crate> {

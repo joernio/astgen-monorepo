@@ -280,7 +280,9 @@ fn main() {
 fn emits_names_for_async_fn_return_type() -> TestResult<()> {
     let json = sysroot_ast_json(
         "rust2cpg",
-        r#"
+        &[(
+            "src/main.rs",
+            r#"
 async fn f() -> i32 {
     1
 }
@@ -289,6 +291,8 @@ fn main() {
     f();
 }
 "#,
+        )],
+        "src/main.rs",
     )?;
 
     assert_eq!(

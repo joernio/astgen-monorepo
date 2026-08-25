@@ -1,4 +1,7 @@
-use crate::common::{TestResult, fn_decl, no_sysroot_ast_json, no_sysroot_ast_json_generated};
+use crate::common::{
+    TestResult, fn_decl, no_sysroot_ast_json, no_sysroot_ast_json_generated, nodes_by_kind,
+    sysroot_ast_json, sysroot_ast_json_generated,
+};
 use std::path::Path;
 
 mod common;
@@ -156,4 +159,30 @@ fn skips_a_file_outside_the_module_tree() {
         &files,
         "src/bar.rs"
     ));
+}
+
+#[test]
+fn emits_included_items_at_the_include_site() -> TestResult<()> {
+    let files = [
+        ("src/lib.rs", "include!(\"s.rs\");\n"),
+        ("src/s.rs", "pub struct S;\n"),
+    ];
+
+    let json = sysroot_ast_json("my_crate", &files, "src/lib.rs")?;
+
+    let structs = nodes_by_kind(&json, "STRUCT");
+    assert_eq!(structs.len(), 1);
+    assert_eq!(structs[0]["typeFullName"].as_str(), Some("my_crate::S"));
+
+    Ok(())
+}
+
+#[test]
+fn skips_an_included_file() {
+    let files = [
+        ("src/lib.rs", "include!(\"s.rs\");\n"),
+        ("src/s.rs", "pub struct S;\n"),
+    ];
+
+    assert!(!sysroot_ast_json_generated("my_crate", &files, "src/s.rs"));
 }
