@@ -1,7 +1,7 @@
 //! Where we finally build `typeFullName` for each (relevant) SyntaxNode.
 
 use super::{
-    method_full_names::format_generic_module_def_full_name,
+    method_full_names::{format_enum_variant_full_name, format_generic_module_def_full_name},
     rust_name_formatter::{
         format_item_name, format_member_full_name, format_module_def_full_name,
         format_name_with_generic_args,
@@ -123,6 +123,9 @@ pub(super) fn format_path_resolution_type_full_name<'db>(
             semantics.db,
             semantics,
         ),
+        PathResolution::Def(ModuleDef::EnumVariant(enum_variant)) => {
+            format_enum_variant_full_name(enum_variant, semantics.db)
+        }
         PathResolution::Def(ModuleDef::TypeAlias(type_alias)) => {
             format_type_alias_type_full_name(type_alias, path, module, semantics)
         }

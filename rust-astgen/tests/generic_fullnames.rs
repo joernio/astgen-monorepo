@@ -737,3 +737,31 @@ fn main() {
 
     Ok(())
 }
+
+#[test]
+fn emits_type_full_name_for_generic_enum_variant_pattern() -> TestResult<()> {
+    let json = no_sysroot_ast_json(
+        "rust2cpg",
+        &[(
+            "src/main.rs",
+            r#"
+enum E<T> { A(T) }
+
+fn main() {
+    let a = E::A(1);
+    if let E::A(v) = a {}
+}
+"#,
+        )],
+        "src/main.rs",
+    )?;
+
+    assert_eq!(
+        name_ref(&json, "A")
+            .on_line("    if let E::A(v) = a {}")
+            .type_full_name(),
+        "rust2cpg::E<T>::A"
+    );
+
+    Ok(())
+}
