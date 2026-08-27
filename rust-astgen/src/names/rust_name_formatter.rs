@@ -159,12 +159,8 @@ pub(crate) fn format_disambiguated_full_name(name: &str, disambiguator: usize) -
     format!("{name}{DISAMBIGUATOR_SEPARATOR}{disambiguator}")
 }
 
-pub(crate) fn format_trait_impl_member_full_name(
-    impl_ty: &str,
-    trait_name: &str,
-    member_name: &str,
-) -> String {
-    format!("<{impl_ty} as {trait_name}>{PATH_SEPARATOR}{member_name}")
+pub(crate) fn format_trait_impl_full_name(impl_ty: &str, trait_name: &str) -> String {
+    format!("<{impl_ty} as {trait_name}>")
 }
 
 pub(crate) fn format_name_with_generic_args(base: String, generic_args: Vec<String>) -> String {

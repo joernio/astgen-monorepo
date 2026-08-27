@@ -1,7 +1,7 @@
 mod common;
 
 use crate::common::{
-    TestResult, call_expr, enum_decl, fn_decl, ident_pat, method_call_expr, name_ref,
+    TestResult, call_expr, enum_decl, fn_decl, ident_pat, impl_decl, method_call_expr, name_ref,
     no_sysroot_ast_json, sysroot_ast_json,
 };
 
@@ -761,6 +761,35 @@ fn main() {
             .on_line("    if let E::A(v) = a {}")
             .type_full_name(),
         "rust2cpg::E<T>::A"
+    );
+
+    Ok(())
+}
+
+#[test]
+fn emits_inherent_impl_matching_the_method_full_name_of_its_methods() -> TestResult<()> {
+    let json = no_sysroot_ast_json(
+        "rust2cpg",
+        &[(
+            "src/main.rs",
+            r#"
+struct P<'a>(&'a u8);
+
+impl P<'_> {
+    fn m(&self) {}
+}
+"#,
+        )],
+        "src/main.rs",
+    )?;
+
+    assert_eq!(
+        impl_decl(&json, "impl P<'_> {\n    fn m(&self) {}\n}").type_full_name(),
+        "rust2cpg::P<'a>"
+    );
+    assert_eq!(
+        fn_decl(&json, "fn m(&self) {}").method_full_name(),
+        "rust2cpg::P<'a>::m"
     );
 
     Ok(())

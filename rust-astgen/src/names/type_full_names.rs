@@ -1,7 +1,9 @@
 //! Where we finally build `typeFullName` for each (relevant) SyntaxNode.
 
 use super::{
-    method_full_names::{format_enum_variant_full_name, format_generic_module_def_full_name},
+    method_full_names::{
+        format_enum_variant_full_name, format_generic_module_def_full_name, format_impl_full_name,
+    },
     rust_name_formatter::{
         format_item_name, format_member_full_name, format_module_def_full_name,
         format_name_with_generic_args,
@@ -24,6 +26,7 @@ pub(crate) fn type_full_name_for_node(
             ast::Enum(enum_) => resolve_enum_type_full_name(&enum_, semantics),
             ast::Expr(expr) => resolve_expr_type_full_name(&expr, semantics),
             ast::IdentPat(ident_pat) => resolve_ident_pat_type_full_name(&ident_pat, semantics),
+            ast::Impl(impl_) => resolve_impl_type_full_name(&impl_, semantics),
             ast::NameRef(name_ref) => resolve_name_ref_type_full_name(&name_ref, semantics),
             ast::SelfParam(self_param) => resolve_self_param_type_full_name(&self_param, semantics),
             ast::Struct(struct_) => resolve_struct_type_full_name(&struct_, semantics),
@@ -56,6 +59,13 @@ fn resolve_struct_type_full_name(
         struct_def.module(semantics.db),
         semantics.db,
     )
+}
+
+fn resolve_impl_type_full_name(
+    impl_: &ast::Impl,
+    semantics: &Semantics<RootDatabase>,
+) -> Option<String> {
+    format_impl_full_name(semantics.to_def(impl_)?, semantics.db)
 }
 
 fn resolve_expr_type_full_name(
