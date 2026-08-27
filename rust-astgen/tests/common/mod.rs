@@ -229,7 +229,10 @@ fn collect_nodes_by_kind<'a>(node: &'a Value, kind: &str, result: &mut Vec<&'a V
     }
 }
 
-fn node_text<'a>(json: &'a Value, node: &Value) -> Option<&'a str> {
+fn node_text<'a>(json: &'a Value, node: &'a Value) -> Option<&'a str> {
+    if let Some(text) = node.get("text").and_then(Value::as_str) {
+        return Some(text);
+    }
     let content = json.get("content")?.as_str()?;
     let range = node.get("range")?;
     let start = range.get("startOffset")?.as_u64()? as usize;
@@ -261,6 +264,13 @@ impl<'a> NodeSelector<'a> {
 
     pub fn method_full_name(self) -> String {
         self.field("methodFullName")
+    }
+
+    pub fn type_full_name_opt(self) -> Option<String> {
+        self.one_node()
+            .get("typeFullName")
+            .and_then(Value::as_str)
+            .map(str::to_owned)
     }
 
     pub fn method_full_name_opt(self) -> Option<String> {
@@ -387,6 +397,10 @@ pub fn enum_decl<'a>(json: &'a Value, text: &'static str) -> NodeSelector<'a> {
 
 pub fn trait_decl<'a>(json: &'a Value, text: &'static str) -> NodeSelector<'a> {
     node(json, "TRAIT", text)
+}
+
+pub fn impl_decl<'a>(json: &'a Value, text: &'static str) -> NodeSelector<'a> {
+    node(json, "IMPL", text)
 }
 
 pub fn fn_decl<'a>(json: &'a Value, text: &'static str) -> NodeSelector<'a> {

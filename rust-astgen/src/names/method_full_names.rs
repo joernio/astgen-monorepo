@@ -3,13 +3,12 @@
 use super::{
     rust_name_formatter::{
         format_generic_args_for_def, format_item_name, format_member_full_name,
-        format_module_def_full_name, format_name_with_generic_args,
-        format_trait_impl_member_full_name,
+        format_module_def_full_name, format_name_with_generic_args, format_trait_impl_full_name,
     },
     type_formatter,
 };
 use ra_ap_hir::{
-    AsAssocItem, AssocItemContainer, CallableKind, EnumVariant, Function, GenericDef, Module,
+    AsAssocItem, AssocItemContainer, CallableKind, EnumVariant, Function, GenericDef, Impl, Module,
     ModuleDef, Name, PathResolution, Semantics, Struct, TraitRef,
 };
 use ra_ap_ide::RootDatabase;
@@ -97,6 +96,15 @@ fn resolve_fn_def_full_name<'db>(
     format_function_full_name(function, semantics.db)
 }
 
+pub(super) fn format_impl_full_name(impl_: Impl, db: &RootDatabase) -> Option<String> {
+    let self_ty_name = type_formatter::format_impl_self_ty(impl_, impl_.module(db), db)?;
+    let Some(trait_ref) = impl_.trait_ref(db) else {
+        return Some(self_ty_name);
+    };
+    let trait_name = format_trait_ref_full_name(trait_ref, impl_.module(db), db)?;
+    Some(format_trait_impl_full_name(&self_ty_name, &trait_name))
+}
+
 pub(crate) fn format_function_full_name(function: Function, db: &RootDatabase) -> Option<String> {
     let Some(assoc_item) = function.as_assoc_item(db) else {
         return format_generic_module_def_full_name(
@@ -114,21 +122,10 @@ pub(crate) fn format_function_full_name(function: Function, db: &RootDatabase) -
         db,
     );
     match assoc_item.container(db) {
-        AssocItemContainer::Impl(impl_) => {
-            let receiver_type_name =
-                type_formatter::format_impl_self_ty(impl_, impl_.module(db), db)?;
-
-            if let Some(trait_ref) = impl_.trait_ref(db) {
-                let trait_name = format_trait_ref_full_name(trait_ref, impl_.module(db), db)?;
-                Some(format_trait_impl_member_full_name(
-                    &receiver_type_name,
-                    &trait_name,
-                    &method_name,
-                ))
-            } else {
-                Some(format_member_full_name(&receiver_type_name, &method_name))
-            }
-        }
+        AssocItemContainer::Impl(impl_) => Some(format_member_full_name(
+            &format_impl_full_name(impl_, db)?,
+            &method_name,
+        )),
         AssocItemContainer::Trait(trait_) => {
             let trait_name = format_generic_module_def_full_name(
                 ModuleDef::from(trait_),
