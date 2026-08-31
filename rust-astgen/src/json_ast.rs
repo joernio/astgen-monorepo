@@ -1,6 +1,7 @@
 //! The actual JSON shape we emit per Rust source file.
 
 use crate::adjustments::{Adjustment, adjustments_for_node};
+use crate::format_args::{ImplicitFormatArg, implicit_format_args_for_node};
 use crate::json_kind::syntax_kind_to_json_name;
 use crate::names::{
     implemented_traits_for_node, method_full_name_for_node, supertraits_for_node,
@@ -11,7 +12,7 @@ use ra_ap_hir::{
     CfgExpr, CfgOptions, Crate, HirFileId, Semantics, db::ExpandDatabase, prettify_macro_expansion,
 };
 use ra_ap_ide::{LineIndex, RootDatabase, TextRange};
-use ra_ap_syntax::{AstNode, NodeOrToken, SyntaxElement, SyntaxNode, SyntaxToken, ast};
+use ra_ap_syntax::{AstNode, NodeOrToken, SyntaxElement, SyntaxKind, SyntaxNode, SyntaxToken, ast};
 use serde::Serialize;
 
 /// Per-file envelope wrapping the AST.
@@ -139,7 +140,7 @@ impl RustAstGenJsonNode {
                 .into()
             });
 
-        let children = node
+        let mut children: Vec<_> = node
             .children_with_tokens()
             .filter(|child| !child.kind().is_trivia())
             .filter(|child| !is_cfg_inactive(child, cfg_options))
@@ -157,6 +158,10 @@ impl RustAstGenJsonNode {
                 }
             })
             .collect();
+
+        for capture in implicit_format_args_for_node(node, semantics).unwrap_or_default() {
+            children.push(mk_format_args_arg(capture));
+        }
 
         Self {
             node_kind,
@@ -212,6 +217,47 @@ impl RustAstGenJsonNode {
             RustAstGenJsonNodeRange::from_text_range(text_range, line_index)
         }
     }
+
+    fn mk_synthetic(
+        kind: SyntaxKind,
+        text: &str,
+        type_full_name: Option<String>,
+        children: Vec<RustAstGenJsonNode>,
+    ) -> RustAstGenJsonNode {
+        RustAstGenJsonNode {
+            node_kind: syntax_kind_to_json_name(kind),
+            range: RustAstGenJsonNodeRange::empty(),
+            text: Some(text.to_owned()),
+            method_full_name: None,
+            type_full_name,
+            implemented_traits: None,
+            supertraits: None,
+            macro_expansion: None,
+            adjustments: None,
+            has_self_receiver: None,
+            children,
+        }
+    }
+}
+
+fn mk_format_args_arg(capture: ImplicitFormatArg) -> RustAstGenJsonNode {
+    let ImplicitFormatArg {
+        name,
+        type_full_name,
+    } = capture;
+    let ident = RustAstGenJsonNode::mk_synthetic(SyntaxKind::IDENT, &name, None, vec![]);
+    let name_ref = RustAstGenJsonNode::mk_synthetic(
+        SyntaxKind::NAME_REF,
+        &name,
+        type_full_name.clone(),
+        vec![ident],
+    );
+    let path_segment =
+        RustAstGenJsonNode::mk_synthetic(SyntaxKind::PATH_SEGMENT, &name, None, vec![name_ref]);
+    let path = RustAstGenJsonNode::mk_synthetic(SyntaxKind::PATH, &name, None, vec![path_segment]);
+    let path_expr =
+        RustAstGenJsonNode::mk_synthetic(SyntaxKind::PATH_EXPR, &name, type_full_name, vec![path]);
+    RustAstGenJsonNode::mk_synthetic(SyntaxKind::FORMAT_ARGS_ARG, &name, None, vec![path_expr])
 }
 
 fn is_cfg_inactive(child: &SyntaxElement, cfg_options: Option<&CfgOptions>) -> bool {

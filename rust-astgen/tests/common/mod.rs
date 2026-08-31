@@ -433,6 +433,10 @@ pub fn path_expr<'a>(json: &'a Value, text: &'static str) -> NodeSelector<'a> {
     node(json, "PATH_EXPR", text)
 }
 
+pub fn format_args_arg<'a>(json: &'a Value, text: &'static str) -> NodeSelector<'a> {
+    node(json, "FORMAT_ARGS_ARG", text)
+}
+
 pub fn ref_expr<'a>(json: &'a Value, text: &'static str) -> NodeSelector<'a> {
     node(json, "REF_EXPR", text)
 }
