@@ -12,7 +12,6 @@
 // never serialized across the thread boundary — only the per-file Done/Error
 // envelope is.
 
-import {parentPort} from "node:worker_threads"
 import * as fs from "node:fs"
 
 import * as Parsing from "./Parsing"
@@ -57,13 +56,15 @@ function processOne(job: Job): WorkerMsg {
     }
 }
 
-if (parentPort !== null) {
-    const port = parentPort
-    port.on("message", (job: Job | "shutdown") => {
-        if (job === "shutdown") {
-            port.close()
-            return
-        }
-        port.postMessage(processOne(job))
-    })
+declare var self: Worker
+
+// This module is also loaded on the main thread: Pipeline.ts value-imports the
+// PARSER_* constants from here. Registering a global "message" listener there
+// would keep the main event loop alive forever, so guard on the worker context.
+// The pool terminates workers once all jobs are drained, so no shutdown
+// message handling is needed here.
+if (!Bun.isMainThread) {
+    self.onmessage = (ev: MessageEvent<Job>) => {
+        self.postMessage(processOne(ev.data))
+    }
 }

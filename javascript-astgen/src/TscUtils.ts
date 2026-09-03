@@ -55,8 +55,8 @@ export default class TscUtils {
      * Generates a map of node positions to their inferred type strings for a given TypeScript source file.
      *
      * This method traverses the AST of the specified file, analyzes each node using the TypeScript compiler API,
-     * and records the type information for relevant nodes. The resulting map uses a string key in the format
-     * "start:end" (representing the node's position in the file) and maps it to the node's type as a string.
+     * and records the type information for relevant nodes. The resulting map keys each node's position as a
+     * packed (start, end) number (see {@link encodePos}); writers decode it back to "start:end" on output.
      *
      * @param file - The path to the TypeScript source file to analyze.
      * @returns A `TypeMap` mapping node positions to their inferred type strings.

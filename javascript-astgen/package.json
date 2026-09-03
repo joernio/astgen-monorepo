@@ -1,13 +1,13 @@
 {
   "name": "@joernio/astgen",
-  "version": "3.47.0",
+  "version": "3.48.0",
   "description": "Generate JavaScript/TypeScript AST in JSON format with Babel. CLI-only — invoke via the `astgen` binary; programmatic imports are not supported.",
   "keywords": [
     "AST",
     "Static Analysis"
   ],
   "bin": {
-    "astgen": "./dist/astgen.js"
+    "astgen": "./src/astgen.ts"
   },
   "repository": "https://github.com/joernio/astgen",
   "author": "Max Leuthaeuser",
@@ -19,44 +19,15 @@
     "yargs": "^17.7.2"
   },
   "scripts": {
-    "pretest": "yarn build",
-    "test": "NODE_OPTIONS='--experimental-vm-modules' jest --silent --config=jest.config.js",
-    "sync-version": "node scripts/sync-version.mjs",
-    "prebuild": "node scripts/sync-version.mjs",
-    "build": "tsc --build",
-    "binary": "yarn build && pkg . --sea --options max-old-space-size=8192 --compress GZip --targets node24-linux-x64,node24-linux-arm64,node24-macos-x64,node24-win-x64,node24-macos-arm64",
+    "test": "bun test --parallel",
+    "typecheck": "tsc --noEmit",
+    "sync-version": "bun scripts/sync-version.ts",
+    "prebinary": "bun scripts/sync-version.ts",
+    "binary": "bun run scripts/build-binaries.ts",
     "regression": "astgen-regression local"
   },
-  "engines": {
-    "node": ">=24.0.0"
-  },
-  "files": [
-    "./dist/**/*.js"
-  ],
-  "directories": {
-    "test": "./test/"
-  },
   "devDependencies": {
-    "@tsconfig/node24": "^24.0.4",
-    "@types/jest": "^30.0.0",
-    "@types/node": "^25.6.0",
     "@types/yargs": "^17.0.33",
-    "@yao-pkg/pkg": "^6.19.0",
-    "jest": "^30.3.0",
-    "ts-jest": "^29.4.9"
-  },
-  "pkg": {
-    "ignore": [
-      "**/node_modules/*/test/**",
-      "**/node_modules/*/tests/**",
-      "**/node_modules/*/docs/**",
-      "**/node_modules/*/example/**",
-      "**/node_modules/*/examples/**"
-    ]
-  },
-  "resolutions": {
-    "brace-expansion": ">=2.0.3",
-    "picomatch": ">=4.0.4",
-    "minimatch": ">=9.0.6"
+    "bun-types": "latest"
   }
 }

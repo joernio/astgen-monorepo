@@ -223,6 +223,52 @@ describe("astgen basic functionality", () => {
         })
     })
 
+    it("should emit byte-identical outputs across repeated runs", async () => {
+        // Cross-file union fixture: without deterministic file ordering
+        // (Pipeline sorts filePaths) and stableTypeOrdering (Defaults), the
+        // union member order in u.ts.typemap depends on worker completion
+        // order and can flip between runs.
+        const files = [
+            {name: "src/g1.ts", code: `class C1 { a: string }\n`},
+            {name: "src/g2.ts", code: `class C2 { b: number }\nconst z = new C2()\n`},
+            {name: "src/u.ts", code: `type T = "x" | C1 | "y" | C2\nconst t: T = "x"\n`},
+        ]
+
+        const snapshot = (dir: string): Record<string, string> => {
+            const entries: Record<string, string> = {}
+            const walk = (d: string): void => {
+                for (const e of fs.readdirSync(d, {withFileTypes: true})) {
+                    const p = path.join(d, e.name)
+                    if (e.isDirectory()) walk(p)
+                    else entries[path.relative(dir, p)] = fs.readFileSync(p, "utf-8")
+                }
+            }
+            walk(dir)
+            return entries
+        }
+
+        await withTmpDir(async (tmpDir) => {
+            writeFiles(tmpDir, files)
+            const base = {
+                type: "ts",
+                recurse: true,
+                tsTypes: true,
+                "exclude-file": [] as string[],
+                src: path.join(tmpDir, "src"),
+            }
+            await start({...base, output: path.join(tmpDir, "out1")})
+            await start({...base, output: path.join(tmpDir, "out2")})
+
+            const run1 = snapshot(path.join(tmpDir, "out1"))
+            const run2 = snapshot(path.join(tmpDir, "out2"))
+            expect(run2).toEqual(run1)
+            expect(Object.keys(run1).length).toBe(6)
+
+            const uTypemap = JSON.parse(run1["u.ts.typemap"])
+            expect(Object.values(uTypemap)).toContain(`"x" | "y" | C1 | C2`)
+        })
+    })
+
     it("should not run type extraction on files skipped during AST parsing", async () => {
         // A file rejected by validateBuffer (e.g. a minified single-line bundle
         // with a line over 10000 bytes) produces no AST. It must therefore also

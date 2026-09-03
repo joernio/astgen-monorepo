@@ -16,8 +16,8 @@ This package is **CLI-only** — install it for the `astgen` binary; programmati
 
 ## Requirements
 
-- Node.js >= 24.0.0 (for development/testing)
-- No Node.js required for standalone binaries
+- [Bun](https://bun.sh) >= 1.4 (for development/testing)
+- No runtime required for standalone binaries
 
 ## Key Dependencies
 
@@ -29,34 +29,28 @@ This package is **CLI-only** — install it for the `astgen` binary; programmati
 ## Building
 
 ```bash
-yarn install
-yarn build
+bun install
 ```
 
-Platform-specific standalone binaries ([cross-platform SEAs](https://nodejs.org/api/single-executable-applications.html)) can be built using [pkg](https://github.com/yao-pkg/pkg):
+Bun executes TypeScript directly — no separate compile step is needed.
+
+Platform-specific standalone binaries can be built using `bun build --compile`:
 
 ```bash
-yarn binary
+bun run binary
 ```
 
-This creates standalone executables with embedded Node.js runtime for:
+This cross-compiles standalone executables with an embedded Bun runtime for all targets in parallel:
 - Linux (x64, arm64)
 - macOS (x64, arm64)
-- Windows (x64)
-
-**Note:** During the build process, you may see warnings about dynamic `require()` calls. These are harmless and do not affect the functionality of the binaries.
+- Windows (x64, arm64)
 
 ## Testing
 
 ```bash
-yarn install
-yarn build
-yarn test
+bun install
+bun run test
 ```
-
-This uses `jest` with `ts-jest` to run the tests in `test/`.
-
-**Note:** Tests require Node.js with experimental VM modules support to handle ES module dynamic imports.
 
 ## Usage
 
@@ -145,8 +139,8 @@ The CLI entry point is [`src/astgen.ts`](src/astgen.ts), which delegates to [`sr
 
 ## Releasing
 
-The version lives in `package.json` and is mirrored into `src/version.ts` by `scripts/sync-version.mjs` (run automatically on `yarn build` via the `prebuild` hook). Use `bump-version.sh` to bump:
+The version lives in `package.json` and is mirrored into `src/version.ts` by `scripts/sync-version.ts` (run automatically on `bun run binary` via the `prebinary` hook). Use `bump-version.sh` to bump:
 
 ```bash
-./bump-version.sh 3.44.0
+./bump-version.sh <bumped-version-tag>
 ```

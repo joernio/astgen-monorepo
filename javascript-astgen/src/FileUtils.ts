@@ -5,6 +5,7 @@ import {getErrorMessage} from "./Errors"
 
 import * as fs from "node:fs"
 import * as path from "node:path"
+import {readdirp} from "readdirp"
 
 /**
  * Computes the per-file output path layout. Both `relativePath` (from `src`,
@@ -114,25 +115,21 @@ export function validateBuffer(buf: Buffer): ValidationResult {
     }
     let lineStart = 0
     let lineCount = 0
-    for (let i = 0; i < buf.length; i++) {
-        if (buf[i] === NEWLINE_BYTE) {
-            if (i - lineStart > Defaults.MAX_LINE_LENGTH) {
-                return {ok: false, reason: `line ${lineCount + 1} exceeds ${Defaults.MAX_LINE_LENGTH} bytes`}
-            }
-            if (++lineCount > Defaults.MAX_LOC_IN_FILE) {
-                return {ok: false, reason: `more than ${Defaults.MAX_LOC_IN_FILE} lines of code`}
-            }
-            lineStart = i + 1
+    // Buffer.indexOf is native (memchr) — much faster than a per-byte JS loop
+    // on multi-MB files. A miss (-1) doubles as the tail-line check, so the
+    // text after the last newline needs no separate code path. The tail counts
+    // as a line: a MAX_LOC_IN_FILE+1-line file has MAX_LOC_IN_FILE newlines.
+    while (true) {
+        const newline = buf.indexOf(NEWLINE_BYTE, lineStart)
+        const lineEnd = newline === -1 ? buf.length : newline
+        if (lineEnd - lineStart > Defaults.MAX_LINE_LENGTH) {
+            return {ok: false, reason: `line ${lineCount + 1} exceeds ${Defaults.MAX_LINE_LENGTH} bytes`}
         }
-    }
-    // Tail (text after the last newline, or the whole file if no newline). The
-    // legacy implementation counted this as a line, so a 50001-line file with
-    // 50000 newlines exceeds MAX_LOC_IN_FILE. Preserve that semantics here.
-    if (buf.length - lineStart > Defaults.MAX_LINE_LENGTH) {
-        return {ok: false, reason: `line ${lineCount + 1} exceeds ${Defaults.MAX_LINE_LENGTH} bytes`}
-    }
-    if (++lineCount > Defaults.MAX_LOC_IN_FILE) {
-        return {ok: false, reason: `more than ${Defaults.MAX_LOC_IN_FILE} lines of code`}
+        if (++lineCount > Defaults.MAX_LOC_IN_FILE) {
+            return {ok: false, reason: `more than ${Defaults.MAX_LOC_IN_FILE} lines of code`}
+        }
+        if (newline === -1) break
+        lineStart = newline + 1
     }
     return {ok: true, content: buf.toString("utf-8")}
 }
@@ -152,8 +149,6 @@ export async function* pathsWithExtensions(
 ): AsyncGenerator<string> {
     const dir = path.resolve(options.src)
     const excludeRules = buildExcludeRules(options)
-    // Dynamic import for ESM-only package.
-    const {readdirp} = await import('readdirp')
     // Run readdirp in dirent mode (alwaysStat omitted) so the walk does not
     // stat every entry — readdirp applies fileFilter AFTER stat, so enabling
     // alwaysStat would stat every node_modules JSON etc. before the
@@ -161,7 +156,6 @@ export async function* pathsWithExtensions(
     // that survive the name filter, purely to enforce MAX_FILE_SIZE_BYTES
     // before the worker reads the file.
     const stream = readdirp(dir, {
-        root: dir,
         fileFilter: (f) => !ignoreFileByName(excludeRules, f.basename, f.fullPath, extensions),
         directoryFilter: (d) => !ignoreDirectory(excludeRules, d.basename, d.fullPath),
         depth: options.recurse ? undefined : 0,
@@ -171,11 +165,11 @@ export async function* pathsWithExtensions(
         try {
             size = (await fs.promises.stat(entry.fullPath)).size
         } catch (err) {
-            Logger.warn("Stat failed for", entry.fullPath, ":", getErrorMessage(err))
+            Logger.info("Parsing", entry.fullPath, ":", "unable to stat due to", getErrorMessage(err))
             continue
         }
         if (size > Defaults.MAX_FILE_SIZE_BYTES) {
-            Logger.warn(entry.fullPath, "exceeds maximum file size of", Defaults.MAX_FILE_SIZE_BYTES, "bytes")
+            Logger.info("Parsing", entry.fullPath, ":", "exceeds maximum file size of", Defaults.MAX_FILE_SIZE_BYTES, "bytes")
             continue
         }
         yield entry.fullPath

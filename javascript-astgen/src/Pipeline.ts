@@ -22,7 +22,7 @@ function buildTscUtils(files: string[], options: Options): TscUtils | undefined 
     try {
         return new TscUtils(files)
     } catch (err) {
-        Logger.warn("Retrieving types :", getErrorMessage(err))
+        Logger.warn("Retrieving types", ":", getErrorMessage(err))
         return undefined
     }
 }
@@ -61,9 +61,9 @@ async function processAstFilesParallel(
             inflight.push(
                 pool.submit(job).then((msg) => {
                     if (msg.kind === "error") {
-                        Logger.warn("Parsing", msg.file, ":", msg.message)
+                        Logger.info("Parsing", msg.file, ":", msg.message)
                     } else if (msg.skipped) {
-                        Logger.warn("Parsing", msg.file, ":", msg.skipped)
+                        Logger.info("Parsing", msg.file, ":", msg.skipped)
                     } else {
                         // Only files that actually produced an AST feed the
                         // type-extraction phase. A file skipped by validateBuffer
@@ -148,6 +148,14 @@ export default async function start(options: Options, sink: WriteSink = new FsWr
     // Type extraction only makes sense for JS/TS projects — TscUtils runs the
     // TypeScript compiler over the input files, which doesn't apply to .vue.
     if (type === "vue") return
+
+    // filePaths arrives in worker-completion order, which is timing-dependent.
+    // Both the createProgram root order and the per-file typeMapForFile query
+    // order influence the encounter-order type IDs tsc uses to order union
+    // members in typeToString output — sort so .typemap files are deterministic
+    // across runtimes and machines (complements stableTypeOrdering, Defaults.ts).
+    filePaths.sort()
+
     const tscUtils = buildTscUtils(filePaths, options)
     if (tscUtils) {
         await processTypeFiles(filePaths, options, sink, tscUtils)

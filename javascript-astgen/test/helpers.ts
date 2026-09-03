@@ -1,6 +1,7 @@
 import * as fs from "node:fs"
 import * as os from "node:os"
 import * as path from "node:path"
+import {mock, type Mock} from "bun:test"
 
 import Options from "../src/Options"
 import start from "../src/Pipeline"
@@ -136,9 +137,9 @@ export function findOffsets(source: string, needle: string, occurrence = 0): str
  * {@link uninstall} in `afterEach` (or use {@link withCapturedLogger}).
  */
 export class MemoryLogger implements Logger {
-    readonly info: jest.Mock = jest.fn()
-    readonly warn: jest.Mock = jest.fn()
-    readonly error: jest.Mock = jest.fn()
+    readonly info: Mock<(...args: unknown[]) => void> = mock()
+    readonly warn: Mock<(...args: unknown[]) => void> = mock()
+    readonly error: Mock<(...args: unknown[]) => void> = mock()
 
     install(): void {
         setLogger(this)

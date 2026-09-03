@@ -37,7 +37,7 @@ sed -i.bak -E "s/\"version\": \"$CURRENT_VERSION\"/\"version\": \"$NEW_VERSION\"
 rm package.json.bak
 
 # Regenerate src/version.ts from package.json
-node scripts/sync-version.mjs
+bun scripts/sync-version.ts
 
 echo -e "${GREEN}✓ Updated package.json${NC}"
 echo -e "${GREEN}✓ Regenerated src/version.ts${NC}"
@@ -52,8 +52,8 @@ echo -e "${GREEN}Version bumped successfully!${NC}"
 echo ""
 echo "Next steps:"
 echo "  1. Review the changes above"
-echo "  2. Run: yarn install  (to update yarn.lock)"
-echo "  3. Run: git add package.json src/version.ts yarn.lock"
+echo "  2. Run: bun install  (to update bun.lock)"
+echo "  3. Run: git add package.json src/version.ts bun.lock"
 echo "  4. Run: git commit -m \"[javascript-astgen] Bump version to ${NEW_VERSION}\""
 echo "  5. Run: git tag javascript-astgen/v${NEW_VERSION}"
 echo "  6. Run: git push && git push --tags"
