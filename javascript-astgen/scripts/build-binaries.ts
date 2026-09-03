@@ -7,7 +7,30 @@
  * astgen-macos-arm64, astgen-win-x64, astgen-win-arm64).
  */
 
+import * as fs from "node:fs"
+import * as path from "node:path"
+
 export {}
+
+// TscUtils.ts points tsc's default-lib resolution at an embedded copy of
+// `typescript/lib` (see the `assets` entry below) because the build machine's
+// `node_modules/typescript/lib` path baked in by Bun at compile time does not
+// exist on whatever machine eventually runs the compiled binary. Stage only
+// the `lib.*.d.ts` runtime-library files (~4 MB) into a scratch directory
+// rather than embedding the package's `lib/` wholesale (~23 MB, mostly the
+// typescript.js/tsc.js compiler bundles, which are already pulled in through
+// the normal import graph). The staged directory keeps the `lib` basename so
+// it lands at the same embedded path (`<binary>/lib`) that TscUtils.ts reads.
+const tsLibSrcDir = path.join(import.meta.dir, "..", "node_modules", "typescript", "lib")
+const stagedAssetsDir = path.join(import.meta.dir, "..", ".tslib-assets")
+const stagedLibDir = path.join(stagedAssetsDir, "lib")
+fs.rmSync(stagedAssetsDir, {recursive: true, force: true})
+fs.mkdirSync(stagedLibDir, {recursive: true})
+for (const entry of fs.readdirSync(tsLibSrcDir)) {
+    if (entry.startsWith("lib.") && entry.endsWith(".d.ts")) {
+        fs.copyFileSync(path.join(tsLibSrcDir, entry), path.join(stagedLibDir, entry))
+    }
+}
 
 const targets = [
     {target: "bun-linux-x64",    outfile: "./astgen-linux-x64"},
@@ -24,7 +47,7 @@ const results = await Promise.allSettled(
     targets.map(async ({target, outfile}) => {
         const result = await Bun.build({
             entrypoints: ["./src/astgen.ts", "./src/AstWorker.ts"],
-            compile: {target, outfile},
+            compile: {target, outfile, assets: [stagedLibDir]},
             minify: true,
         })
         if (!result.success) {

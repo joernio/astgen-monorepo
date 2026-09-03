@@ -1,6 +1,6 @@
 {
   "name": "@joernio/astgen",
-  "version": "3.48.0",
+  "version": "3.49.0",
   "description": "Generate JavaScript/TypeScript AST in JSON format with Babel. CLI-only — invoke via the `astgen` binary; programmatic imports are not supported.",
   "keywords": [
     "AST",
