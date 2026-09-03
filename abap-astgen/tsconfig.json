@@ -1,0 +1,22 @@
+{
+  "include": [
+    "./src/**/*.ts",
+    "./test/**/*.ts",
+    "./scripts/**/*.ts"
+  ],
+  "compilerOptions": {
+    "target": "ESNext",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "strict": true,
+    "noImplicitAny": true,
+    "strictNullChecks": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noImplicitReturns": true,
+    "skipLibCheck": true,
+    "skipDefaultLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "types": ["bun-types", "bun-types/test-globals"]
+  }
+}

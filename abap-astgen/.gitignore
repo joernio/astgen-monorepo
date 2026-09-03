@@ -2,24 +2,34 @@ node_modules/
 *.log
 .DS_Store
 
-# pkg binary outputs
-parse-abap
+# TypeScript cache
+*.tsbuildinfo
+
+# Compiled binaries (pre-rename)
+abapgen
 abapgen-linux-x64
 abapgen-linux-arm64
 abapgen-macos-x64
 abapgen-macos-arm64
 abapgen-win-x64.exe
+abapgen-win-arm64.exe
 
-# CI-renamed + gzexe backups
+# Compiled binaries (post-rename)
 abapgen-linux
 abapgen-linux-arm
 abapgen-macos
 abapgen-macos-arm
 abapgen-win.exe
+abapgen-win-arm.exe
+
+# gzexe backup files
 abapgen-linux~
 abapgen-linux-arm~
 abapgen-macos~
 abapgen-macos-arm~
+
+# Debug / local test builds
+abapgen-debug*
 
 # editor/IDE
 .idea/

@@ -1,40 +1,23 @@
 {
   "name": "@joernio/abapgen",
-  "version": "0.1.0",
-  "description": "ABAP AST generator producing JSON output via @abaplint/core",
-  "main": "parse-abap.js",
+  "version": "0.4.0",
+  "description": "ABAP AST generator producing JSON output via @abaplint/core. CLI-only — invoke via the `abapgen` binary; programmatic imports are not supported.",
   "bin": {
-    "abapgen": "./parse-abap.js"
+    "abapgen": "./src/parse-abap.ts"
   },
   "repository": "https://github.com/joernio/astgen-monorepo",
   "license": "Apache-2.0",
   "scripts": {
-    "binary": "pkg . --targets node18-linux-x64,node18-linux-arm64,node18-macos-x64,node18-macos-arm64,node18-win-x64 --out-path .",
-    "binary:current": "pkg . --targets node18-macos-arm64 -o abapgen-macos-arm64",
-    "clean": "rm -f abapgen-linux-x64 abapgen-linux-arm64 abapgen-macos-x64 abapgen-macos-arm64 abapgen-win-x64.exe abapgen-linux abapgen-linux-arm abapgen-macos abapgen-macos-arm abapgen-win.exe abapgen-linux~ abapgen-linux-arm~ abapgen-macos~ abapgen-macos-arm~",
-    "test": "jest --config=jest.config.js"
-  },
-  "engines": {
-    "node": ">=18.0.0"
+    "test": "bun test --parallel",
+    "typecheck": "tsc --noEmit",
+    "binary": "bun run scripts/build-binaries.ts",
+    "clean": "rm -f abapgen abapgen-linux-x64 abapgen-linux-arm64 abapgen-macos-x64 abapgen-macos-arm64 abapgen-win-x64.exe abapgen-win-arm64.exe abapgen-linux abapgen-linux-arm abapgen-macos abapgen-macos-arm abapgen-win.exe abapgen-win-arm.exe abapgen-linux~ abapgen-linux-arm~ abapgen-macos~ abapgen-macos-arm~"
   },
   "dependencies": {
     "@abaplint/core": "^2.116.0"
   },
   "devDependencies": {
-    "@yao-pkg/pkg": "^6.12.0",
-    "jest": "^30.0.4"
-  },
-  "directories": {
-    "test": "./test/"
-  },
-  "pkg": {
-    "assets": [],
-    "targets": [
-      "node18-linux-x64",
-      "node18-linux-arm64",
-      "node18-macos-x64",
-      "node18-macos-arm64",
-      "node18-win-x64"
-    ]
+    "bun-types": "latest",
+    "typescript": "^6.0.3"
   }
 }
