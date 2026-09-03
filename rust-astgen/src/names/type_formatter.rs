@@ -13,6 +13,7 @@ use ra_ap_hir::{
     Mutability, PathResolution, Semantics, Trait, Type, TypeAlias,
 };
 use ra_ap_ide::RootDatabase;
+use ra_ap_ide_db::famous_defs::FamousDefs;
 use ra_ap_syntax::ast;
 
 pub(crate) fn format_type(typ: &Type, module: Module, db: &RootDatabase) -> Option<String> {
@@ -212,8 +213,32 @@ impl<'db> TypeFormatter<'db> {
         Some(format_name_with_generic_args(base, bindings))
     }
 
-    fn format_dyn_trait(&self, typ: &Type, trait_: Trait) -> Option<String> {
-        Some(format!("dyn {}", self.format_trait_bound(typ, trait_)?))
+    fn format_dyn_trait(&self, typ: &Type, principal: Trait) -> Option<String> {
+        let mut bounds = vec![self.format_trait_bound(typ, principal)?];
+        bounds.extend(self.format_auto_trait_bounds(typ));
+        Some(format!("dyn {}", bounds.join(" + ")))
+    }
+
+    fn format_auto_trait_bounds(&self, typ: &Type) -> Vec<String> {
+        let mut bounds = self
+            .core_auto_traits()
+            .filter(|trait_| typ.impls_trait(self.db, *trait_, &[]))
+            .filter_map(|trait_| format_module_def_full_name(ModuleDef::from(trait_), self.db))
+            .collect::<Vec<_>>();
+        bounds.sort();
+        bounds
+    }
+
+    fn core_auto_traits(&self) -> impl Iterator<Item = Trait> {
+        let semantics = Semantics::new(self.db);
+        let core = FamousDefs(&semantics, self.module.krate(self.db)).core();
+        core.into_iter()
+            .flat_map(|core| core.modules(self.db))
+            .flat_map(|module| module.declarations(self.db))
+            .filter_map(|def| match def {
+                ModuleDef::Trait(trait_) if trait_.is_auto(self.db) => Some(trait_),
+                _ => None,
+            })
     }
 
     fn format_fallback(&self, typ: &Type) -> String {

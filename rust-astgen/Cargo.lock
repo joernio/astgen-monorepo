@@ -2000,7 +2000,7 @@ dependencies = [
 
 [[package]]
 name = "rust_ast_gen"
-version = "0.20.0"
+version = "0.21.0"
 dependencies = [
  "anyhow",
  "chrono",
@@ -2011,6 +2011,7 @@ dependencies = [
  "log",
  "ra_ap_hir",
  "ra_ap_ide",
+ "ra_ap_ide_db",
  "ra_ap_load-cargo",
  "ra_ap_project_model",
  "ra_ap_syntax",

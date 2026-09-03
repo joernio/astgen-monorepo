@@ -3,6 +3,7 @@ mod common;
 use crate::common::{
     TestResult, bin_expr, call_expr, enum_decl, fn_decl, ident_pat, impl_decl, literal,
     method_call_expr, name_ref, no_sysroot_ast_json, path_expr, self_param, struct_decl,
+    sysroot_ast_json,
 };
 use serde_json::json;
 
@@ -1347,6 +1348,96 @@ impl Tr for S {
     assert_eq!(
         fn_decl(&json, "fn m(&self) {}").method_full_name(),
         "<rust2cpg::S as rust2cpg::Tr>::m"
+    );
+
+    Ok(())
+}
+
+#[test]
+fn emits_qualified_trait_for_dyn_type_with_auto_traits() -> TestResult<()> {
+    let json = sysroot_ast_json(
+        "rust2cpg",
+        &[(
+            "src/main.rs",
+            r#"
+trait Tr {}
+fn f(g: Box<dyn Tr + Sync + Send>) {
+    let c = g;
+}
+"#,
+        )],
+        "src/main.rs",
+    )?;
+
+    assert_eq!(
+        path_expr(&json, "g").type_full_name(),
+        "alloc::boxed::Box<dyn rust2cpg::Tr + core::marker::Send + core::marker::Sync, alloc::alloc::Global>"
+    );
+
+    Ok(())
+}
+
+#[test]
+fn emits_qualified_trait_for_dyn_type_without_auto_traits_of_nested_types() -> TestResult<()> {
+    let json = sysroot_ast_json(
+        "rust2cpg",
+        &[(
+            "src/main.rs",
+            r#"
+trait Tr {
+    type A;
+}
+trait Other {}
+fn f(g: &dyn Tr<A = Box<dyn Other + Send>>) {
+    let c = g;
+}
+"#,
+        )],
+        "src/main.rs",
+    )?;
+
+    assert_eq!(
+        path_expr(&json, "g").type_full_name(),
+        "&dyn rust2cpg::Tr<A = alloc::boxed::Box<dyn rust2cpg::Other + core::marker::Send, alloc::alloc::Global>>"
+    );
+
+    Ok(())
+}
+
+#[test]
+fn emits_distinct_trait_impls_for_dyn_types_differing_in_auto_traits() -> TestResult<()> {
+    let json = sysroot_ast_json(
+        "rust2cpg",
+        &[(
+            "src/main.rs",
+            r#"
+trait Tr {}
+trait Mark {}
+
+impl Mark for Box<dyn Tr> {}
+impl Mark for Box<dyn Tr + Send> {}
+impl Mark for Box<dyn Tr + Sync> {}
+impl Mark for Box<dyn Tr + Send + Sync> {}
+"#,
+        )],
+        "src/main.rs",
+    )?;
+
+    assert_eq!(
+        impl_decl(&json, "impl Mark for Box<dyn Tr> {}").type_full_name(),
+        "<alloc::boxed::Box<dyn rust2cpg::Tr, alloc::alloc::Global> as rust2cpg::Mark>"
+    );
+    assert_eq!(
+        impl_decl(&json, "impl Mark for Box<dyn Tr + Send> {}").type_full_name(),
+        "<alloc::boxed::Box<dyn rust2cpg::Tr + core::marker::Send, alloc::alloc::Global> as rust2cpg::Mark>"
+    );
+    assert_eq!(
+        impl_decl(&json, "impl Mark for Box<dyn Tr + Sync> {}").type_full_name(),
+        "<alloc::boxed::Box<dyn rust2cpg::Tr + core::marker::Sync, alloc::alloc::Global> as rust2cpg::Mark>"
+    );
+    assert_eq!(
+        impl_decl(&json, "impl Mark for Box<dyn Tr + Send + Sync> {}").type_full_name(),
+        "<alloc::boxed::Box<dyn rust2cpg::Tr + core::marker::Send + core::marker::Sync, alloc::alloc::Global> as rust2cpg::Mark>"
     );
 
     Ok(())
