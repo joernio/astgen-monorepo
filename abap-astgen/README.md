@@ -12,22 +12,40 @@ Reads `.abap` files from an input directory and writes, for each file, a JSON do
 
 No semantic interpretation is performed here; consumers (for example `AbapJsonParser.scala`) are responsible for turning statements into a higher-level AST.
 
+## Requirements
+
+- [Bun](https://bun.sh) >= 1.4 (for development/testing)
+- No runtime required for standalone binaries
+
 ## Building
 
 ```bash
-npm install
-npm run binary           # build binaries for all supported platforms
-npm run binary:current   # build only for the current platform (macOS arm64 example)
+bun install
 ```
 
-Binaries are written to the project root.
+Bun executes TypeScript directly — no separate compile step is needed.
+
+Platform-specific standalone binaries can be built using `bun build --compile`:
+
+```bash
+bun run binary
+```
+
+This cross-compiles standalone executables with an embedded Bun runtime for all targets in parallel. Binaries are written to the project root.
+
+## Testing
+
+```bash
+bun install
+bun run test
+```
 
 ## Usage
 
 ```bash
 ./abapgen-macos-arm64 <input-dir> <output-dir>
 # or
-node parse-abap.js <input-dir> <output-dir>
+bun src/parse-abap.ts <input-dir> <output-dir>
 ```
 
 Each parsed file produces `<output-dir>/<filename>.json`. The process prints one `OK <path>` or `ERR <path>` line per input file.
@@ -41,3 +59,4 @@ Each parsed file produces `<output-dir>/<filename>.json`. The process prints one
 | macOS   | x64          | `abapgen-macos-x64`      |
 | macOS   | arm64        | `abapgen-macos-arm64`    |
 | Windows | x64          | `abapgen-win-x64.exe`    |
+| Windows | arm64        | `abapgen-win-arm64.exe`  |

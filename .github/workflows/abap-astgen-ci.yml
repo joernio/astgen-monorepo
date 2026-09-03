@@ -16,22 +16,26 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: '0'
-      - name: Install node
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+      - name: Install Bun
+        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
         with:
-          node-version: '24'
-          cache: 'npm'
-          cache-dependency-path: 'abap-astgen/package-lock.json'
+          bun-version: 1.4.0
       - name: Install ldid
         uses: MOZGIII/install-ldid-action@d5ab465f3a66a4d60a59882b935eb30e18e8d043 # v1
         with:
-          tag: v2.1.5-procursus6
+          tag: v2.1.5-procursus7
       - name: Install dependencies
-        run: npm install
-      - name: Run tests
-        run: npm test
+        run: bun install --frozen-lockfile
+      - name: Type check
+        run: bun run typecheck
+      - name: Test
+        run: bun run test
       - name: Create binaries
-        run: npm run binary
+        run: bun run binary
+      - name: Sign macOS binaries (ad-hoc)
+        run: |
+          ldid -S abapgen-macos-x64
+          ldid -S abapgen-macos-arm64
       - name: Rename
         run: |
           mv abapgen-linux-x64 abapgen-linux
@@ -39,6 +43,7 @@ jobs:
           mv abapgen-macos-x64 abapgen-macos
           mv abapgen-macos-arm64 abapgen-macos-arm
           mv abapgen-win-x64.exe abapgen-win.exe
+          mv abapgen-win-arm64.exe abapgen-win-arm.exe
       - name: Run gzexe
         run: |
           gzexe abapgen-linux
@@ -48,6 +53,6 @@ jobs:
       - name: Print size and version
         run: |
           ls -lh ./abapgen*
-          ABAPGEN_VERSION=$(node -p "require('./package.json').version")
+          ABAPGEN_VERSION=$(bun -p "require('./package.json').version")
           echo "ABAPGEN_VERSION=$ABAPGEN_VERSION" >> $GITHUB_ENV
           echo "abapgen version is: $ABAPGEN_VERSION"
