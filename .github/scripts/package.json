@@ -5,7 +5,7 @@
   "private": true,
   "type": "module",
   "dependencies": {
-    "minimatch": "^9.0.3",
-    "js-yaml": "^4.1.0"
+    "minimatch": "^10.2.6",
+    "js-yaml": "^5.4.1"
   }
 }
