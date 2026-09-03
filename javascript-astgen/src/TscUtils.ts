@@ -1,6 +1,21 @@
 import * as Defaults from "./Defaults"
 
 import tsc from "typescript"
+import * as path from "node:path"
+
+// tsc resolves its bundled lib.*.d.ts files (Array, Uppercase<T>, etc.) relative to
+// `ts.sys.getExecutingFilePath()`. Bun's bundler bakes that path in at compile time
+// as the build machine's absolute `node_modules/typescript/lib` path, which does not
+// exist on whatever machine eventually runs the compiled binary — silently starving
+// the TypeChecker of its standard library (arrays degrade to `{}`, intrinsics like
+// `Uppercase<T>` never resolve, and everything otherwise resolvable falls back to
+// `any`). Point it at the copy of that directory embedded alongside the binary
+// instead (see the matching `assets` entry in scripts/build-binaries.ts). Only the
+// directory is used (via getDirectoryPath in tsc), so the filename here is a dummy.
+if (Bun.isStandaloneExecutable) {
+    const embeddedLibDir = path.join(import.meta.dir, "lib")
+    tsc.sys.getExecutingFilePath = () => path.join(embeddedLibDir, "typescript.js")
+}
 
 export type TypeMap = Map<number, string>
 
