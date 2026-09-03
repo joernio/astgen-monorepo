@@ -1,6 +1,6 @@
 [package]
 name = "rust_ast_gen"
-version = "0.20.0"
+version = "0.21.0"
 edition = "2024"
 
 [dependencies]
@@ -10,6 +10,7 @@ dunce = "1.0.5"
 env_logger = "0.11.10"
 ra_ap_hir = "0.0.332"
 ra_ap_ide = "0.0.332"
+ra_ap_ide_db = "0.0.332"
 ra_ap_load-cargo = "0.0.332"
 ra_ap_project_model = "0.0.332"
 ra_ap_vfs = "0.0.332"
