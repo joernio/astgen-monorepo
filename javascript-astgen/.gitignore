@@ -38,6 +38,9 @@ jspm_packages/
 dist
 build/
 
+# Staged TS lib assets used by scripts/build-binaries.ts
+.tslib-assets/
+
 # Compiled binaries (pre-rename)
 astgen-linux-x64
 astgen-linux-arm64
