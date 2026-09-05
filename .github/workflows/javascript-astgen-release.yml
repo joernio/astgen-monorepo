@@ -39,7 +39,7 @@ jobs:
       - name: Install Bun
         uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
         with:
-          bun-version: 1.4.0
+          bun-version: 1.4.2
       - name: Install ldid
         uses: MOZGIII/install-ldid-action@d5ab465f3a66a4d60a59882b935eb30e18e8d043 # v1
         with:
