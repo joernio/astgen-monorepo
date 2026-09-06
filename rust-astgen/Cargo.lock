@@ -2000,14 +2000,12 @@ dependencies = [
 
 [[package]]
 name = "rust_ast_gen"
-version = "0.21.0"
+version = "0.21.1"
 dependencies = [
  "anyhow",
- "chrono",
  "clap",
  "dunce",
  "env_logger",
- "heck",
  "log",
  "ra_ap_hir",
  "ra_ap_ide",
@@ -2016,11 +2014,10 @@ dependencies = [
  "ra_ap_project_model",
  "ra_ap_syntax",
  "ra_ap_vfs",
+ "scala_bindings_gen",
  "serde",
  "serde_json",
  "temp-dir",
- "toml 1.1.2+spec-1.1.0",
- "ungrammar",
 ]
 
 [[package]]
@@ -2129,6 +2126,20 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "93fc1dc3aaa9bfed95e02e6eadabb4baf7e3078b0bd1b4d7b6b0b68378900502"
 dependencies = [
  "winapi-util",
+]
+
+[[package]]
+name = "scala_bindings_gen"
+version = "0.21.1"
+dependencies = [
+ "anyhow",
+ "chrono",
+ "clap",
+ "heck",
+ "ra_ap_syntax",
+ "serde",
+ "toml 1.1.2+spec-1.1.0",
+ "ungrammar",
 ]
 
 [[package]]

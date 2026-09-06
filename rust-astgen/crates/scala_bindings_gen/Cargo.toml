@@ -1,0 +1,16 @@
+[package]
+name = "scala_bindings_gen"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+anyhow = "1.0.102"
+clap = { version = "4.6.0", features = ["derive"] }
+ra_ap_syntax.workspace = true
+ungrammar = "1.16.1"
+chrono = "0.4.44"
+heck = "0.5.0"
+
+[build-dependencies]
+serde = { version = "1.0", features = ["derive"] }
+toml = "1.1"
