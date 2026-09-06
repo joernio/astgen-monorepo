@@ -1,12 +1,12 @@
 use anyhow::{Context, Result};
 use clap::Parser;
 use heck::ToPascalCase;
-use rust_ast_gen::grammar::model::Model;
-use rust_ast_gen::json_kind::{
+use scala_bindings_gen::grammar::model::Model;
+use scala_bindings_gen::json_kind::{
     node_name_to_syntax_kind, syntax_kind_to_json_name, token_name_to_syntax_kind,
 };
-use rust_ast_gen::scala_gen::config::ScalaAstGenConfig;
-use rust_ast_gen::scala_gen::emitter::generate_scala;
+use scala_bindings_gen::scala_gen::config::ScalaAstGenConfig;
+use scala_bindings_gen::scala_gen::emitter::generate_scala;
 use std::collections::{HashMap, HashSet};
 use std::path::PathBuf;
 use std::str::FromStr;
@@ -29,7 +29,7 @@ fn main() -> Result<()> {
 }
 
 fn generate_bindings(include_date: bool) -> Result<String> {
-    let grammar_text = include_str!("../../rust.ungram");
+    let grammar_text = include_str!("../rust.ungram");
     let grammar = Grammar::from_str(grammar_text)?;
     let model = Model::from_ungrammar(&grammar)?;
 
