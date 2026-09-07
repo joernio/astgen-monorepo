@@ -1,6 +1,6 @@
 {
   "name": "@joernio/abapgen",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "description": "ABAP AST generator producing JSON output via @abaplint/core. CLI-only — invoke via the `abapgen` binary; programmatic imports are not supported.",
   "bin": {
     "abapgen": "./src/parse-abap.ts"

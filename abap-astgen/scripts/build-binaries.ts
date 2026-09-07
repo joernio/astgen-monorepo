@@ -30,6 +30,10 @@ const results = await Promise.allSettled(
             // and minifying identifiers mangles them (keepNames does not
             // cover bundled node_modules classes).
             minify: {whitespace: true, syntax: true},
+            // Bytecode-compiled ESM (requires Bun >= 1.4): skips source
+            // parsing at startup, ~3x faster cold start.
+            format: "esm",
+            bytecode: true,
         })
         if (!result.success) {
             const logs = result.logs.map(l => l.message).join("\n")
