@@ -70,10 +70,8 @@ jobs:
           swift sdk install https://download.swift.org/swift-6.1-release/static-sdk/swift-6.1-RELEASE/swift-6.1-RELEASE_static-linux-0.0.1.artifactbundle.tar.gz --checksum 111c6f7d280a651208b8c74c0521dd99365d785c1976a6e23162f55f65379ac6
           swift build --swift-sdk x86_64-swift-linux-musl -c release --static-swift-stdlib
           mv ./.build/release/SwiftAstGen SwiftAstGen-linux
-          gzexe SwiftAstGen-linux
           swift build --swift-sdk aarch64-swift-linux-musl -c release --static-swift-stdlib
           mv ./.build/release/SwiftAstGen SwiftAstGen-linux-arm64
-          gzexe SwiftAstGen-linux-arm64
           ./SwiftAstGen-linux -s
 
       - name: Run Mac Build
@@ -81,7 +79,6 @@ jobs:
         run: |
           xcrun --toolchain ${{ env.TOOLCHAINS }} swift build -c release --arch arm64 --arch x86_64
           mv ./.build/apple/Products/Release/SwiftAstGen SwiftAstGen-mac
-          gzexe SwiftAstGen-mac
 
       - name: Run Windows Build
         if: matrix.os == 'windows-latest'
