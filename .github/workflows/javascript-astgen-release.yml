@@ -64,12 +64,6 @@ jobs:
           mv astgen-macos-arm64 astgen-macos-arm
           mv astgen-win-x64.exe astgen-win.exe
           mv astgen-win-arm64.exe astgen-win-arm.exe
-      - name: Run gzexe
-        run: |
-          gzexe astgen-linux
-          rm astgen-linux~
-          gzexe astgen-linux-arm
-          rm astgen-linux-arm~
       - name: Print size and version
         run: |
           ls -lh ./astgen*

@@ -72,12 +72,6 @@ jobs:
           mv abapgen-macos-arm64 abapgen-macos-arm
           mv abapgen-win-x64.exe abapgen-win.exe
           mv abapgen-win-arm64.exe abapgen-win-arm.exe
-      - name: Run gzexe
-        run: |
-          gzexe abapgen-linux
-          rm abapgen-linux~
-          gzexe abapgen-linux-arm
-          rm abapgen-linux-arm~
       - name: Print size and version
         run: |
           ls -lh ./abapgen*
