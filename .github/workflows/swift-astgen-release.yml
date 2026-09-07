@@ -76,8 +76,13 @@ jobs:
 
       - name: Run Mac Build
         if: matrix.os == 'macos-latest'
+        # Plain `swift build`: setup-swift puts the requested toolchain on PATH. Do NOT use
+        # `xcrun --toolchain $TOOLCHAINS` here: setup-swift only sets TOOLCHAINS when it installs
+        # an OSS toolchain, but with prefer-oss-toolchain=false it defers to the Xcode-bundled
+        # toolchain whenever it satisfies swift-version (macos-latest now ships one), leaving
+        # TOOLCHAINS empty and the xcrun invocation broken.
         run: |
-          xcrun --toolchain ${{ env.TOOLCHAINS }} swift build -c release --arch arm64 --arch x86_64
+          swift build -c release --arch arm64 --arch x86_64
           mv ./.build/apple/Products/Release/SwiftAstGen SwiftAstGen-mac
 
       - name: Run Windows Build
