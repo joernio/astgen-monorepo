@@ -11,12 +11,11 @@ use std::env;
 use std::path::{Path, PathBuf};
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    println!("cargo:rerun-if-changed=Cargo.lock");
-    println!("cargo:rerun-if-changed=Cargo.toml");
+    println!("cargo:rerun-if-changed=../../Cargo.lock");
     println!("cargo:rerun-if-changed=rust.ungram");
 
     let manifest_dir = PathBuf::from(env::var("CARGO_MANIFEST_DIR")?);
-    let lockfile_path = manifest_dir.join("Cargo.lock");
+    let lockfile_path = manifest_dir.join("../../Cargo.lock");
     let destination_path = manifest_dir.join("rust.ungram");
 
     let ra_ap_syntax_version = resolved_ra_ap_syntax_version(&lockfile_path)?;

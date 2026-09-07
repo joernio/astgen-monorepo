@@ -1,5 +1,5 @@
 //! The generated scala bindings and the JSON ast creation must agree on
-//! [`crate::json_ast::RustAstGenJsonNode`] `node_kind` names.
+//! `rust_ast_gen::json_ast::RustAstGenJsonNode` `node_kind` names.
 //! To achieve so, they both get them from here.
 
 use heck::ToShoutySnakeCase;
