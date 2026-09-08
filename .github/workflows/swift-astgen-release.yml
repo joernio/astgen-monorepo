@@ -91,15 +91,6 @@ jobs:
           swift build -c release --arch x86_64 --static-swift-stdlib
           mv .\.build\release\SwiftAstGen.exe SwiftAstGen-win.exe
 
-      - name: Run UPX for Windows Build
-        if: matrix.os == 'windows-latest'
-        uses: crazy-max/ghaction-upx@c83f378efc804f828e988debb88ed6116feb2368 # v4.0.0
-        with:
-          version: latest
-          files: |
-            swift-astgen/SwiftAstGen-win.exe
-          args: -fq
-
       - name: Upload Linux binary
         if: matrix.os == 'ubuntu-latest'
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
