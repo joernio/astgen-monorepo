@@ -1,6 +1,6 @@
 [workspace]
-members = ["crates/scala_bindings_gen"]
-default-members = [".", "crates/scala_bindings_gen"]
+members = ["crates/rust_ast_function_fullnames", "crates/scala_bindings_gen"]
+default-members = [".", "crates/rust_ast_function_fullnames", "crates/scala_bindings_gen"]
 
 [workspace.package]
 version = "0.21.1"

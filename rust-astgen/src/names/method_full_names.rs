@@ -105,7 +105,7 @@ pub(super) fn format_impl_full_name(impl_: Impl, db: &RootDatabase) -> Option<St
     Some(format_trait_impl_full_name(&self_ty_name, &trait_name))
 }
 
-pub(crate) fn format_function_full_name(function: Function, db: &RootDatabase) -> Option<String> {
+pub fn format_function_full_name(function: Function, db: &RootDatabase) -> Option<String> {
     let Some(assoc_item) = function.as_assoc_item(db) else {
         return format_generic_module_def_full_name(
             ModuleDef::from(function),
@@ -168,10 +168,7 @@ fn format_generic_name(
     format_name_with_generic_args(base, generic_args)
 }
 
-pub(crate) fn format_tuple_struct_ctor_full_name(
-    struct_: Struct,
-    db: &RootDatabase,
-) -> Option<String> {
+pub fn format_tuple_struct_ctor_full_name(struct_: Struct, db: &RootDatabase) -> Option<String> {
     format_generic_module_def_full_name(
         ModuleDef::from(struct_),
         GenericDef::from(struct_),
@@ -180,7 +177,7 @@ pub(crate) fn format_tuple_struct_ctor_full_name(
     )
 }
 
-pub(crate) fn format_enum_variant_full_name(
+pub fn format_enum_variant_full_name(
     enum_variant: EnumVariant,
     db: &RootDatabase,
 ) -> Option<String> {

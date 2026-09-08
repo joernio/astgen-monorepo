@@ -1,7 +1,6 @@
 use anyhow::{Result, bail};
 use clap::Parser;
 use rust_ast_gen::config::RustAstGenConfig;
-use rust_ast_gen::function_fullnames_gen;
 use std::num::NonZero;
 use std::path::PathBuf;
 use std::thread::available_parallelism;
@@ -18,7 +17,7 @@ fn main() -> Result<()> {
     cli_args.validate()?;
 
     let config = config_from_args(cli_args)?;
-    function_fullnames_gen::run(&config)
+    rust_ast_function_fullnames::run(&config)
 }
 
 #[derive(Parser)]
