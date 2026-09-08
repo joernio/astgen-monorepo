@@ -71,15 +71,6 @@ jobs:
           mv .\.build\debug\SwiftAstGen.exe SwiftAstGen-win.exe
           .\SwiftAstGen-win.exe -s
 
-      - name: Run UPX for Windows Build
-        if: matrix.os == 'windows-latest'
-        uses: crazy-max/ghaction-upx@c83f378efc804f828e988debb88ed6116feb2368 # v4.0.0
-        with:
-          version: latest
-          files: |
-            swift-astgen/SwiftAstGen-win.exe
-          args: -fq
-
       - name: Run Swift Tests
         run: swift test
 
