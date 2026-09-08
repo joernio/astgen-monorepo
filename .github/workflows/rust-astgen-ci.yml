@@ -32,7 +32,32 @@ jobs:
           workspaces: rust-astgen
 
       - name: Run tests
-        run: cargo test --locked
+        run: cargo test --locked -p rust_ast_gen
+
+  rust-ci-fullnames-gen:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@6c977a6ca4077a0ceb28ffbe03f59d46e9ac8772 # v1
+        with:
+          toolchain: stable
+          components: rust-src
+
+      - name: Restore Rust cache
+        uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
+        with:
+          workspaces: rust-astgen
+
+      - name: Run tests
+        run: cargo test --locked -p rust_ast_function_fullnames
 
   rust-ci-scala:
     runs-on: ubuntu-latest
@@ -67,10 +92,13 @@ jobs:
         uses: sbt/setup-sbt@c7d2d6258b4bd0d3ec5129e6b3453199d3c79729 # v1.5.8
 
       - name: Build
-        run: cargo build --locked --bin rust_ast_gen --bin scala_bindings_gen
+        run: cargo build --locked -p rust_ast_gen -p scala_bindings_gen
+
+      - name: Run tests
+        run: cargo test --locked -p scala_bindings_gen
 
       - name: Regenerate Scala bindings
-        run: cargo run --locked --bin scala_bindings_gen -- --include-date=false --output scala_tests/src/main/scala/io/joern/rust2cpg/parser/RustNodeSyntax.scala
+        run: cargo run --locked -p scala_bindings_gen -- --include-date=false --output scala_tests/src/main/scala/io/joern/rust2cpg/parser/RustNodeSyntax.scala
 
       - name: Run Scala tests
         working-directory: rust-astgen/scala_tests
