@@ -1999,6 +1999,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "rust_ast_function_fullnames"
+version = "0.21.1"
+dependencies = [
+ "anyhow",
+ "clap",
+ "env_logger",
+ "ra_ap_hir",
+ "ra_ap_ide",
+ "rust_ast_gen",
+ "serde",
+ "serde_json",
+ "temp-dir",
+]
+
+[[package]]
 name = "rust_ast_gen"
 version = "0.21.1"
 dependencies = [

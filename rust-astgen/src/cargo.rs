@@ -10,7 +10,7 @@ use ra_ap_project_model::{
 };
 use ra_ap_vfs::{AbsPathBuf, FileId, Vfs, VfsPath};
 
-pub(crate) fn load_workspace(config: &RustAstGenConfig) -> Result<(RootDatabase, Vfs)> {
+pub fn load_workspace(config: &RustAstGenConfig) -> Result<(RootDatabase, Vfs)> {
     let load_cargo_config = LoadCargoConfig {
         load_out_dirs_from_check: false,
         with_proc_macro_server: ProcMacroServerChoice::None,
