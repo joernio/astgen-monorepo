@@ -36,3 +36,8 @@ temp-dir = "0.1.16"
 
 [profile.release]
 lto = "thin"
+
+# compiling rust-analyzer crates just with this opt-level makes debug tests run
+# much faster.
+[profile.dev.package."*"]
+opt-level = 1
