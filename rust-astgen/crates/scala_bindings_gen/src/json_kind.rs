@@ -4,10 +4,7 @@
 
 use heck::ToShoutySnakeCase;
 use ra_ap_syntax::{Edition, SyntaxKind};
-
-pub fn syntax_kind_to_json_name(kind: SyntaxKind) -> String {
-    format!("{kind:?}")
-}
+pub use rust_ast_gen::json_gen::syntax_kind_to_json_name;
 
 pub fn token_name_to_syntax_kind(token: &str) -> Option<SyntaxKind> {
     if let Some(kind) = all_kinds()

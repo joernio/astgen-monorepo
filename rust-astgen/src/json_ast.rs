@@ -2,6 +2,7 @@
 
 use crate::adjustments::{Adjustment, adjustments_for_node};
 use crate::format_args::{ImplicitFormatArg, implicit_format_args_for_node};
+use crate::json_gen::syntax_kind_to_json_name;
 use crate::names::{
     implemented_traits_for_node, method_full_name_for_node, supertraits_for_node,
     type_full_name_for_node,
@@ -12,7 +13,6 @@ use ra_ap_hir::{
 };
 use ra_ap_ide::{LineIndex, RootDatabase, TextRange};
 use ra_ap_syntax::{AstNode, NodeOrToken, SyntaxElement, SyntaxKind, SyntaxNode, SyntaxToken, ast};
-use scala_bindings_gen::json_kind::syntax_kind_to_json_name;
 use serde::Serialize;
 
 /// Per-file envelope wrapping the AST.

@@ -3,7 +3,7 @@ members = ["crates/rust_ast_function_fullnames", "crates/scala_bindings_gen"]
 default-members = ["."]
 
 [workspace.package]
-version = "0.21.2"
+version = "0.21.3"
 edition = "2024"
 
 [workspace.dependencies]
@@ -17,7 +17,6 @@ edition.workspace = true
 [dependencies]
 anyhow = "1.0.102"
 clap = { version = "4.6.0", features = ["derive"] }
-scala_bindings_gen = { path = "crates/scala_bindings_gen" }
 dunce = "1.0.5"
 env_logger = "0.11.10"
 ra_ap_hir = "0.0.332"

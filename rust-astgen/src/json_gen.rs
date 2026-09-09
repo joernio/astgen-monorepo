@@ -4,9 +4,13 @@ use anyhow::Context;
 use log::{debug, error};
 use ra_ap_hir::{Crate, Semantics, attach_db, db::DefDatabase};
 use ra_ap_ide::{Analysis, AnalysisHost, RootDatabase};
-use ra_ap_syntax::{AstNode, SyntaxNode};
+use ra_ap_syntax::{AstNode, SyntaxKind, SyntaxNode};
 use ra_ap_vfs::{FileId, VfsPath};
 use std::path::Path;
+
+pub fn syntax_kind_to_json_name(kind: SyntaxKind) -> String {
+    format!("{kind:?}")
+}
 
 fn write_json_to_file(json_tree: &str, output_file: &Path) -> anyhow::Result<()> {
     let output_parent = output_file.parent().with_context(|| {
