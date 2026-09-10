@@ -119,10 +119,10 @@ fn terminal_path_expr(path: &ast::Path) -> Option<ast::PathExpr> {
     path.syntax().parent().and_then(ast::PathExpr::cast)
 }
 
-pub(super) fn format_path_resolution_type_full_name<'db>(
+pub(super) fn format_path_resolution_type_full_name(
     resolution: PathResolution,
     path: &ast::Path,
-    semantics: &Semantics<'db, RootDatabase>,
+    semantics: &Semantics<RootDatabase>,
 ) -> Option<String> {
     let module = semantics.scope(path.syntax())?.module();
     match resolution {
@@ -159,11 +159,11 @@ pub(super) fn format_path_resolution_type_full_name<'db>(
     }
 }
 
-fn format_type_alias_type_full_name<'db>(
+fn format_type_alias_type_full_name(
     type_alias: TypeAlias,
     path: &ast::Path,
     module: Module,
-    semantics: &Semantics<'db, RootDatabase>,
+    semantics: &Semantics<RootDatabase>,
 ) -> Option<String> {
     if let Some(normalized) = type_formatter::normalize_assoc_type(path, type_alias, semantics) {
         return type_formatter::format_type(&normalized, module, semantics.db);
@@ -184,22 +184,22 @@ fn format_type_alias_full_name(type_alias: TypeAlias, db: &RootDatabase) -> Opti
     Some(format_member_full_name(&trait_name, &name))
 }
 
-fn format_module_def_type_full_name<'db>(
+fn format_module_def_type_full_name(
     def: ModuleDef,
     path: &ast::Path,
     module: Module,
-    db: &'db RootDatabase,
-    semantics: &Semantics<'db, RootDatabase>,
+    db: &RootDatabase,
+    semantics: &Semantics<RootDatabase>,
 ) -> Option<String> {
     let base = format_module_def_full_name(def, db)?;
     let generic_args = generic_args_for_path(path, module, semantics);
     Some(format_name_with_generic_args(base, generic_args))
 }
 
-fn generic_args_for_path<'db>(
+fn generic_args_for_path(
     path: &ast::Path,
     module: Module,
-    semantics: &Semantics<'db, RootDatabase>,
+    semantics: &Semantics<RootDatabase>,
 ) -> Vec<String> {
     let Some(arg_list) = path
         .segment()
@@ -273,10 +273,10 @@ fn resolve_const_param_name(
     }
 }
 
-fn format_node_type_full_name<'db>(
+fn format_node_type_full_name(
     typ: Type,
     node: &SyntaxNode,
-    semantics: &Semantics<'db, RootDatabase>,
+    semantics: &Semantics<RootDatabase>,
 ) -> Option<String> {
     let module = semantics.scope(node)?.module();
     type_formatter::format_type(&typ, module, semantics.db)
