@@ -3,7 +3,7 @@ members = ["crates/rust_ast_function_fullnames", "crates/scala_bindings_gen"]
 default-members = ["."]
 
 [workspace.package]
-version = "0.21.3"
+version = "0.21.4"
 edition = "2024"
 
 [workspace.dependencies]
