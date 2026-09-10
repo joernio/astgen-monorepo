@@ -4,7 +4,7 @@ mod trait_full_names;
 pub(crate) mod type_formatter;
 mod type_full_names;
 
-pub use method_full_names::{
+pub use rust_name_formatter::{
     format_enum_variant_full_name, format_function_full_name, format_tuple_struct_ctor_full_name,
 };
 
