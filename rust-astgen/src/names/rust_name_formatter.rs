@@ -4,7 +4,7 @@
 //! naming conventions for generics and traits.
 
 use super::method_full_names::format_function_full_name;
-use ra_ap_hir::{GenericDef, InFile, Module, ModuleDef, ModuleSource, Name, Semantics};
+use ra_ap_hir::{Crate, GenericDef, InFile, Module, ModuleDef, ModuleSource, Name, Semantics};
 use ra_ap_ide::RootDatabase;
 use ra_ap_syntax::{AstNode, SyntaxNode, ast};
 
@@ -26,9 +26,23 @@ fn format_module_member_full_name(
     db: &RootDatabase,
 ) -> Option<String> {
     let krate = module.krate(db);
-    let crate_name = super::crate_name(krate, db)?;
+    let crate_name = crate_name(krate, db)?;
     let canonical_path = def.canonical_path(db, krate.edition(db))?;
     Some(format_member_full_name(&crate_name, &canonical_path))
+}
+
+pub(crate) fn crate_name(krate: Crate, db: &RootDatabase) -> Option<String> {
+    let display_name = krate.display_name(db)?.to_string();
+
+    // Build scripts are named `build_script` regardless of the crate they belong to.
+    // So, prefix it with the crate name to disambiguate.
+    if display_name.starts_with("build_script_")
+        && let Some(package_name) = krate.base().env(db).get("CARGO_PKG_NAME")
+    {
+        return Some(format!("{}_build_script", package_name.replace("-", "_")));
+    }
+
+    Some(display_name)
 }
 
 fn block_local_full_name(
