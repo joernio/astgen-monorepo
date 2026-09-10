@@ -1,16 +1,9 @@
 //! Where we finally build `methodFullName` for each call.
 
-use super::{
-    rust_name_formatter::{
-        format_generic_args_for_def, format_item_name, format_member_full_name,
-        format_module_def_full_name, format_name_with_generic_args, format_trait_impl_full_name,
-    },
-    type_formatter,
+use super::rust_name_formatter::{
+    format_enum_variant_full_name, format_function_full_name, format_tuple_struct_ctor_full_name,
 };
-use ra_ap_hir::{
-    AsAssocItem, AssocItemContainer, CallableKind, EnumVariant, Function, GenericDef, Impl, Module,
-    ModuleDef, Name, PathResolution, Semantics, Struct, TraitRef,
-};
+use ra_ap_hir::{CallableKind, ModuleDef, PathResolution, Semantics};
 use ra_ap_ide::RootDatabase;
 use ra_ap_syntax::{AstNode, SyntaxNode, ast, match_ast};
 
@@ -27,6 +20,19 @@ pub(crate) fn method_full_name_for_node(
             ast::PathExpr(path_expr) => resolve_path_expr_full_name(&path_expr, semantics),
             _ => None,
         }
+    }
+}
+
+/// Whether a `CallExpr`'s first argument is a `self` receiver.
+pub(crate) fn has_self_receiver_for_node(
+    node: &SyntaxNode,
+    semantics: &Semantics<RootDatabase>,
+) -> Option<bool> {
+    let call_expr = ast::CallExpr::cast(node.clone())?;
+    let callee = call_expr.expr()?;
+    match semantics.resolve_expr_as_callable(&callee)?.kind() {
+        CallableKind::Function(function) if function.has_self_param(semantics.db) => Some(true),
+        _ => None,
     }
 }
 
@@ -91,119 +97,4 @@ fn resolve_struct_ctor_full_name(
 fn resolve_fn_def_full_name(fn_: &ast::Fn, semantics: &Semantics<RootDatabase>) -> Option<String> {
     let function = semantics.to_def(fn_)?;
     format_function_full_name(function, semantics.db)
-}
-
-pub(super) fn format_impl_full_name(impl_: Impl, db: &RootDatabase) -> Option<String> {
-    let self_ty_name = type_formatter::format_impl_self_ty(impl_, impl_.module(db), db)?;
-    let Some(trait_ref) = impl_.trait_ref(db) else {
-        return Some(self_ty_name);
-    };
-    let trait_name = format_trait_ref_full_name(trait_ref, impl_.module(db), db)?;
-    Some(format_trait_impl_full_name(&self_ty_name, &trait_name))
-}
-
-pub fn format_function_full_name(function: Function, db: &RootDatabase) -> Option<String> {
-    let Some(assoc_item) = function.as_assoc_item(db) else {
-        return format_generic_module_def_full_name(
-            ModuleDef::from(function),
-            GenericDef::from(function),
-            function.module(db),
-            db,
-        );
-    };
-
-    let method_name = format_generic_item_name(
-        function.name(db),
-        GenericDef::from(function),
-        function.module(db),
-        db,
-    );
-    match assoc_item.container(db) {
-        AssocItemContainer::Impl(impl_) => Some(format_member_full_name(
-            &format_impl_full_name(impl_, db)?,
-            &method_name,
-        )),
-        AssocItemContainer::Trait(trait_) => {
-            let trait_name = format_generic_module_def_full_name(
-                ModuleDef::from(trait_),
-                GenericDef::from(trait_),
-                trait_.module(db),
-                db,
-            )?;
-            Some(format_member_full_name(&trait_name, &method_name))
-        }
-    }
-}
-
-pub(super) fn format_generic_module_def_full_name(
-    def: ModuleDef,
-    generic_def: GenericDef,
-    module: Module,
-    db: &RootDatabase,
-) -> Option<String> {
-    let base = format_module_def_full_name(def, db)?;
-    Some(format_generic_name(base, generic_def, module, db))
-}
-
-fn format_generic_item_name(
-    name: Name,
-    generic_def: GenericDef,
-    module: Module,
-    db: &RootDatabase,
-) -> String {
-    let base = format_item_name(name, module, db);
-    format_generic_name(base, generic_def, module, db)
-}
-
-fn format_generic_name(
-    base: String,
-    generic_def: GenericDef,
-    module: Module,
-    db: &RootDatabase,
-) -> String {
-    let generic_args = format_generic_args_for_def(generic_def, module, db);
-    format_name_with_generic_args(base, generic_args)
-}
-
-pub fn format_tuple_struct_ctor_full_name(struct_: Struct, db: &RootDatabase) -> Option<String> {
-    format_generic_module_def_full_name(
-        ModuleDef::from(struct_),
-        GenericDef::from(struct_),
-        struct_.module(db),
-        db,
-    )
-}
-
-pub fn format_enum_variant_full_name(
-    enum_variant: EnumVariant,
-    db: &RootDatabase,
-) -> Option<String> {
-    let enum_ = enum_variant.parent_enum(db);
-    let enum_name = format_generic_module_def_full_name(
-        ModuleDef::from(enum_),
-        GenericDef::from(enum_),
-        enum_.module(db),
-        db,
-    )?;
-    let variant_name = format_item_name(enum_variant.name(db), enum_variant.module(db), db);
-    Some(format_member_full_name(&enum_name, &variant_name))
-}
-
-fn format_trait_ref_full_name<'db>(
-    trait_ref: TraitRef<'db>,
-    module: Module,
-    db: &'db RootDatabase,
-) -> Option<String> {
-    let trait_ = trait_ref.trait_();
-    let base = format_module_def_full_name(ModuleDef::from(trait_), db)?;
-    let arg_count = trait_.type_or_const_param_count(db, false);
-    // Self is 0, type args are 1+
-    let generic_args = (1..=arg_count)
-        .map(|idx| {
-            let arg = trait_ref.get_type_argument(idx)?;
-            type_formatter::format_type(&arg.to_type(db), module, db)
-        })
-        .collect::<Option<Vec<_>>>()?;
-
-    Some(format_name_with_generic_args(base, generic_args))
 }

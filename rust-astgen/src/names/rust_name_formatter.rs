@@ -3,8 +3,11 @@
 //! Essentially, uses `::` for separators, and follows the same
 //! naming conventions for generics and traits.
 
-use super::method_full_names::format_function_full_name;
-use ra_ap_hir::{GenericDef, InFile, Module, ModuleDef, ModuleSource, Name, Semantics};
+use super::type_formatter;
+use ra_ap_hir::{
+    AsAssocItem, AssocItemContainer, Crate, EnumVariant, Function, GenericDef, Impl, InFile,
+    Module, ModuleDef, ModuleSource, Name, Semantics, Struct, TraitRef, TypeAlias,
+};
 use ra_ap_ide::RootDatabase;
 use ra_ap_syntax::{AstNode, SyntaxNode, ast};
 
@@ -26,9 +29,23 @@ fn format_module_member_full_name(
     db: &RootDatabase,
 ) -> Option<String> {
     let krate = module.krate(db);
-    let crate_name = super::crate_name(krate, db)?;
+    let crate_name = crate_name(krate, db)?;
     let canonical_path = def.canonical_path(db, krate.edition(db))?;
     Some(format_member_full_name(&crate_name, &canonical_path))
+}
+
+pub(crate) fn crate_name(krate: Crate, db: &RootDatabase) -> Option<String> {
+    let display_name = krate.display_name(db)?.to_string();
+
+    // Build scripts are named `build_script` regardless of the crate they belong to.
+    // So, prefix it with the crate name to disambiguate.
+    if display_name.starts_with("build_script_")
+        && let Some(package_name) = krate.base().env(db).get("CARGO_PKG_NAME")
+    {
+        return Some(format!("{}_build_script", package_name.replace("-", "_")));
+    }
+
+    Some(display_name)
 }
 
 fn block_local_full_name(
@@ -171,7 +188,7 @@ pub(crate) fn format_name_with_generic_args(base: String, generic_args: Vec<Stri
     }
 }
 
-pub(super) fn format_generic_args_for_def(
+fn format_generic_args_for_def(
     generic_def: GenericDef,
     module: Module,
     db: &RootDatabase,
@@ -192,4 +209,118 @@ pub(super) fn format_generic_args_for_def(
     }
 
     args
+}
+
+pub(super) fn format_impl_full_name(impl_: Impl, db: &RootDatabase) -> Option<String> {
+    let self_ty_name = type_formatter::format_impl_self_ty(impl_, impl_.module(db), db)?;
+    let Some(trait_ref) = impl_.trait_ref(db) else {
+        return Some(self_ty_name);
+    };
+    let trait_name = format_trait_ref_full_name(trait_ref, impl_.module(db), db)?;
+    Some(format_trait_impl_full_name(&self_ty_name, &trait_name))
+}
+
+pub fn format_function_full_name(function: Function, db: &RootDatabase) -> Option<String> {
+    let Some(assoc_item) = function.as_assoc_item(db) else {
+        return format_generic_module_def_full_name(function, db);
+    };
+
+    let method_name = format_generic_item_name(
+        function.name(db),
+        GenericDef::from(function),
+        function.module(db),
+        db,
+    );
+    match assoc_item.container(db) {
+        AssocItemContainer::Impl(impl_) => Some(format_member_full_name(
+            &format_impl_full_name(impl_, db)?,
+            &method_name,
+        )),
+        AssocItemContainer::Trait(trait_) => {
+            let trait_name = format_generic_module_def_full_name(trait_, db)?;
+            Some(format_member_full_name(&trait_name, &method_name))
+        }
+    }
+}
+
+pub(super) fn format_generic_module_def_full_name<D>(def: D, db: &RootDatabase) -> Option<String>
+where
+    D: Into<ModuleDef> + Into<GenericDef> + Copy,
+{
+    let generic_def: GenericDef = def.into();
+    let module_def: ModuleDef = def.into();
+    let base = format_module_def_full_name(module_def, db)?;
+    Some(format_generic_name(
+        base,
+        generic_def,
+        generic_def.module(db),
+        db,
+    ))
+}
+
+fn format_generic_item_name(
+    name: Name,
+    generic_def: GenericDef,
+    module: Module,
+    db: &RootDatabase,
+) -> String {
+    let base = format_item_name(name, module, db);
+    format_generic_name(base, generic_def, module, db)
+}
+
+fn format_generic_name(
+    base: String,
+    generic_def: GenericDef,
+    module: Module,
+    db: &RootDatabase,
+) -> String {
+    let generic_args = format_generic_args_for_def(generic_def, module, db);
+    format_name_with_generic_args(base, generic_args)
+}
+
+pub fn format_tuple_struct_ctor_full_name(struct_: Struct, db: &RootDatabase) -> Option<String> {
+    format_generic_module_def_full_name(struct_, db)
+}
+
+pub fn format_enum_variant_full_name(
+    enum_variant: EnumVariant,
+    db: &RootDatabase,
+) -> Option<String> {
+    let enum_ = enum_variant.parent_enum(db);
+    let enum_name = format_generic_module_def_full_name(enum_, db)?;
+    let variant_name = format_item_name(enum_variant.name(db), enum_variant.module(db), db);
+    Some(format_member_full_name(&enum_name, &variant_name))
+}
+
+fn format_trait_ref_full_name<'db>(
+    trait_ref: TraitRef<'db>,
+    module: Module,
+    db: &'db RootDatabase,
+) -> Option<String> {
+    let trait_ = trait_ref.trait_();
+    let base = format_module_def_full_name(ModuleDef::from(trait_), db)?;
+    let arg_count = trait_.type_or_const_param_count(db, false);
+    // Self is 0, type args are 1+
+    let generic_args = (1..=arg_count)
+        .map(|idx| {
+            let arg = trait_ref.get_type_argument(idx)?;
+            type_formatter::format_type(&arg.to_type(db), module, db)
+        })
+        .collect::<Option<Vec<_>>>()?;
+
+    Some(format_name_with_generic_args(base, generic_args))
+}
+
+pub(super) fn format_type_alias_full_name(
+    type_alias: TypeAlias,
+    db: &RootDatabase,
+) -> Option<String> {
+    let Some(AssocItemContainer::Trait(trait_)) =
+        type_alias.as_assoc_item(db).map(|item| item.container(db))
+    else {
+        return format_module_def_full_name(ModuleDef::from(type_alias), db);
+    };
+    let trait_name = format_module_def_full_name(ModuleDef::from(trait_), db)?;
+    let name = format_item_name(type_alias.name(db), type_alias.module(db), db);
+    Some(format_member_full_name(&trait_name, &name))
 }

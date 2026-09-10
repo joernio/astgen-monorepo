@@ -5,7 +5,7 @@
 //! `display_source_code` do not emit fully qualified paths.
 
 use super::rust_name_formatter::{
-    format_generic_args_for_def, format_item_name, format_module_def_full_name,
+    format_generic_module_def_full_name, format_item_name, format_module_def_full_name,
     format_name_with_generic_args,
 };
 use ra_ap_hir::{
@@ -120,10 +120,7 @@ impl<'db> TypeFormatter<'db> {
     }
 
     fn format_trait_self(&self, trait_: Trait) -> Option<String> {
-        let base = format_module_def_full_name(ModuleDef::from(trait_), self.db)?;
-        let args =
-            format_generic_args_for_def(GenericDef::from(trait_), trait_.module(self.db), self.db);
-        Some(format_name_with_generic_args(base, args))
+        format_generic_module_def_full_name(trait_, self.db)
     }
 
     fn format_reference(&self, inner: &Type, mutability: Mutability) -> Option<String> {
