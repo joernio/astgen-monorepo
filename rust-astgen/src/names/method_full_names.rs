@@ -30,6 +30,19 @@ pub(crate) fn method_full_name_for_node(
     }
 }
 
+/// Whether a `CallExpr`'s first argument is a `self` receiver.
+pub(crate) fn has_self_receiver_for_node(
+    node: &SyntaxNode,
+    semantics: &Semantics<RootDatabase>,
+) -> Option<bool> {
+    let call_expr = ast::CallExpr::cast(node.clone())?;
+    let callee = call_expr.expr()?;
+    match semantics.resolve_expr_as_callable(&callee)?.kind() {
+        CallableKind::Function(function) if function.has_self_param(semantics.db) => Some(true),
+        _ => None,
+    }
+}
+
 fn resolve_method_call_expr_full_name(
     method_call_expr: &ast::MethodCallExpr,
     semantics: &Semantics<RootDatabase>,
