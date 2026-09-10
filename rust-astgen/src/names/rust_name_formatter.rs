@@ -248,7 +248,8 @@ where
     D: Into<ModuleDef> + Into<GenericDef> + Copy,
 {
     let generic_def: GenericDef = def.into();
-    let base = format_module_def_full_name(def.into(), db)?;
+    let module_def: ModuleDef = def.into();
+    let base = format_module_def_full_name(module_def, db)?;
     Some(format_generic_name(
         base,
         generic_def,
