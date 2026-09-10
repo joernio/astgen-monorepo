@@ -30,17 +30,17 @@ pub(crate) fn method_full_name_for_node(
     }
 }
 
-fn resolve_method_call_expr_full_name<'db>(
+fn resolve_method_call_expr_full_name(
     method_call_expr: &ast::MethodCallExpr,
-    semantics: &Semantics<'db, RootDatabase>,
+    semantics: &Semantics<RootDatabase>,
 ) -> Option<String> {
     let function = semantics.resolve_method_call(method_call_expr)?;
     format_function_full_name(function, semantics.db)
 }
 
-fn resolve_path_expr_full_name<'db>(
+fn resolve_path_expr_full_name(
     path_expr: &ast::PathExpr,
-    semantics: &Semantics<'db, RootDatabase>,
+    semantics: &Semantics<RootDatabase>,
 ) -> Option<String> {
     let path = path_expr.path()?;
     match semantics.resolve_path(&path)? {
@@ -49,9 +49,9 @@ fn resolve_path_expr_full_name<'db>(
     }
 }
 
-fn resolve_call_expr_full_name<'db>(
+fn resolve_call_expr_full_name(
     call_expr: &ast::CallExpr,
-    semantics: &Semantics<'db, RootDatabase>,
+    semantics: &Semantics<RootDatabase>,
 ) -> Option<String> {
     let callee_expr = call_expr.expr()?;
     if let ast::Expr::PathExpr(path_expr) = &callee_expr
@@ -72,9 +72,9 @@ fn resolve_call_expr_full_name<'db>(
     }
 }
 
-fn resolve_struct_ctor_full_name<'db>(
+fn resolve_struct_ctor_full_name(
     struct_: &ast::Struct,
-    semantics: &Semantics<'db, RootDatabase>,
+    semantics: &Semantics<RootDatabase>,
 ) -> Option<String> {
     // We provide a `methodFullName` at struct definition to match its constructor name.
     // Only tuple structs have a callable constructor. Record/Unit structs have RecordExpr
@@ -88,10 +88,7 @@ fn resolve_struct_ctor_full_name<'db>(
     format_tuple_struct_ctor_full_name(struct_def, semantics.db)
 }
 
-fn resolve_fn_def_full_name<'db>(
-    fn_: &ast::Fn,
-    semantics: &Semantics<'db, RootDatabase>,
-) -> Option<String> {
+fn resolve_fn_def_full_name(fn_: &ast::Fn, semantics: &Semantics<RootDatabase>) -> Option<String> {
     let function = semantics.to_def(fn_)?;
     format_function_full_name(function, semantics.db)
 }
