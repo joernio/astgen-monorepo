@@ -173,7 +173,7 @@ impl<'db> TypeFormatter<'db> {
         Some(format!("{prefix} {}", self.format(inner)?))
     }
 
-    fn format_fn(&self, callable: Callable<'db>) -> Option<String> {
+    fn format_fn(&self, callable: Callable) -> Option<String> {
         let params = callable
             .params()
             .into_iter()

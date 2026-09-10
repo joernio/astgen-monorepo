@@ -292,10 +292,10 @@ pub fn format_enum_variant_full_name(
     Some(format_member_full_name(&enum_name, &variant_name))
 }
 
-fn format_trait_ref_full_name<'db>(
-    trait_ref: TraitRef<'db>,
+fn format_trait_ref_full_name(
+    trait_ref: TraitRef,
     module: Module,
-    db: &'db RootDatabase,
+    db: & RootDatabase,
 ) -> Option<String> {
     let trait_ = trait_ref.trait_();
     let base = format_module_def_full_name(ModuleDef::from(trait_), db)?;

@@ -56,10 +56,10 @@ pub(crate) fn adjustments_for_node(
     Some(adjustments)
 }
 
-fn convert_adjustment<'db>(
-    step: &ra_ap_hir::Adjustment<'db>,
+fn convert_adjustment(
+    step: &ra_ap_hir::Adjustment,
     module: Module,
-    db: &'db RootDatabase,
+    db: &RootDatabase,
 ) -> Option<Adjustment> {
     let source = type_formatter::format_type(&step.source, module, db)?;
     let target = type_formatter::format_type(&step.target, module, db)?;
@@ -78,11 +78,11 @@ fn convert_adjustment<'db>(
     Some(adjust)
 }
 
-fn overloaded_deref_method_full_name<'db>(
-    source: &Type<'db>,
+fn overloaded_deref_method_full_name(
+    source: &Type,
     mutability: Mutability,
     module: Module,
-    db: &'db RootDatabase,
+    db: &RootDatabase,
 ) -> Option<String> {
     let resolved = resolve_deref_method(source, mutability, module, db);
     if resolved.is_none() && source.as_type_param(db).is_none() {
@@ -91,11 +91,11 @@ fn overloaded_deref_method_full_name<'db>(
     resolved
 }
 
-fn resolve_deref_method<'db>(
-    source: &Type<'db>,
+fn resolve_deref_method(
+    source: &Type,
     mutability: Mutability,
     module: Module,
-    db: &'db RootDatabase,
+    db: &RootDatabase,
 ) -> Option<String> {
     let lang_item = match mutability {
         Mutability::Mut => LangItem::DerefMut,
