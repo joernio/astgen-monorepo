@@ -8,7 +8,7 @@ use super::{
     },
     type_formatter,
 };
-use ra_ap_hir::{GenericDef, Module, ModuleDef, PathResolution, Semantics, Type, TypeAlias};
+use ra_ap_hir::{Module, ModuleDef, PathResolution, Semantics, Type, TypeAlias};
 use ra_ap_ide::RootDatabase;
 use ra_ap_syntax::{AstNode, SyntaxNode, ast, ast::HasGenericArgs, match_ast};
 
@@ -35,12 +35,7 @@ fn resolve_enum_type_full_name(
     semantics: &Semantics<RootDatabase>,
 ) -> Option<String> {
     let enum_def = semantics.to_def(enum_)?;
-    format_generic_module_def_full_name(
-        ModuleDef::from(enum_def),
-        GenericDef::from(enum_def),
-        enum_def.module(semantics.db),
-        semantics.db,
-    )
+    format_generic_module_def_full_name(enum_def, semantics.db)
 }
 
 fn resolve_struct_type_full_name(
@@ -48,12 +43,7 @@ fn resolve_struct_type_full_name(
     semantics: &Semantics<RootDatabase>,
 ) -> Option<String> {
     let struct_def = semantics.to_def(struct_)?;
-    format_generic_module_def_full_name(
-        ModuleDef::from(struct_def),
-        GenericDef::from(struct_def),
-        struct_def.module(semantics.db),
-        semantics.db,
-    )
+    format_generic_module_def_full_name(struct_def, semantics.db)
 }
 
 fn resolve_impl_type_full_name(

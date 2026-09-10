@@ -188,7 +188,7 @@ pub(crate) fn format_name_with_generic_args(base: String, generic_args: Vec<Stri
     }
 }
 
-pub(super) fn format_generic_args_for_def(
+fn format_generic_args_for_def(
     generic_def: GenericDef,
     module: Module,
     db: &RootDatabase,
@@ -222,12 +222,7 @@ pub(super) fn format_impl_full_name(impl_: Impl, db: &RootDatabase) -> Option<St
 
 pub fn format_function_full_name(function: Function, db: &RootDatabase) -> Option<String> {
     let Some(assoc_item) = function.as_assoc_item(db) else {
-        return format_generic_module_def_full_name(
-            ModuleDef::from(function),
-            GenericDef::from(function),
-            function.module(db),
-            db,
-        );
+        return format_generic_module_def_full_name(function, db);
     };
 
     let method_name = format_generic_item_name(
@@ -242,25 +237,24 @@ pub fn format_function_full_name(function: Function, db: &RootDatabase) -> Optio
             &method_name,
         )),
         AssocItemContainer::Trait(trait_) => {
-            let trait_name = format_generic_module_def_full_name(
-                ModuleDef::from(trait_),
-                GenericDef::from(trait_),
-                trait_.module(db),
-                db,
-            )?;
+            let trait_name = format_generic_module_def_full_name(trait_, db)?;
             Some(format_member_full_name(&trait_name, &method_name))
         }
     }
 }
 
-pub(super) fn format_generic_module_def_full_name(
-    def: ModuleDef,
-    generic_def: GenericDef,
-    module: Module,
-    db: &RootDatabase,
-) -> Option<String> {
-    let base = format_module_def_full_name(def, db)?;
-    Some(format_generic_name(base, generic_def, module, db))
+pub(super) fn format_generic_module_def_full_name<D>(def: D, db: &RootDatabase) -> Option<String>
+where
+    D: Into<ModuleDef> + Into<GenericDef> + Copy,
+{
+    let generic_def: GenericDef = def.into();
+    let base = format_module_def_full_name(def.into(), db)?;
+    Some(format_generic_name(
+        base,
+        generic_def,
+        generic_def.module(db),
+        db,
+    ))
 }
 
 fn format_generic_item_name(
@@ -284,12 +278,7 @@ fn format_generic_name(
 }
 
 pub fn format_tuple_struct_ctor_full_name(struct_: Struct, db: &RootDatabase) -> Option<String> {
-    format_generic_module_def_full_name(
-        ModuleDef::from(struct_),
-        GenericDef::from(struct_),
-        struct_.module(db),
-        db,
-    )
+    format_generic_module_def_full_name(struct_, db)
 }
 
 pub fn format_enum_variant_full_name(
@@ -297,12 +286,7 @@ pub fn format_enum_variant_full_name(
     db: &RootDatabase,
 ) -> Option<String> {
     let enum_ = enum_variant.parent_enum(db);
-    let enum_name = format_generic_module_def_full_name(
-        ModuleDef::from(enum_),
-        GenericDef::from(enum_),
-        enum_.module(db),
-        db,
-    )?;
+    let enum_name = format_generic_module_def_full_name(enum_, db)?;
     let variant_name = format_item_name(enum_variant.name(db), enum_variant.module(db), db);
     Some(format_member_full_name(&enum_name, &variant_name))
 }
