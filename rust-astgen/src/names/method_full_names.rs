@@ -4,7 +4,7 @@ use super::rust_name_formatter::{
     format_enum_variant_full_name, format_function_full_name, format_tuple_struct_ctor_full_name,
 };
 use ra_ap_hir::{CallableKind, ModuleDef, PathResolution, Semantics};
-use ra_ap_ide::RootDatabase;
+use ra_ap_ide_db::RootDatabase;
 use ra_ap_syntax::ast;
 
 /// Whether a `CallExpr`'s first argument is a `self` receiver.

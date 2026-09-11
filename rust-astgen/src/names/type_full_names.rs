@@ -9,7 +9,7 @@ use super::{
     type_formatter,
 };
 use ra_ap_hir::{Module, ModuleDef, PathResolution, Semantics, Type, TypeAlias};
-use ra_ap_ide::RootDatabase;
+use ra_ap_ide_db::RootDatabase;
 use ra_ap_syntax::{AstNode, SyntaxNode, ast, ast::HasGenericArgs};
 
 pub(crate) fn resolve_enum_type_full_name(

@@ -2,7 +2,7 @@ use ra_ap_hir::{ModuleDef, PathResolution, Semantics};
 use std::ops::Range;
 
 use crate::names::type_formatter;
-use ra_ap_ide::RootDatabase;
+use ra_ap_ide_db::RootDatabase;
 use ra_ap_syntax::{AstNode, AstToken, ast};
 
 pub(crate) struct ImplicitFormatArg {

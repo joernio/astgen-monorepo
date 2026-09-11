@@ -3,7 +3,7 @@ use crate::{cargo, config};
 use anyhow::Context;
 use log::{debug, error};
 use ra_ap_hir::{Crate, Semantics, attach_db, db::DefDatabase};
-use ra_ap_ide::{Analysis, AnalysisHost, RootDatabase};
+use ra_ap_ide_db::RootDatabase;
 use ra_ap_syntax::{AstNode, SyntaxKind, SyntaxNode};
 use ra_ap_vfs::{FileId, VfsPath};
 use std::path::Path;
@@ -32,22 +32,21 @@ fn write_json_to_file(json_tree: &str, output_file: &Path) -> anyhow::Result<()>
 }
 
 pub fn run(config: &config::RustAstGenConfig) -> anyhow::Result<()> {
-    let (analysis_host, input_rust_files) = load_inputs(config)?;
-    process_inputs(&analysis_host, input_rust_files, config);
+    let (root_db, input_rust_files) = load_inputs(config)?;
+    process_inputs(&root_db, input_rust_files, config);
     Ok(())
 }
 
 fn load_inputs(
     config: &config::RustAstGenConfig,
-) -> anyhow::Result<(AnalysisHost, Vec<(FileId, VfsPath)>)> {
+) -> anyhow::Result<(RootDatabase, Vec<(FileId, VfsPath)>)> {
     let (root_db, vfs) = cargo::load_workspace(config)?;
-    let analysis_host = AnalysisHost::with_database(root_db);
     let input_rust_files = cargo::collect_input_files(config, &vfs)?;
-    Ok((analysis_host, input_rust_files))
+    Ok((root_db, input_rust_files))
 }
 
 fn process_inputs(
-    analysis_host: &AnalysisHost,
+    root_db: &RootDatabase,
     input_rust_files: Vec<(FileId, VfsPath)>,
     config: &config::RustAstGenConfig,
 ) {
@@ -58,17 +57,15 @@ fn process_inputs(
 
     std::thread::scope(|scope| {
         for files in input_rust_files.chunks(files_per_worker) {
-            let analysis = analysis_host.analysis();
-            let root_db = analysis_host.raw_database().to_owned();
+            let root_db = root_db.clone();
 
-            scope.spawn(move || process_files(files, analysis, root_db, config));
+            scope.spawn(move || process_files(files, root_db, config));
         }
     });
 }
 
 fn process_files(
     input_rust_files: &[(FileId, VfsPath)],
-    analysis: Analysis,
     root_db: RootDatabase,
     config: &config::RustAstGenConfig,
 ) {
@@ -80,9 +77,7 @@ fn process_files(
             let input_file_path = file_vfs_path.as_path().map(AsRef::<Path>::as_ref);
 
             let file_result = if let Some(input_file_path) = input_file_path {
-                if let Err(e) =
-                    process_file(*file_id, input_file_path, &analysis, &semantics, config)
-                {
+                if let Err(e) = process_file(*file_id, input_file_path, &semantics, config) {
                     error!("{e}");
                     None
                 } else {
@@ -105,7 +100,6 @@ fn process_files(
 fn process_file(
     file_id: FileId,
     input_file_path: &Path,
-    analysis: &Analysis,
     semantics: &Semantics<RootDatabase>,
     config: &config::RustAstGenConfig,
 ) -> anyhow::Result<()> {
@@ -126,7 +120,7 @@ fn process_file(
         return Ok(());
     }
 
-    let file_line_index = analysis.file_line_index(file_id)?;
+    let file_line_index = ra_ap_ide_db::line_index(semantics.db, file_id);
 
     debug!("building the JSON tree: {}", input_file_path.display());
 
@@ -135,7 +129,7 @@ fn process_file(
     let json_root = RustAstGenJsonNode::from_node(
         syntax_tree,
         hir_file_id,
-        &file_line_index,
+        file_line_index,
         semantics,
         target_crate,
         cfg_options,

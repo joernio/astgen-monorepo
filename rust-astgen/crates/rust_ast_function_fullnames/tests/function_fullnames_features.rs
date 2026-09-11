@@ -2,7 +2,7 @@ mod common;
 
 use crate::common::TestResult;
 use ra_ap_hir::{Crate, attach_db};
-use ra_ap_ide::RootDatabase;
+use ra_ap_ide_db::RootDatabase;
 use rust_ast_function_fullnames::{
     FunctionFullNameEntry, load_sysroot_workspace, module_full_names, modules_in_crate,
     unique_by_method_full_name, workspace_root_modules_rc,

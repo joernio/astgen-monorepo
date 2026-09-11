@@ -3,7 +3,7 @@ use ra_ap_hir::{
     Adt, AsAssocItem, AssocItem, AssocItemContainer, Crate, Enum, EnumVariant, Function, HasAttrs,
     HasVisibility, Impl, Module, ModuleDef, StructKind, Trait, attach_db,
 };
-use ra_ap_ide::RootDatabase;
+use ra_ap_ide_db::RootDatabase;
 use rust_ast_gen::names::{
     format_enum_variant_full_name, format_function_full_name, format_tuple_struct_ctor_full_name,
 };
