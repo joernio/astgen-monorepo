@@ -10,6 +10,7 @@ use scala_bindings_gen::scala_gen::emitter::generate_scala;
 use std::collections::{HashMap, HashSet};
 use std::path::PathBuf;
 use std::str::FromStr;
+use time::{OffsetDateTime, format_description};
 use ungrammar::Grammar;
 
 fn main() -> Result<()> {
@@ -34,11 +35,13 @@ fn generate_bindings(include_date: bool) -> Result<String> {
     let model = Model::from_ungrammar(&grammar)?;
 
     let codegen_version = env!("CARGO_PKG_VERSION").to_string();
-    let codegen_date = include_date.then(|| {
-        chrono::Local::now()
-            .format("%d %B %Y, %H:%M:%S %Z")
-            .to_string()
-    });
+    let codegen_date = include_date
+        .then(|| -> Result<String> {
+            let format =
+                format_description::parse("[year]-[month]-[day] [hour]:[minute]:[second] UTC")?;
+            Ok(OffsetDateTime::now_utc().format(&format)?)
+        })
+        .transpose()?;
     let package_name = "io.joern.rust2cpg.parser".to_string();
     let object_name = "RustNodeSyntax".to_string();
     let base_node_trait = "RustNode".to_string();
