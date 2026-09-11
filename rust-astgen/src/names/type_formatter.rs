@@ -16,33 +16,38 @@ use ra_ap_ide::RootDatabase;
 use ra_ap_ide_db::famous_defs::FamousDefs;
 use ra_ap_syntax::ast;
 
-pub(crate) fn format_type(typ: &Type, module: Module, db: &RootDatabase) -> Option<String> {
-    TypeFormatter::new(module, db).format(typ)
+pub(crate) fn format_type(
+    typ: &Type,
+    module: Module,
+    semantics: &Semantics<RootDatabase>,
+) -> Option<String> {
+    TypeFormatter::new(module, semantics).format(typ)
 }
 
 pub(crate) fn format_impl_self_ty(
     impl_: Impl,
     module: Module,
-    db: &RootDatabase,
+    semantics: &Semantics<RootDatabase>,
 ) -> Option<String> {
-    let self_ty = impl_.self_ty(db);
-    let self_ty_is_associated_type = self_ty.as_associated_type_parent_trait(db).is_some();
+    let self_ty = impl_.self_ty(semantics.db);
+    let self_ty_is_associated_type = self_ty
+        .as_associated_type_parent_trait(semantics.db)
+        .is_some();
     if !self_ty_is_associated_type {
-        return format_type(&self_ty, module, db);
+        return format_type(&self_ty, module, semantics);
     }
 
-    let semantics = Semantics::new(db);
     if let Some(source) = semantics.source(impl_)
         && let Some(ast::Type::PathType(path_type)) = source.value.self_ty()
         && let Some(path) = path_type.path()
         && let Some(PathResolution::Def(ModuleDef::TypeAlias(assoc_type))) =
             semantics.resolve_path(&path)
-        && let Some(normalized) = normalize_assoc_type(&path, assoc_type, &semantics)
+        && let Some(normalized) = normalize_assoc_type(&path, assoc_type, semantics)
     {
-        return format_type(&normalized, module, db);
+        return format_type(&normalized, module, semantics);
     }
 
-    format_type(&self_ty, module, db)
+    format_type(&self_ty, module, semantics)
 }
 
 pub(super) fn normalize_assoc_type<'db>(
@@ -60,18 +65,18 @@ pub(super) fn normalize_assoc_type<'db>(
         .then_some(normalized)
 }
 
-struct TypeFormatter<'db> {
+struct TypeFormatter<'a, 'db> {
     module: Module,
-    db: &'db RootDatabase,
+    semantics: &'a Semantics<'db, RootDatabase>,
     display_target: DisplayTarget,
 }
 
-impl<'db> TypeFormatter<'db> {
-    fn new(module: Module, db: &'db RootDatabase) -> Self {
-        let display_target = module.krate(db).to_display_target(db);
+impl<'a, 'db> TypeFormatter<'a, 'db> {
+    fn new(module: Module, semantics: &'a Semantics<'db, RootDatabase>) -> Self {
+        let display_target = module.krate(semantics.db).to_display_target(semantics.db);
         Self {
             module,
-            db,
+            semantics,
             display_target,
         }
     }
@@ -87,9 +92,9 @@ impl<'db> TypeFormatter<'db> {
             return self.format_adt(adt, hir_args, typ);
         }
         if typ.is_tuple() {
-            return self.format_tuple(typ.tuple_fields(self.db));
+            return self.format_tuple(typ.tuple_fields(self.semantics.db));
         }
-        if let Some((inner, len)) = typ.as_array(self.db) {
+        if let Some((inner, len)) = typ.as_array(self.semantics.db) {
             return self.format_array(&inner, len);
         }
         if let Some(inner) = typ.as_slice() {
@@ -99,20 +104,20 @@ impl<'db> TypeFormatter<'db> {
             return self.format_raw_ptr(&inner, mutability);
         }
         if typ.is_fn()
-            && let Some(callable) = typ.as_callable(self.db)
+            && let Some(callable) = typ.as_callable(self.semantics.db)
         {
             return self.format_fn(callable);
         }
-        if let Some(traits) = typ.as_impl_traits(self.db) {
+        if let Some(traits) = typ.as_impl_traits(self.semantics.db) {
             return self.format_impl_trait(typ, traits);
         }
         if let Some(trait_) = typ.as_dyn_trait() {
             return self.format_dyn_trait(typ, trait_);
         }
         // Replace implicit `Self` with the trait's name.
-        if let Some(type_param) = typ.as_type_param(self.db)
-            && type_param.is_implicit(self.db)
-            && let GenericDef::Trait(trait_) = type_param.parent(self.db)
+        if let Some(type_param) = typ.as_type_param(self.semantics.db)
+            && type_param.is_implicit(self.semantics.db)
+            && let GenericDef::Trait(trait_) = type_param.parent(self.semantics.db)
         {
             return self.format_trait_self(trait_);
         }
@@ -120,7 +125,7 @@ impl<'db> TypeFormatter<'db> {
     }
 
     fn format_trait_self(&self, trait_: Trait) -> Option<String> {
-        format_generic_module_def_full_name(trait_, self.db)
+        format_generic_module_def_full_name(trait_, self.semantics)
     }
 
     fn format_reference(&self, inner: &Type, mutability: Mutability) -> Option<String> {
@@ -132,9 +137,9 @@ impl<'db> TypeFormatter<'db> {
     }
 
     fn format_adt(&self, adt: Adt, hir_args: Vec<Option<Type>>, typ: &Type) -> Option<String> {
-        let base = format_module_def_full_name(ModuleDef::from(adt), self.db)?;
+        let base = format_module_def_full_name(ModuleDef::from(adt), self.semantics)?;
         let generic_args = typ
-            .generic_parameters(self.db, self.display_target)
+            .generic_parameters(self.semantics.db, self.display_target)
             .zip(hir_args)
             .map(|(display_arg, hir_arg)| {
                 hir_arg
@@ -173,7 +178,7 @@ impl<'db> TypeFormatter<'db> {
         Some(format!("{prefix} {}", self.format(inner)?))
     }
 
-    fn format_fn(&self, callable: Callable<'db>) -> Option<String> {
+    fn format_fn(&self, callable: Callable) -> Option<String> {
         let params = callable
             .params()
             .into_iter()
@@ -191,19 +196,20 @@ impl<'db> TypeFormatter<'db> {
     }
 
     fn format_trait_bound(&self, typ: &Type, trait_: Trait) -> Option<String> {
-        let base = format_module_def_full_name(ModuleDef::from(trait_), self.db)?;
+        let base = format_module_def_full_name(ModuleDef::from(trait_), self.semantics)?;
         let bindings = trait_
-            .items(self.db)
+            .items(self.semantics.db)
             .into_iter()
             .filter_map(|item| match item {
                 AssocItem::TypeAlias(alias) => {
-                    let value = typ.normalize_trait_assoc_type(self.db, &[], alias)?;
+                    let value = typ.normalize_trait_assoc_type(self.semantics.db, &[], alias)?;
                     Some((alias, value))
                 }
                 _ => None,
             })
             .map(|(alias, value)| {
-                let name = format_item_name(alias.name(self.db), self.module, self.db);
+                let name =
+                    format_item_name(alias.name(self.semantics.db), self.module, self.semantics);
                 Some(format!("{name} = {}", self.format(&value)?))
             })
             .collect::<Option<Vec<_>>>()?;
@@ -219,27 +225,31 @@ impl<'db> TypeFormatter<'db> {
     fn format_auto_trait_bounds(&self, typ: &Type) -> Vec<String> {
         let mut bounds = self
             .core_auto_traits()
-            .filter(|trait_| typ.impls_trait(self.db, *trait_, &[]))
-            .filter_map(|trait_| format_module_def_full_name(ModuleDef::from(trait_), self.db))
+            .filter(|trait_| typ.impls_trait(self.semantics.db, *trait_, &[]))
+            .filter_map(|trait_| {
+                format_module_def_full_name(ModuleDef::from(trait_), self.semantics)
+            })
             .collect::<Vec<_>>();
         bounds.sort();
         bounds
     }
 
     fn core_auto_traits(&self) -> impl Iterator<Item = Trait> {
-        let semantics = Semantics::new(self.db);
-        let core = FamousDefs(&semantics, self.module.krate(self.db)).core();
+        let core = FamousDefs(self.semantics, self.module.krate(self.semantics.db)).core();
         core.into_iter()
-            .flat_map(|core| core.modules(self.db))
-            .flat_map(|module| module.declarations(self.db))
+            .flat_map(|core| core.modules(self.semantics.db))
+            .flat_map(|module| module.declarations(self.semantics.db))
             .filter_map(|def| match def {
-                ModuleDef::Trait(trait_) if trait_.is_auto(self.db) => Some(trait_),
+                ModuleDef::Trait(trait_) if trait_.is_auto(self.semantics.db) => Some(trait_),
                 _ => None,
             })
     }
 
     fn format_fallback(&self, typ: &Type) -> String {
-        typ.display_source_code(self.db, self.module.into(), true)
-            .unwrap_or_else(|_| typ.display(self.db, self.display_target).to_string())
+        typ.display_source_code(self.semantics.db, self.module.into(), true)
+            .unwrap_or_else(|_| {
+                typ.display(self.semantics.db, self.display_target)
+                    .to_string()
+            })
     }
 }

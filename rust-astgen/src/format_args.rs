@@ -3,18 +3,17 @@ use std::ops::Range;
 
 use crate::names::type_formatter;
 use ra_ap_ide::RootDatabase;
-use ra_ap_syntax::{AstNode, AstToken, SyntaxNode, ast};
+use ra_ap_syntax::{AstNode, AstToken, ast};
 
 pub(crate) struct ImplicitFormatArg {
     pub(crate) name: String,
     pub(crate) type_full_name: Option<String>,
 }
 
-pub(crate) fn implicit_format_args_for_node(
-    node: &SyntaxNode,
+pub(crate) fn implicit_format_args(
+    format_args_expr: &ast::FormatArgsExpr,
     semantics: &Semantics<RootDatabase>,
 ) -> Option<Vec<ImplicitFormatArg>> {
-    let format_args_expr = ast::FormatArgsExpr::cast(node.clone())?;
     let ast::Expr::Literal(template) = format_args_expr.template()? else {
         return None;
     };
@@ -28,7 +27,7 @@ pub(crate) fn implicit_format_args_for_node(
         .map(|arg_name| arg_name.name().text().to_owned())
         .collect();
 
-    let module = semantics.scope(node)?.module();
+    let module = semantics.scope(format_args_expr.syntax())?.module();
     let literal_start = string.syntax().text_range().start();
     let literal_text = string.syntax().text();
 
@@ -48,7 +47,7 @@ pub(crate) fn implicit_format_args_for_node(
                 PathResolution::Def(ModuleDef::Static(statik)) => statik.ty(semantics.db),
                 _ => return None,
             };
-            type_formatter::format_type(&typ, module, semantics.db)
+            type_formatter::format_type(&typ, module, semantics)
         });
 
         captures.push(ImplicitFormatArg {
