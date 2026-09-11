@@ -1,16 +1,16 @@
 //! The actual JSON shape we emit per Rust source file.
 
-use crate::adjustments::{Adjustment, adjustments_for_node};
-use crate::format_args::{ImplicitFormatArg, implicit_format_args_for_node};
+use crate::adjustments::{self, Adjustment};
+use crate::format_args::{self, ImplicitFormatArg};
 use crate::json_gen::syntax_kind_to_json_name;
-use crate::names::method_full_names::{has_self_receiver_for_node, method_full_name_for_node};
-use crate::names::trait_full_names::{implemented_traits_for_node, supertraits_for_node};
-use crate::names::type_full_names::type_full_name_for_node;
+use crate::names::{method_full_names, trait_full_names, type_full_names};
 use ra_ap_hir::{
     CfgExpr, CfgOptions, Crate, HirFileId, Semantics, db::ExpandDatabase, prettify_macro_expansion,
 };
 use ra_ap_ide::{LineIndex, RootDatabase, TextRange};
-use ra_ap_syntax::{AstNode, NodeOrToken, SyntaxElement, SyntaxKind, SyntaxNode, SyntaxToken, ast};
+use ra_ap_syntax::{
+    AstNode, NodeOrToken, SyntaxElement, SyntaxKind, SyntaxNode, SyntaxToken, ast, match_ast,
+};
 use serde::Serialize;
 
 /// Per-file envelope wrapping the AST.
@@ -116,27 +116,79 @@ impl RustAstGenJsonNode {
         let node_kind = syntax_kind_to_json_name(node.kind());
         let range = Self::make_range(node.text_range(), hir_file_id, line_index);
         let text = macro_text(node, hir_file_id, semantics, target_crate);
-        let method_full_name = method_full_name_for_node(node, semantics);
-        let type_full_name = type_full_name_for_node(node, semantics);
-        let implemented_traits = implemented_traits_for_node(node, semantics);
-        let supertraits = supertraits_for_node(node, semantics);
-        let adjustments = adjustments_for_node(node, semantics);
-        let has_self_receiver = has_self_receiver_for_node(node, semantics);
-
-        let macro_expansion = ast::MacroCall::cast(node.clone())
-            .and_then(|macro_call| semantics.expand_macro_call(&macro_call))
-            .filter(|expanded| expansion_has_no_errors(expanded.file_id, semantics))
-            .map(|expanded| {
-                Self::from_node(
-                    &expanded.value,
-                    expanded.file_id,
-                    line_index,
-                    semantics,
-                    target_crate,
-                    cfg_options,
-                )
-                .into()
-            });
+        let method_full_name = match_ast! {
+            match node {
+                ast::CallExpr(it) => method_full_names::resolve_call_expr_full_name(&it, semantics),
+                ast::MethodCallExpr(it) => method_full_names::resolve_method_call_expr_full_name(&it, semantics),
+                ast::PathExpr(it) => method_full_names::resolve_path_expr_full_name(&it, semantics),
+                ast::Struct(it) => method_full_names::resolve_struct_ctor_full_name(&it, semantics),
+                ast::Fn(it) => method_full_names::resolve_fn_def_full_name(&it, semantics),
+                _ => None,
+            }
+        };
+        let type_full_name = match_ast! {
+            match node {
+                ast::Expr(it) => type_full_names::resolve_expr_type_full_name(&it, semantics),
+                ast::Enum(it) => type_full_names::resolve_enum_type_full_name(&it, semantics),
+                ast::Struct(it) => type_full_names::resolve_struct_type_full_name(&it, semantics),
+                ast::Impl(it) => type_full_names::resolve_impl_type_full_name(&it, semantics),
+                ast::IdentPat(it) => type_full_names::resolve_ident_pat_type_full_name(&it, semantics),
+                ast::SelfParam(it) => type_full_names::resolve_self_param_type_full_name(&it, semantics),
+                ast::NameRef(it) => type_full_names::resolve_name_ref_type_full_name(&it, semantics),
+                _ => None,
+            }
+        };
+        let implemented_traits = match_ast! {
+            match node {
+                ast::Struct(it) => trait_full_names::implemented_traits_for_struct(&it, semantics),
+                ast::Enum(it) => trait_full_names::implemented_traits_for_enum(&it, semantics),
+                _ => None,
+            }
+        };
+        let supertraits = match_ast! {
+            match node {
+                ast::Trait(it) => trait_full_names::supertraits(&it, semantics),
+                _ => None,
+            }
+        };
+        let adjustments = match_ast! {
+            match node {
+                ast::Expr(it) => adjustments::adjustments_for_expr(&it, semantics),
+                _ => None,
+            }
+        };
+        let has_self_receiver = match_ast! {
+            match node {
+                ast::CallExpr(it) => method_full_names::has_self_receiver(&it, semantics),
+                _ => None,
+            }
+        };
+        let implicit_format_args = match_ast! {
+            match node {
+                ast::FormatArgsExpr(it) => format_args::implicit_format_args(&it, semantics),
+                _ => None,
+            }
+        }
+        .unwrap_or_default();
+        let macro_expansion = match_ast! {
+            match node {
+                ast::MacroCall(it) => semantics
+                    .expand_macro_call(&it)
+                    .filter(|expanded| expansion_has_no_errors(expanded.file_id, semantics))
+                    .map(|expanded| {
+                        Self::from_node(
+                            &expanded.value,
+                            expanded.file_id,
+                            line_index,
+                            semantics,
+                            target_crate,
+                            cfg_options,
+                        )
+                        .into()
+                    }),
+                _ => None,
+            }
+        };
 
         let mut children: Vec<_> = node
             .children_with_tokens()
@@ -157,7 +209,7 @@ impl RustAstGenJsonNode {
             })
             .collect();
 
-        for capture in implicit_format_args_for_node(node, semantics).unwrap_or_default() {
+        for capture in implicit_format_args {
             children.push(mk_format_args_arg(capture));
         }
 

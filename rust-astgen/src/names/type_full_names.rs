@@ -10,27 +10,9 @@ use super::{
 };
 use ra_ap_hir::{Module, ModuleDef, PathResolution, Semantics, Type, TypeAlias};
 use ra_ap_ide::RootDatabase;
-use ra_ap_syntax::{AstNode, SyntaxNode, ast, ast::HasGenericArgs, match_ast};
+use ra_ap_syntax::{AstNode, SyntaxNode, ast, ast::HasGenericArgs};
 
-pub(crate) fn type_full_name_for_node(
-    node: &SyntaxNode,
-    semantics: &Semantics<RootDatabase>,
-) -> Option<String> {
-    match_ast! {
-        match node {
-            ast::Enum(enum_) => resolve_enum_type_full_name(&enum_, semantics),
-            ast::Expr(expr) => resolve_expr_type_full_name(&expr, semantics),
-            ast::IdentPat(ident_pat) => resolve_ident_pat_type_full_name(&ident_pat, semantics),
-            ast::Impl(impl_) => resolve_impl_type_full_name(&impl_, semantics),
-            ast::NameRef(name_ref) => resolve_name_ref_type_full_name(&name_ref, semantics),
-            ast::SelfParam(self_param) => resolve_self_param_type_full_name(&self_param, semantics),
-            ast::Struct(struct_) => resolve_struct_type_full_name(&struct_, semantics),
-            _ => None,
-        }
-    }
-}
-
-fn resolve_enum_type_full_name(
+pub(crate) fn resolve_enum_type_full_name(
     enum_: &ast::Enum,
     semantics: &Semantics<RootDatabase>,
 ) -> Option<String> {
@@ -38,7 +20,7 @@ fn resolve_enum_type_full_name(
     format_generic_module_def_full_name(enum_def, semantics)
 }
 
-fn resolve_struct_type_full_name(
+pub(crate) fn resolve_struct_type_full_name(
     struct_: &ast::Struct,
     semantics: &Semantics<RootDatabase>,
 ) -> Option<String> {
@@ -46,14 +28,14 @@ fn resolve_struct_type_full_name(
     format_generic_module_def_full_name(struct_def, semantics)
 }
 
-fn resolve_impl_type_full_name(
+pub(crate) fn resolve_impl_type_full_name(
     impl_: &ast::Impl,
     semantics: &Semantics<RootDatabase>,
 ) -> Option<String> {
     format_impl_full_name(semantics.to_def(impl_)?, semantics)
 }
 
-fn resolve_expr_type_full_name(
+pub(crate) fn resolve_expr_type_full_name(
     expr: &ast::Expr,
     semantics: &Semantics<RootDatabase>,
 ) -> Option<String> {
@@ -61,7 +43,7 @@ fn resolve_expr_type_full_name(
     format_node_type_full_name(typ, expr.syntax(), semantics)
 }
 
-fn resolve_ident_pat_type_full_name(
+pub(crate) fn resolve_ident_pat_type_full_name(
     ident_pat: &ast::IdentPat,
     semantics: &Semantics<RootDatabase>,
 ) -> Option<String> {
@@ -69,7 +51,7 @@ fn resolve_ident_pat_type_full_name(
     format_node_type_full_name(typ, ident_pat.syntax(), semantics)
 }
 
-fn resolve_self_param_type_full_name(
+pub(crate) fn resolve_self_param_type_full_name(
     self_param: &ast::SelfParam,
     semantics: &Semantics<RootDatabase>,
 ) -> Option<String> {
@@ -77,7 +59,7 @@ fn resolve_self_param_type_full_name(
     format_node_type_full_name(typ, self_param.syntax(), semantics)
 }
 
-fn resolve_name_ref_type_full_name(
+pub(crate) fn resolve_name_ref_type_full_name(
     name_ref: &ast::NameRef,
     semantics: &Semantics<RootDatabase>,
 ) -> Option<String> {

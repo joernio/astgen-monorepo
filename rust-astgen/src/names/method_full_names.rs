@@ -5,30 +5,13 @@ use super::rust_name_formatter::{
 };
 use ra_ap_hir::{CallableKind, ModuleDef, PathResolution, Semantics};
 use ra_ap_ide::RootDatabase;
-use ra_ap_syntax::{AstNode, SyntaxNode, ast, match_ast};
-
-pub(crate) fn method_full_name_for_node(
-    node: &SyntaxNode,
-    semantics: &Semantics<RootDatabase>,
-) -> Option<String> {
-    match_ast! {
-        match node {
-            ast::CallExpr(call_expr) => resolve_call_expr_full_name(&call_expr, semantics),
-            ast::MethodCallExpr(method_call_expr) => resolve_method_call_expr_full_name(&method_call_expr, semantics),
-            ast::Struct(struct_) => resolve_struct_ctor_full_name(&struct_, semantics),
-            ast::Fn(fn_) => resolve_fn_def_full_name(&fn_, semantics),
-            ast::PathExpr(path_expr) => resolve_path_expr_full_name(&path_expr, semantics),
-            _ => None,
-        }
-    }
-}
+use ra_ap_syntax::ast;
 
 /// Whether a `CallExpr`'s first argument is a `self` receiver.
-pub(crate) fn has_self_receiver_for_node(
-    node: &SyntaxNode,
+pub(crate) fn has_self_receiver(
+    call_expr: &ast::CallExpr,
     semantics: &Semantics<RootDatabase>,
 ) -> Option<bool> {
-    let call_expr = ast::CallExpr::cast(node.clone())?;
     let callee = call_expr.expr()?;
     match semantics.resolve_expr_as_callable(&callee)?.kind() {
         CallableKind::Function(function) if function.has_self_param(semantics.db) => Some(true),
@@ -36,7 +19,7 @@ pub(crate) fn has_self_receiver_for_node(
     }
 }
 
-fn resolve_method_call_expr_full_name(
+pub(crate) fn resolve_method_call_expr_full_name(
     method_call_expr: &ast::MethodCallExpr,
     semantics: &Semantics<RootDatabase>,
 ) -> Option<String> {
@@ -44,7 +27,7 @@ fn resolve_method_call_expr_full_name(
     format_function_full_name(function, semantics)
 }
 
-fn resolve_path_expr_full_name(
+pub(crate) fn resolve_path_expr_full_name(
     path_expr: &ast::PathExpr,
     semantics: &Semantics<RootDatabase>,
 ) -> Option<String> {
@@ -55,7 +38,7 @@ fn resolve_path_expr_full_name(
     }
 }
 
-fn resolve_call_expr_full_name(
+pub(crate) fn resolve_call_expr_full_name(
     call_expr: &ast::CallExpr,
     semantics: &Semantics<RootDatabase>,
 ) -> Option<String> {
@@ -78,7 +61,7 @@ fn resolve_call_expr_full_name(
     }
 }
 
-fn resolve_struct_ctor_full_name(
+pub(crate) fn resolve_struct_ctor_full_name(
     struct_: &ast::Struct,
     semantics: &Semantics<RootDatabase>,
 ) -> Option<String> {
@@ -94,7 +77,10 @@ fn resolve_struct_ctor_full_name(
     format_tuple_struct_ctor_full_name(struct_def, semantics)
 }
 
-fn resolve_fn_def_full_name(fn_: &ast::Fn, semantics: &Semantics<RootDatabase>) -> Option<String> {
+pub(crate) fn resolve_fn_def_full_name(
+    fn_: &ast::Fn,
+    semantics: &Semantics<RootDatabase>,
+) -> Option<String> {
     let function = semantics.to_def(fn_)?;
     format_function_full_name(function, semantics)
 }

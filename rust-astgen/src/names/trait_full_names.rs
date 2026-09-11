@@ -8,22 +8,32 @@ use super::{
 };
 use ra_ap_hir::{Adt, GenericDef, Impl, Module, ModuleDef, PathResolution, Semantics, TraitRef};
 use ra_ap_ide::RootDatabase;
-use ra_ap_syntax::{AstNode, SyntaxNode, ast, ast::HasTypeBounds, match_ast};
+use ra_ap_syntax::{AstNode, SyntaxNode, ast, ast::HasTypeBounds};
 
 // NB: This is approximate (cf. all_for_type's doc). In particular, `impl<T> Trait for T` are
 // excluded, as well as compiler marker traits (Send, Sync, Unpin, UnwindSafe, etc.), and
 // negative impls (no use for them).
-pub(crate) fn implemented_traits_for_node(
+pub(crate) fn implemented_traits_for_struct(
+    struct_: &ast::Struct,
+    semantics: &Semantics<RootDatabase>,
+) -> Option<Vec<String>> {
+    let adt = Adt::from(semantics.to_def(struct_)?);
+    implemented_traits(adt, struct_.syntax(), semantics)
+}
+
+pub(crate) fn implemented_traits_for_enum(
+    enum_: &ast::Enum,
+    semantics: &Semantics<RootDatabase>,
+) -> Option<Vec<String>> {
+    let adt = Adt::from(semantics.to_def(enum_)?);
+    implemented_traits(adt, enum_.syntax(), semantics)
+}
+
+fn implemented_traits(
+    adt: Adt,
     node: &SyntaxNode,
     semantics: &Semantics<RootDatabase>,
 ) -> Option<Vec<String>> {
-    let adt = match_ast! {
-        match node {
-            ast::Struct(struct_) => Some(Adt::from(semantics.to_def(&struct_)?)),
-            ast::Enum(enum_) => Some(Adt::from(semantics.to_def(&enum_)?)),
-            _ => None,
-        }
-    }?;
     let module = semantics.scope(node)?.module();
 
     let mut names: Vec<String> = Impl::all_for_type(semantics.db, adt.ty(semantics.db))
@@ -39,11 +49,10 @@ pub(crate) fn implemented_traits_for_node(
 }
 
 // TODO: `where Self: Tr` is in essence also a supertrait, but not currently handled.
-pub(crate) fn supertraits_for_node(
-    node: &SyntaxNode,
+pub(crate) fn supertraits(
+    trait_decl: &ast::Trait,
     semantics: &Semantics<RootDatabase>,
 ) -> Option<Vec<String>> {
-    let trait_decl = ast::Trait::cast(node.clone())?;
     let mut names: Vec<String> = trait_decl
         .type_bound_list()?
         .bounds()

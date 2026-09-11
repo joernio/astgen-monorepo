@@ -7,7 +7,7 @@ use crate::names::type_formatter;
 use log::debug;
 use ra_ap_hir::{Adjust, AssocItem, Impl, LangItem, Module, Mutability, Semantics, Trait, Type};
 use ra_ap_ide::RootDatabase;
-use ra_ap_syntax::{AstNode, SyntaxNode, ast};
+use ra_ap_syntax::{AstNode, ast};
 use serde::Serialize;
 
 #[derive(Serialize)]
@@ -38,13 +38,12 @@ pub(crate) enum Adjustment {
     },
 }
 
-pub(crate) fn adjustments_for_node(
-    node: &SyntaxNode,
+pub(crate) fn adjustments_for_expr(
+    expr: &ast::Expr,
     semantics: &Semantics<RootDatabase>,
 ) -> Option<Vec<Adjustment>> {
-    let expr = ast::Expr::cast(node.clone())?;
-    let steps = semantics.expr_adjustments(&expr)?;
-    let module = semantics.scope(node)?.module();
+    let steps = semantics.expr_adjustments(expr)?;
+    let module = semantics.scope(expr.syntax())?.module();
     let mut adjustments = Vec::with_capacity(steps.len());
     for (index, step) in steps.into_iter().enumerate() {
         let Some(adjustment) = convert_adjustment(&step, module, semantics) else {
