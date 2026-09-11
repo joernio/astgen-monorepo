@@ -12,7 +12,7 @@ use ra_ap_hir::{
     Adt, AssocItem, Callable, DisplayTarget, GenericDef, HirDisplay, Impl, Module, ModuleDef,
     Mutability, PathResolution, Semantics, Trait, Type, TypeAlias,
 };
-use ra_ap_ide::RootDatabase;
+use ra_ap_ide_db::RootDatabase;
 use ra_ap_ide_db::famous_defs::FamousDefs;
 use ra_ap_syntax::ast;
 

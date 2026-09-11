@@ -5,7 +5,7 @@ pub(crate) mod type_formatter;
 pub(crate) mod type_full_names;
 
 use ra_ap_hir::{EnumVariant, Function, Semantics, Struct};
-use ra_ap_ide::RootDatabase;
+use ra_ap_ide_db::RootDatabase;
 
 // TODO(xavierp): Only here so we don't touch rust_ast_function_fullnames yet. Remove later.
 pub fn format_function_full_name(function: Function, db: &RootDatabase) -> Option<String> {

@@ -6,7 +6,7 @@ use crate::names::rust_name_formatter::format_function_full_name;
 use crate::names::type_formatter;
 use log::debug;
 use ra_ap_hir::{Adjust, AssocItem, Impl, LangItem, Module, Mutability, Semantics, Trait, Type};
-use ra_ap_ide::RootDatabase;
+use ra_ap_ide_db::RootDatabase;
 use ra_ap_syntax::{AstNode, ast};
 use serde::Serialize;
 

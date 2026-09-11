@@ -8,7 +8,7 @@ use ra_ap_hir::{
     AsAssocItem, AssocItemContainer, Crate, EnumVariant, Function, GenericDef, Impl, InFile,
     Module, ModuleDef, ModuleSource, Name, Semantics, Struct, TraitRef, TypeAlias,
 };
-use ra_ap_ide::RootDatabase;
+use ra_ap_ide_db::RootDatabase;
 use ra_ap_syntax::{AstNode, SyntaxNode, ast};
 
 pub(crate) const PATH_SEPARATOR: &str = "::";

@@ -1,7 +1,7 @@
 use crate::config::RustAstGenConfig;
 use anyhow::{Context, Result};
 use log::{error, info};
-use ra_ap_ide::RootDatabase;
+use ra_ap_ide_db::RootDatabase;
 use ra_ap_load_cargo::{
     LoadCargoConfig, ProcMacroServerChoice, load_workspace as load_workspace_into_db,
 };

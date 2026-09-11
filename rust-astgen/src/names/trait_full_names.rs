@@ -7,7 +7,7 @@ use super::{
     type_full_names::format_path_resolution_type_full_name,
 };
 use ra_ap_hir::{Adt, GenericDef, Impl, Module, ModuleDef, PathResolution, Semantics, TraitRef};
-use ra_ap_ide::RootDatabase;
+use ra_ap_ide_db::RootDatabase;
 use ra_ap_syntax::{AstNode, SyntaxNode, ast, ast::HasTypeBounds};
 
 // NB: This is approximate (cf. all_for_type's doc). In particular, `impl<T> Trait for T` are

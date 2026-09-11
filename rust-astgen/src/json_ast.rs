@@ -7,9 +7,11 @@ use crate::names::{method_full_names, trait_full_names, type_full_names};
 use ra_ap_hir::{
     CfgExpr, CfgOptions, Crate, HirFileId, Semantics, db::ExpandDatabase, prettify_macro_expansion,
 };
-use ra_ap_ide::{LineIndex, RootDatabase, TextRange};
+use ra_ap_ide_db::RootDatabase;
+use ra_ap_ide_db::line_index::LineIndex;
 use ra_ap_syntax::{
-    AstNode, NodeOrToken, SyntaxElement, SyntaxKind, SyntaxNode, SyntaxToken, ast, match_ast,
+    AstNode, NodeOrToken, SyntaxElement, SyntaxKind, SyntaxNode, SyntaxToken, TextRange, ast,
+    match_ast,
 };
 use serde::Serialize;
 
