@@ -3,10 +3,9 @@
 use crate::adjustments::{Adjustment, adjustments_for_node};
 use crate::format_args::{ImplicitFormatArg, implicit_format_args_for_node};
 use crate::json_gen::syntax_kind_to_json_name;
-use crate::names::{
-    has_self_receiver_for_node, implemented_traits_for_node, method_full_name_for_node,
-    supertraits_for_node, type_full_name_for_node,
-};
+use crate::names::method_full_names::{has_self_receiver_for_node, method_full_name_for_node};
+use crate::names::trait_full_names::{implemented_traits_for_node, supertraits_for_node};
+use crate::names::type_full_names::type_full_name_for_node;
 use ra_ap_hir::{
     CfgExpr, CfgOptions, Crate, HirFileId, Semantics, db::ExpandDatabase, prettify_macro_expansion,
 };

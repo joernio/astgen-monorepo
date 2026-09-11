@@ -178,15 +178,15 @@ pub(crate) fn format_item_name(
     .to_string()
 }
 
-pub(crate) fn format_member_full_name(parent: &str, member: &str) -> String {
+fn format_member_full_name(parent: &str, member: &str) -> String {
     format!("{parent}{PATH_SEPARATOR}{member}")
 }
 
-pub(crate) fn format_disambiguated_full_name(name: &str, disambiguator: usize) -> String {
+fn format_disambiguated_full_name(name: &str, disambiguator: usize) -> String {
     format!("{name}{DISAMBIGUATOR_SEPARATOR}{disambiguator}")
 }
 
-pub(crate) fn format_trait_impl_full_name(impl_ty: &str, trait_name: &str) -> String {
+fn format_trait_impl_full_name(impl_ty: &str, trait_name: &str) -> String {
     format!("<{impl_ty} as {trait_name}>")
 }
 
