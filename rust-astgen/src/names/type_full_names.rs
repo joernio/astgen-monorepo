@@ -35,7 +35,7 @@ fn resolve_enum_type_full_name(
     semantics: &Semantics<RootDatabase>,
 ) -> Option<String> {
     let enum_def = semantics.to_def(enum_)?;
-    format_generic_module_def_full_name(enum_def, semantics.db)
+    format_generic_module_def_full_name(enum_def, semantics)
 }
 
 fn resolve_struct_type_full_name(
@@ -43,14 +43,14 @@ fn resolve_struct_type_full_name(
     semantics: &Semantics<RootDatabase>,
 ) -> Option<String> {
     let struct_def = semantics.to_def(struct_)?;
-    format_generic_module_def_full_name(struct_def, semantics.db)
+    format_generic_module_def_full_name(struct_def, semantics)
 }
 
 fn resolve_impl_type_full_name(
     impl_: &ast::Impl,
     semantics: &Semantics<RootDatabase>,
 ) -> Option<String> {
-    format_impl_full_name(semantics.to_def(impl_)?, semantics.db)
+    format_impl_full_name(semantics.to_def(impl_)?, semantics)
 }
 
 fn resolve_expr_type_full_name(
@@ -111,34 +111,26 @@ pub(super) fn format_path_resolution_type_full_name(
 ) -> Option<String> {
     let module = semantics.scope(path.syntax())?.module();
     match resolution {
-        PathResolution::Def(ModuleDef::Adt(adt)) => format_module_def_type_full_name(
-            ModuleDef::from(adt),
-            path,
-            module,
-            semantics.db,
-            semantics,
-        ),
+        PathResolution::Def(ModuleDef::Adt(adt)) => {
+            format_module_def_type_full_name(ModuleDef::from(adt), path, module, semantics)
+        }
         PathResolution::Def(ModuleDef::EnumVariant(enum_variant)) => {
-            format_enum_variant_full_name(enum_variant, semantics.db)
+            format_enum_variant_full_name(enum_variant, semantics)
         }
         PathResolution::Def(ModuleDef::TypeAlias(type_alias)) => {
             format_type_alias_type_full_name(type_alias, path, module, semantics)
         }
-        PathResolution::Def(ModuleDef::Trait(trait_)) => format_module_def_type_full_name(
-            ModuleDef::from(trait_),
-            path,
-            module,
-            semantics.db,
-            semantics,
-        ),
+        PathResolution::Def(ModuleDef::Trait(trait_)) => {
+            format_module_def_type_full_name(ModuleDef::from(trait_), path, module, semantics)
+        }
         PathResolution::Def(ModuleDef::BuiltinType(builtin)) => {
-            type_formatter::format_type(&builtin.ty(semantics.db), module, semantics.db)
+            type_formatter::format_type(&builtin.ty(semantics.db), module, semantics)
         }
         PathResolution::TypeParam(type_param) => {
-            type_formatter::format_type(&type_param.ty(semantics.db), module, semantics.db)
+            type_formatter::format_type(&type_param.ty(semantics.db), module, semantics)
         }
         PathResolution::SelfType(impl_) => {
-            type_formatter::format_impl_self_ty(impl_, module, semantics.db)
+            type_formatter::format_impl_self_ty(impl_, module, semantics)
         }
         _ => None,
     }
@@ -151,9 +143,9 @@ fn format_type_alias_type_full_name(
     semantics: &Semantics<RootDatabase>,
 ) -> Option<String> {
     if let Some(normalized) = type_formatter::normalize_assoc_type(path, type_alias, semantics) {
-        return type_formatter::format_type(&normalized, module, semantics.db);
+        return type_formatter::format_type(&normalized, module, semantics);
     }
-    let base = format_type_alias_full_name(type_alias, semantics.db)?;
+    let base = format_type_alias_full_name(type_alias, semantics)?;
     let generic_args = generic_args_for_path(path, module, semantics);
     Some(format_name_with_generic_args(base, generic_args))
 }
@@ -162,10 +154,9 @@ fn format_module_def_type_full_name(
     def: ModuleDef,
     path: &ast::Path,
     module: Module,
-    db: &RootDatabase,
     semantics: &Semantics<RootDatabase>,
 ) -> Option<String> {
-    let base = format_module_def_full_name(def, db)?;
+    let base = format_module_def_full_name(def, semantics)?;
     let generic_args = generic_args_for_path(path, module, semantics);
     Some(format_name_with_generic_args(base, generic_args))
 }
@@ -222,7 +213,7 @@ fn resolve_type_full_name(
     semantics: &Semantics<RootDatabase>,
 ) -> Option<String> {
     if let Some(resolved) = semantics.resolve_type(ty)
-        && let Some(formatted) = type_formatter::format_type(&resolved, module, semantics.db)
+        && let Some(formatted) = type_formatter::format_type(&resolved, module, semantics)
     {
         return Some(formatted);
     }
@@ -241,7 +232,7 @@ fn resolve_const_param_name(
         PathResolution::ConstParam(const_param) => Some(format_item_name(
             const_param.name(semantics.db),
             module,
-            semantics.db,
+            semantics,
         )),
         _ => None,
     }
@@ -253,5 +244,5 @@ fn format_node_type_full_name(
     semantics: &Semantics<RootDatabase>,
 ) -> Option<String> {
     let module = semantics.scope(node)?.module();
-    type_formatter::format_type(&typ, module, semantics.db)
+    type_formatter::format_type(&typ, module, semantics)
 }

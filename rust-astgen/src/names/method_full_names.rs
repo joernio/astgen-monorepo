@@ -41,7 +41,7 @@ fn resolve_method_call_expr_full_name(
     semantics: &Semantics<RootDatabase>,
 ) -> Option<String> {
     let function = semantics.resolve_method_call(method_call_expr)?;
-    format_function_full_name(function, semantics.db)
+    format_function_full_name(function, semantics)
 }
 
 fn resolve_path_expr_full_name(
@@ -50,7 +50,7 @@ fn resolve_path_expr_full_name(
 ) -> Option<String> {
     let path = path_expr.path()?;
     match semantics.resolve_path(&path)? {
-        PathResolution::Def(ModuleDef::Function(f)) => format_function_full_name(f, semantics.db),
+        PathResolution::Def(ModuleDef::Function(f)) => format_function_full_name(f, semantics),
         _ => None,
     }
 }
@@ -66,12 +66,12 @@ fn resolve_call_expr_full_name(
         return Some(name);
     }
     match semantics.resolve_expr_as_callable(&callee_expr)?.kind() {
-        CallableKind::Function(function) => format_function_full_name(function, semantics.db),
+        CallableKind::Function(function) => format_function_full_name(function, semantics),
         CallableKind::TupleStruct(tuple_struct) => {
-            format_tuple_struct_ctor_full_name(tuple_struct, semantics.db)
+            format_tuple_struct_ctor_full_name(tuple_struct, semantics)
         }
         CallableKind::TupleEnumVariant(enum_variant) => {
-            format_enum_variant_full_name(enum_variant, semantics.db)
+            format_enum_variant_full_name(enum_variant, semantics)
         }
         // TODO(xavierp): need more time to understand what these should be named as
         CallableKind::Closure(_) | CallableKind::FnPtr | CallableKind::FnImpl(_) => None,
@@ -91,10 +91,10 @@ fn resolve_struct_ctor_full_name(
         return None;
     };
     let struct_def = semantics.to_def(struct_)?;
-    format_tuple_struct_ctor_full_name(struct_def, semantics.db)
+    format_tuple_struct_ctor_full_name(struct_def, semantics)
 }
 
 fn resolve_fn_def_full_name(fn_: &ast::Fn, semantics: &Semantics<RootDatabase>) -> Option<String> {
     let function = semantics.to_def(fn_)?;
-    format_function_full_name(function, semantics.db)
+    format_function_full_name(function, semantics)
 }

@@ -78,7 +78,7 @@ fn format_trait_ref_full_name(
     semantics: &Semantics<RootDatabase>,
 ) -> Option<String> {
     let trait_ = trait_ref.trait_();
-    let base = format_module_def_full_name(ModuleDef::from(trait_), semantics.db)?;
+    let base = format_module_def_full_name(ModuleDef::from(trait_), semantics)?;
 
     // Parameter 0 is the `Self` (trait) type. Actual parameters start at 1.
     // E.g. trait Tr<'a, A, const N: usize> has parameters: Self, 'a, A, N.
@@ -87,7 +87,7 @@ fn format_trait_ref_full_name(
     // get_type_argument already skips lifetime and const parameters.
     let args = (1..=param_count)
         .filter_map(|idx| trait_ref.get_type_argument(idx))
-        .map(|arg| type_formatter::format_type(&arg.to_type(semantics.db), module, semantics.db))
+        .map(|arg| type_formatter::format_type(&arg.to_type(semantics.db), module, semantics))
         .collect::<Option<Vec<_>>>()?;
 
     Some(format_name_with_generic_args(base, args))

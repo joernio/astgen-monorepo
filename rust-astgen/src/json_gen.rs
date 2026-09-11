@@ -146,7 +146,7 @@ fn process_file(
         .line;
     let relative_path = config.relativize_input_file(input_file_path)?;
 
-    let crate_name = crate::names::crate_name(target_crate, semantics.db);
+    let crate_name = crate::names::crate_name(target_crate, semantics);
     let module_path = module_path_for_file(syntax_tree, semantics);
     let envelope = RustAstGenJsonFile {
         relative_file_path: relative_path.to_string_lossy().to_string(),

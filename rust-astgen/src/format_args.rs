@@ -48,7 +48,7 @@ pub(crate) fn implicit_format_args_for_node(
                 PathResolution::Def(ModuleDef::Static(statik)) => statik.ty(semantics.db),
                 _ => return None,
             };
-            type_formatter::format_type(&typ, module, semantics.db)
+            type_formatter::format_type(&typ, module, semantics)
         });
 
         captures.push(ImplicitFormatArg {
