@@ -2000,7 +2000,7 @@ dependencies = [
 
 [[package]]
 name = "rust_ast_function_fullnames"
-version = "0.21.4"
+version = "0.21.5"
 dependencies = [
  "anyhow",
  "clap",
@@ -2015,7 +2015,7 @@ dependencies = [
 
 [[package]]
 name = "rust_ast_gen"
-version = "0.21.4"
+version = "0.21.5"
 dependencies = [
  "anyhow",
  "clap",
@@ -2144,7 +2144,7 @@ dependencies = [
 
 [[package]]
 name = "scala_bindings_gen"
-version = "0.21.4"
+version = "0.21.5"
 dependencies = [
  "anyhow",
  "chrono",
