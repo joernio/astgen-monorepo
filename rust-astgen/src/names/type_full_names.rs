@@ -124,7 +124,7 @@ fn format_type_alias_type_full_name(
     module: Module,
     semantics: &Semantics<RootDatabase>,
 ) -> Option<String> {
-    if let Some(normalized) = type_formatter::normalize_assoc_type(path, type_alias, semantics) {
+    if let Some(normalized) = rust_analyzer_ext::normalize_assoc_type(path, type_alias, semantics) {
         return type_formatter::format_type(&normalized, module, semantics);
     }
     let base = format_type_alias_full_name(type_alias, semantics)?;

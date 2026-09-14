@@ -10,7 +10,7 @@ use super::rust_name_formatter::{
 };
 use ra_ap_hir::{
     Adt, AssocItem, Callable, DisplayTarget, GenericDef, HirDisplay, Impl, Module, ModuleDef,
-    Mutability, PathResolution, Semantics, Trait, Type, TypeAlias,
+    Mutability, PathResolution, Semantics, Trait, Type,
 };
 use ra_ap_ide_db::RootDatabase;
 use ra_ap_ide_db::famous_defs::FamousDefs;
@@ -42,27 +42,13 @@ pub(crate) fn format_impl_self_ty(
         && let Some(path) = path_type.path()
         && let Some(PathResolution::Def(ModuleDef::TypeAlias(assoc_type))) =
             semantics.resolve_path(&path)
-        && let Some(normalized) = normalize_assoc_type(&path, assoc_type, semantics)
+        && let Some(normalized) =
+            rust_analyzer_ext::normalize_assoc_type(&path, assoc_type, semantics)
     {
         return format_type(&normalized, module, semantics);
     }
 
     format_type(&self_ty, module, semantics)
-}
-
-pub(super) fn normalize_assoc_type<'db>(
-    path: &ast::Path,
-    assoc_type: TypeAlias,
-    semantics: &Semantics<'db, RootDatabase>,
-) -> Option<Type<'db>> {
-    let segment = path.qualifier().and_then(|qualifier| qualifier.segment())?;
-    let anchor = segment.type_anchor().and_then(|anchor| anchor.ty())?;
-    let anchor = semantics.resolve_type(&anchor)?;
-    let normalized = anchor.normalize_trait_assoc_type(semantics.db, &[], assoc_type)?;
-    normalized
-        .as_associated_type_parent_trait(semantics.db)
-        .is_none()
-        .then_some(normalized)
 }
 
 struct TypeFormatter<'a, 'db> {

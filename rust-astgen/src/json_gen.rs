@@ -2,7 +2,7 @@ use crate::json_ast::{RustAstGenJsonFile, RustAstGenJsonNode};
 use crate::{cargo, config};
 use anyhow::Context;
 use log::{debug, error};
-use ra_ap_hir::{Crate, Semantics, attach_db, db::DefDatabase};
+use ra_ap_hir::{Semantics, attach_db};
 use ra_ap_ide_db::RootDatabase;
 use ra_ap_syntax::{AstNode, SyntaxKind, SyntaxNode};
 use ra_ap_vfs::{FileId, VfsPath};
@@ -109,13 +109,13 @@ fn process_file(
 
     // If there's no crate, we don't have any type information. Likely, an inactive `#[cfg(..)]`.
     // Thus, skip it.
-    let Some(target_crate) = crate_for_file(syntax_tree, semantics) else {
+    let Some(target_crate) = rust_analyzer_ext::crate_for_file(syntax_tree, semantics) else {
         println!("Skipped: {}", input_file_path.display());
         return Ok(());
     };
 
     // `included!`-ed files are already macro-expanded. Skip them.
-    if is_include_target(file_id, target_crate, semantics) {
+    if rust_analyzer_ext::is_include_target(file_id, target_crate, semantics) {
         debug!("Skipped (include! target): {}", input_file_path.display());
         return Ok(());
     }
@@ -164,26 +164,6 @@ fn process_file(
     write_json_to_file(&json_tree, &output_file)?;
 
     Ok(())
-}
-
-fn is_include_target(
-    file_id: FileId,
-    target_crate: Crate,
-    semantics: &Semantics<RootDatabase>,
-) -> bool {
-    semantics
-        .db
-        .include_macro_invoc(target_crate.base())
-        .iter()
-        .any(|(_, included_file_id)| included_file_id.file_id(semantics.db) == file_id)
-}
-
-fn crate_for_file(syntax_tree: &SyntaxNode, semantics: &Semantics<RootDatabase>) -> Option<Crate> {
-    semantics
-        .scope(syntax_tree)?
-        .module()
-        .krate(semantics.db)
-        .into()
 }
 
 fn module_path_for_file(

@@ -1494,8 +1494,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "rust_analyzer_ext"
+version = "0.21.7"
+dependencies = [
+ "ra_ap_hir",
+ "ra_ap_ide_db",
+ "ra_ap_syntax",
+ "ra_ap_vfs",
+]
+
+[[package]]
 name = "rust_ast_function_fullnames"
-version = "0.21.6"
+version = "0.21.7"
 dependencies = [
  "anyhow",
  "clap",
@@ -1510,7 +1520,7 @@ dependencies = [
 
 [[package]]
 name = "rust_ast_gen"
-version = "0.21.6"
+version = "0.21.7"
 dependencies = [
  "anyhow",
  "clap",
@@ -1523,6 +1533,7 @@ dependencies = [
  "ra_ap_project_model",
  "ra_ap_syntax",
  "ra_ap_vfs",
+ "rust_analyzer_ext",
  "serde",
  "serde_json",
  "temp-dir",
@@ -1638,7 +1649,7 @@ dependencies = [
 
 [[package]]
 name = "scala_bindings_gen"
-version = "0.21.6"
+version = "0.21.7"
 dependencies = [
  "anyhow",
  "clap",

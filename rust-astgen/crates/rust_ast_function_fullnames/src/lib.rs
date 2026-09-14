@@ -1,10 +1,10 @@
 use anyhow::Context;
 use ra_ap_hir::{
     Adt, AsAssocItem, AssocItem, AssocItemContainer, Crate, Enum, EnumVariant, Function, HasAttrs,
-    HasVisibility, Impl, Module, ModuleDef, StructKind, Trait, attach_db,
+    HasVisibility, Impl, Module, ModuleDef, Semantics, StructKind, Trait, attach_db,
 };
 use ra_ap_ide_db::RootDatabase;
-use rust_ast_gen::names::{
+use rust_ast_gen::names::rust_name_formatter::{
     format_enum_variant_full_name, format_function_full_name, format_tuple_struct_ctor_full_name,
 };
 use rust_ast_gen::{cargo, config};
@@ -35,24 +35,25 @@ pub struct FunctionFullNamesOutput {
 pub fn run(config: &config::RustAstGenConfig) -> anyhow::Result<()> {
     let (root_db, _vfs) = cargo::load_workspace(config)?;
 
-    attach_db(&root_db, || {
+    let semantics = Semantics::new(&root_db);
+    attach_db(semantics.db, || {
         let mut stdout = io::stdout().lock();
-        write_function_fullnames_by_crate(&mut stdout, &root_db)
+        write_function_fullnames_by_crate(&mut stdout, &semantics)
     })
 }
 
-pub fn dependency_full_names<'db>(
-    db: &'db RootDatabase,
-) -> impl Iterator<Item = FunctionFullNameEntry> + 'db {
-    let workspace_roots = workspace_root_modules_rc(db);
-    unique_by_method_full_name(dependency_crates(db).into_iter().flat_map({
+pub fn dependency_full_names<'a, 'db>(
+    semantics: &'a Semantics<'db, RootDatabase>,
+) -> impl Iterator<Item = FunctionFullNameEntry> + 'a {
+    let workspace_roots = workspace_root_modules_rc(semantics.db);
+    unique_by_method_full_name(dependency_crates(semantics.db).into_iter().flat_map({
         let workspace_roots = Rc::clone(&workspace_roots);
         move |krate| {
             let workspace_roots_for_modules = Rc::clone(&workspace_roots);
-            modules_in_crate(db, krate, Rc::clone(&workspace_roots)).flat_map(
+            modules_in_crate(semantics.db, krate, Rc::clone(&workspace_roots)).flat_map(
                 move |(module, parent_is_unstable)| {
                     module_full_names(
-                        db,
+                        semantics,
                         module,
                         Rc::clone(&workspace_roots_for_modules),
                         parent_is_unstable,
@@ -140,62 +141,73 @@ fn modules_recursive<'db>(
     Box::new(std::iter::once((module, module_is_unstable)).chain(children_iter))
 }
 
-pub fn module_full_names<'db>(
-    db: &'db RootDatabase,
+pub fn module_full_names<'a, 'db>(
+    semantics: &'a Semantics<'db, RootDatabase>,
     module: Module,
     workspace_roots: Rc<[Module]>,
     parent_is_unstable: bool,
-) -> impl Iterator<Item = FunctionFullNameEntry> + 'db {
-    module_full_names_with_unstable(db, module, workspace_roots, parent_is_unstable)
+) -> impl Iterator<Item = FunctionFullNameEntry> + 'a {
+    module_full_names_with_unstable(semantics, module, workspace_roots, parent_is_unstable)
 }
 
-fn module_full_names_with_unstable<'db>(
-    db: &'db RootDatabase,
+fn module_full_names_with_unstable<'a, 'db>(
+    semantics: &'a Semantics<'db, RootDatabase>,
     module: Module,
     workspace_roots: Rc<[Module]>,
     parent_is_unstable: bool,
-) -> impl Iterator<Item = FunctionFullNameEntry> + 'db {
+) -> impl Iterator<Item = FunctionFullNameEntry> + 'a {
     // Check if this module is unstable
-    let module_is_unstable = parent_is_unstable || is_module_unstable(module, db);
+    let module_is_unstable = parent_is_unstable || is_module_unstable(module, semantics.db);
     let decl_roots = Rc::clone(&workspace_roots);
-    let decls = module.declarations(db).into_iter().flat_map(move |def| {
-        module_def_full_names(db, def, Rc::clone(&decl_roots), module_is_unstable)
-    });
+    let decls = module
+        .declarations(semantics.db)
+        .into_iter()
+        .flat_map(move |def| {
+            module_def_full_names(semantics, def, Rc::clone(&decl_roots), module_is_unstable)
+        });
 
-    let impls = module.impl_defs(db).into_iter().flat_map(move |impl_| {
-        impl_full_names(db, impl_, Rc::clone(&workspace_roots), module_is_unstable)
-    });
+    let impls = module
+        .impl_defs(semantics.db)
+        .into_iter()
+        .flat_map(move |impl_| {
+            impl_full_names(
+                semantics,
+                impl_,
+                Rc::clone(&workspace_roots),
+                module_is_unstable,
+            )
+        });
 
     decls.chain(impls)
 }
 
-fn module_def_full_names<'db>(
-    db: &'db RootDatabase,
+fn module_def_full_names<'a, 'db>(
+    semantics: &'a Semantics<'db, RootDatabase>,
     def: ModuleDef,
     workspace_roots: Rc<[Module]>,
     module_is_unstable: bool,
-) -> Box<dyn Iterator<Item = FunctionFullNameEntry> + 'db> {
+) -> Box<dyn Iterator<Item = FunctionFullNameEntry> + 'a> {
     match def {
         ModuleDef::Function(function) => option_entry(function_entry(
-            db,
+            semantics,
             function,
             workspace_roots.as_ref(),
             module_is_unstable,
         )),
         ModuleDef::Adt(Adt::Struct(struct_)) => option_entry(tuple_struct_ctor_entry(
-            db,
+            semantics,
             struct_,
             workspace_roots.as_ref(),
             module_is_unstable,
         )),
         ModuleDef::Adt(Adt::Enum(enum_)) => Box::new(enum_full_names(
-            db,
+            semantics,
             enum_,
             workspace_roots,
             module_is_unstable,
         )),
         ModuleDef::Trait(trait_) => Box::new(trait_full_names(
-            db,
+            semantics,
             trait_,
             workspace_roots,
             module_is_unstable,
@@ -204,146 +216,160 @@ fn module_def_full_names<'db>(
     }
 }
 
-fn enum_full_names<'db>(
-    db: &'db RootDatabase,
+fn enum_full_names<'a, 'db>(
+    semantics: &'a Semantics<'db, RootDatabase>,
     enum_: Enum,
     workspace_roots: Rc<[Module]>,
     module_is_unstable: bool,
-) -> impl Iterator<Item = FunctionFullNameEntry> + 'db {
-    enum_.variants(db).into_iter().filter_map(move |variant| {
-        enum_variant_ctor_entry(db, variant, workspace_roots.as_ref(), module_is_unstable)
-    })
+) -> impl Iterator<Item = FunctionFullNameEntry> + 'a {
+    enum_
+        .variants(semantics.db)
+        .into_iter()
+        .filter_map(move |variant| {
+            enum_variant_ctor_entry(
+                semantics,
+                variant,
+                workspace_roots.as_ref(),
+                module_is_unstable,
+            )
+        })
 }
 
-fn trait_full_names<'db>(
-    db: &'db RootDatabase,
+fn trait_full_names<'a, 'db>(
+    semantics: &'a Semantics<'db, RootDatabase>,
     trait_: Trait,
     workspace_roots: Rc<[Module]>,
     module_is_unstable: bool,
-) -> impl Iterator<Item = FunctionFullNameEntry> + 'db {
-    let trait_is_unstable = module_is_unstable || trait_.attrs(db).is_unstable();
+) -> impl Iterator<Item = FunctionFullNameEntry> + 'a {
+    let trait_is_unstable = module_is_unstable || trait_.attrs(semantics.db).is_unstable();
     trait_
-        .items(db)
+        .items(semantics.db)
         .into_iter()
         .filter_map(move |item| match item {
-            AssocItem::Function(function) => {
-                function_entry(db, function, workspace_roots.as_ref(), trait_is_unstable)
-            }
+            AssocItem::Function(function) => function_entry(
+                semantics,
+                function,
+                workspace_roots.as_ref(),
+                trait_is_unstable,
+            ),
             _ => None,
         })
 }
 
-fn impl_full_names<'db>(
-    db: &'db RootDatabase,
+fn impl_full_names<'a, 'db>(
+    semantics: &'a Semantics<'db, RootDatabase>,
     impl_: Impl,
     workspace_roots: Rc<[Module]>,
     module_is_unstable: bool,
-) -> impl Iterator<Item = FunctionFullNameEntry> + 'db {
-    let impl_is_unstable = module_is_unstable || impl_.attrs(db).is_unstable();
+) -> impl Iterator<Item = FunctionFullNameEntry> + 'a {
+    let impl_is_unstable = module_is_unstable || impl_.attrs(semantics.db).is_unstable();
     impl_
-        .items(db)
+        .items(semantics.db)
         .into_iter()
         .filter_map(move |item| match item {
-            AssocItem::Function(function) => {
-                function_entry(db, function, workspace_roots.as_ref(), impl_is_unstable)
-            }
+            AssocItem::Function(function) => function_entry(
+                semantics,
+                function,
+                workspace_roots.as_ref(),
+                impl_is_unstable,
+            ),
             _ => None,
         })
 }
 
 fn function_entry(
-    db: &RootDatabase,
+    semantics: &Semantics<RootDatabase>,
     function: Function,
     workspace_roots: &[Module],
     module_is_unstable: bool,
 ) -> Option<FunctionFullNameEntry> {
-    if !is_function_available_from_workspace(function, db, workspace_roots) {
+    if !is_function_available_from_workspace(function, semantics.db, workspace_roots) {
         return None;
     }
 
-    let method_full_name = format_function_full_name(function, db)?;
+    let method_full_name = format_function_full_name(function, semantics)?;
 
-    let (is_trait_impl, is_trait_method_def) = match function.as_assoc_item(db) {
-        Some(assoc_item) => trait_flags(assoc_item, db),
+    let (is_trait_impl, is_trait_method_def) = match function.as_assoc_item(semantics.db) {
+        Some(assoc_item) => trait_flags(assoc_item, semantics.db),
         None => (false, false),
     };
 
     Some(FunctionFullNameEntry {
         method_full_name,
-        has_self_receiver: function.has_self_param(db),
+        has_self_receiver: function.has_self_param(semantics.db),
         is_trait_impl,
         is_trait_method_def,
-        is_nightly_only: module_is_unstable || function.is_unstable(db),
+        is_nightly_only: module_is_unstable || function.is_unstable(semantics.db),
     })
 }
 
 fn tuple_struct_ctor_entry(
-    db: &RootDatabase,
+    semantics: &Semantics<RootDatabase>,
     struct_: ra_ap_hir::Struct,
     workspace_roots: &[Module],
     module_is_unstable: bool,
 ) -> Option<FunctionFullNameEntry> {
-    if !is_available_from_workspace(&struct_, db, workspace_roots) {
+    if !is_available_from_workspace(&struct_, semantics.db, workspace_roots) {
         return None;
     }
 
-    match struct_.kind(db) {
+    match struct_.kind(semantics.db) {
         StructKind::Tuple => {}
         StructKind::Unit | StructKind::Record => return None,
     }
 
     // Only emit the constructor if all fields are accessible
     if !struct_
-        .fields(db)
+        .fields(semantics.db)
         .iter()
-        .all(|field| is_available_from_workspace(field, db, workspace_roots))
+        .all(|field| is_available_from_workspace(field, semantics.db, workspace_roots))
     {
         return None;
     }
 
-    let method_full_name = format_tuple_struct_ctor_full_name(struct_, db)?;
+    let method_full_name = format_tuple_struct_ctor_full_name(struct_, semantics)?;
 
     Some(FunctionFullNameEntry {
         method_full_name,
         has_self_receiver: false,
         is_trait_impl: false,
         is_trait_method_def: false,
-        is_nightly_only: module_is_unstable || struct_.is_unstable(db),
+        is_nightly_only: module_is_unstable || struct_.is_unstable(semantics.db),
     })
 }
 
 fn enum_variant_ctor_entry(
-    db: &RootDatabase,
+    semantics: &Semantics<RootDatabase>,
     enum_variant: EnumVariant,
     workspace_roots: &[Module],
     module_is_unstable: bool,
 ) -> Option<FunctionFullNameEntry> {
-    if !is_available_from_workspace(&enum_variant, db, workspace_roots) {
+    if !is_available_from_workspace(&enum_variant, semantics.db, workspace_roots) {
         return None;
     }
 
-    match enum_variant.kind(db) {
+    match enum_variant.kind(semantics.db) {
         StructKind::Tuple => {}
         StructKind::Unit | StructKind::Record => return None,
     }
 
     // Only emit the constructor if all fields are accessible
     if !enum_variant
-        .fields(db)
+        .fields(semantics.db)
         .iter()
-        .all(|field| is_available_from_workspace(field, db, workspace_roots))
+        .all(|field| is_available_from_workspace(field, semantics.db, workspace_roots))
     {
         return None;
     }
 
-    let method_full_name = format_enum_variant_full_name(enum_variant, db)?;
+    let method_full_name = format_enum_variant_full_name(enum_variant, semantics)?;
 
     Some(FunctionFullNameEntry {
         method_full_name,
         has_self_receiver: false,
         is_trait_impl: false,
         is_trait_method_def: false,
-        is_nightly_only: module_is_unstable || enum_variant.is_unstable(db),
+        is_nightly_only: module_is_unstable || enum_variant.is_unstable(semantics.db),
     })
 }
 
@@ -386,17 +412,17 @@ where
 
 fn write_function_fullnames_by_crate<W: Write>(
     writer: &mut W,
-    db: &RootDatabase,
+    semantics: &Semantics<RootDatabase>,
 ) -> anyhow::Result<()> {
     writer
         .write_all(b"{\n")
         .context("failed to write JSON opening brace")?;
 
-    let workspace_roots = workspace_root_modules_rc(db);
+    let workspace_roots = workspace_root_modules_rc(semantics.db);
     let mut first_crate = true;
 
-    for krate in dependency_crates(db) {
-        let crate_name = match krate.display_name(db) {
+    for krate in dependency_crates(semantics.db) {
+        let crate_name = match krate.display_name(semantics.db) {
             Some(name) => name.to_string(),
             None => continue,
         };
@@ -415,9 +441,14 @@ fn write_function_fullnames_by_crate<W: Write>(
             .context("failed to write array opening")?;
 
         let entries = unique_by_method_full_name(
-            modules_in_crate(db, krate, Rc::clone(&workspace_roots)).flat_map(
+            modules_in_crate(semantics.db, krate, Rc::clone(&workspace_roots)).flat_map(
                 |(module, parent_is_unstable)| {
-                    module_full_names(db, module, Rc::clone(&workspace_roots), parent_is_unstable)
+                    module_full_names(
+                        semantics,
+                        module,
+                        Rc::clone(&workspace_roots),
+                        parent_is_unstable,
+                    )
                 },
             ),
         );

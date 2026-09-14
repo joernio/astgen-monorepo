@@ -1,0 +1,10 @@
+[package]
+name = "rust_analyzer_ext"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+ra_ap_hir.workspace = true
+ra_ap_ide_db.workspace = true
+ra_ap_syntax.workspace = true
+ra_ap_vfs.workspace = true

@@ -57,7 +57,7 @@ fn block_local_full_name(
     block: InFile<ast::BlockExpr>,
     semantics: &Semantics<RootDatabase>,
 ) -> Option<String> {
-    let Some(fn_) = enclosing_fn(block, semantics) else {
+    let Some(fn_) = rust_analyzer_ext::enclosing_fn(block, semantics) else {
         return anonymous_const_local_full_name(def, module, semantics);
     };
     let parent = format_function_full_name(semantics.to_def(&fn_)?, semantics)?;
@@ -93,19 +93,6 @@ fn module_source_node(source: &ModuleSource) -> Option<SyntaxNode> {
         ModuleSource::Module(it) => Some(it.item_list()?.syntax().clone()),
         ModuleSource::BlockExpr(it) => Some(it.syntax().clone()),
     }
-}
-
-fn enclosing_fn(
-    block: InFile<ast::BlockExpr>,
-    semantics: &Semantics<RootDatabase>,
-) -> Option<ast::Fn> {
-    semantics
-        .ancestors_with_macros_file(block.with_value(block.value.syntax().clone()))
-        .find_map(|ancestor| {
-            let fn_ = ast::Fn::cast(ancestor.value)?;
-            semantics.parse_or_expand(ancestor.file_id);
-            Some(fn_)
-        })
 }
 
 fn block_local_disambiguator(
@@ -238,7 +225,7 @@ pub(super) fn format_impl_full_name(
     Some(format_trait_impl_full_name(&self_ty_name, &trait_name))
 }
 
-pub(crate) fn format_function_full_name(
+pub fn format_function_full_name(
     function: Function,
     semantics: &Semantics<RootDatabase>,
 ) -> Option<String> {
@@ -302,14 +289,14 @@ fn format_generic_name(
     format_name_with_generic_args(base, generic_args)
 }
 
-pub(crate) fn format_tuple_struct_ctor_full_name(
+pub fn format_tuple_struct_ctor_full_name(
     struct_: Struct,
     semantics: &Semantics<RootDatabase>,
 ) -> Option<String> {
     format_generic_module_def_full_name(struct_, semantics)
 }
 
-pub(crate) fn format_enum_variant_full_name(
+pub fn format_enum_variant_full_name(
     enum_variant: EnumVariant,
     semantics: &Semantics<RootDatabase>,
 ) -> Option<String> {
