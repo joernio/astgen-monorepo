@@ -1,7 +1,7 @@
 mod common;
 
 use crate::common::TestResult;
-use ra_ap_hir::attach_db;
+use ra_ap_hir::{Semantics, attach_db};
 use ra_ap_ide_db::RootDatabase;
 use rust_ast_function_fullnames::{
     FunctionFullNameEntry, dependency_crate_named, load_sysroot_workspace, module_full_names,
@@ -26,26 +26,31 @@ fn load_sysroot_only_db() -> TestResult<RootDatabase> {
 }
 
 fn entries_in_dependency_modules(
-    db: &RootDatabase,
+    semantics: &Semantics<RootDatabase>,
     crate_name: &str,
     module_names: &[&str],
 ) -> TestResult<Vec<FunctionFullNameEntry>> {
-    let workspace_roots = workspace_root_modules_rc(db);
-    let krate = dependency_crate_named(db, crate_name)
+    let workspace_roots = workspace_root_modules_rc(semantics.db);
+    let krate = dependency_crate_named(semantics.db, crate_name)
         .ok_or_else(|| format!("dependency crate `{crate_name}` not found in sysroot workspace"))?;
 
-    let edition = krate.edition(db);
-    let selected_modules =
-        modules_in_crate(db, krate, Rc::clone(&workspace_roots)).filter(|(module, _)| {
-            module.name(db).is_some_and(|name| {
-                let name_str = name.display(db, edition).to_string();
+    let edition = krate.edition(semantics.db);
+    let selected_modules = modules_in_crate(semantics.db, krate, Rc::clone(&workspace_roots))
+        .filter(|(module, _)| {
+            module.name(semantics.db).is_some_and(|name| {
+                let name_str = name.display(semantics.db, edition).to_string();
                 module_names.contains(&name_str.as_str())
             })
         });
 
     Ok(
         unique_by_method_full_name(selected_modules.flat_map(|(module, parent_is_unstable)| {
-            module_full_names(db, module, Rc::clone(&workspace_roots), parent_is_unstable)
+            module_full_names(
+                semantics,
+                module,
+                Rc::clone(&workspace_roots),
+                parent_is_unstable,
+            )
         }))
         .collect(),
     )
@@ -54,10 +59,11 @@ fn entries_in_dependency_modules(
 #[test]
 fn dependency_crate_function_fullnames() -> TestResult<()> {
     let db = load_sysroot_only_db()?;
-    attach_db(&db, || {
+    let semantics = Semantics::new(&db);
+    attach_db(semantics.db, || {
         // Use only the exact module names that contain our test methods
         let core_entries = entries_in_dependency_modules(
-            &db,
+            &semantics,
             "core",
             &[
                 "clone",

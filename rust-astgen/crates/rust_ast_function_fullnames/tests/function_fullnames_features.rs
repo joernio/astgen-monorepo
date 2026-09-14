@@ -1,7 +1,7 @@
 mod common;
 
 use crate::common::TestResult;
-use ra_ap_hir::{Crate, attach_db};
+use ra_ap_hir::{Crate, Semantics, attach_db};
 use ra_ap_ide_db::RootDatabase;
 use rust_ast_function_fullnames::{
     FunctionFullNameEntry, load_sysroot_workspace, module_full_names, modules_in_crate,
@@ -69,14 +69,23 @@ fn crate_named(db: &RootDatabase, name: &str) -> Option<Crate> {
     })
 }
 
-fn entries_for_crate(db: &RootDatabase, crate_name: &str) -> Vec<FunctionFullNameEntry> {
-    let workspace_roots = workspace_root_modules_rc(db);
-    let krate = crate_named(db, crate_name).expect("crate should exist in loaded workspace");
+fn entries_for_crate(
+    semantics: &Semantics<RootDatabase>,
+    crate_name: &str,
+) -> Vec<FunctionFullNameEntry> {
+    let workspace_roots = workspace_root_modules_rc(semantics.db);
+    let krate =
+        crate_named(semantics.db, crate_name).expect("crate should exist in loaded workspace");
 
     unique_by_method_full_name(
-        modules_in_crate(db, krate, Rc::clone(&workspace_roots)).flat_map(
+        modules_in_crate(semantics.db, krate, Rc::clone(&workspace_roots)).flat_map(
             |(module, parent_is_unstable)| {
-                module_full_names(db, module, Rc::clone(&workspace_roots), parent_is_unstable)
+                module_full_names(
+                    semantics,
+                    module,
+                    Rc::clone(&workspace_roots),
+                    parent_is_unstable,
+                )
             },
         ),
     )
@@ -95,8 +104,9 @@ fn feature_gated_dependency_function_is_included_when_enabled() -> TestResult<()
     write_feature_fixture(&root)?;
     let db = load_fixture_db(&root, vec!["enabled".to_owned()])?;
 
-    attach_db(&db, || {
-        let entries = entries_for_crate(&db, "gated_dep");
+    let semantics = Semantics::new(&db);
+    attach_db(semantics.db, || {
+        let entries = entries_for_crate(&semantics, "gated_dep");
         assert!(
             has_method(&entries, "gated_dep::always"),
             "expected always-visible dependency function, got: {:?}",
@@ -119,8 +129,9 @@ fn feature_gated_dependency_function_is_excluded_without_feature() -> TestResult
     write_feature_fixture(&root)?;
     let db = load_fixture_db(&root, vec![])?;
 
-    attach_db(&db, || {
-        let entries = entries_for_crate(&db, "gated_dep");
+    let semantics = Semantics::new(&db);
+    attach_db(semantics.db, || {
+        let entries = entries_for_crate(&semantics, "gated_dep");
         assert!(has_method(&entries, "gated_dep::always"));
         assert!(
             !has_method(&entries, "gated_dep::gated"),
