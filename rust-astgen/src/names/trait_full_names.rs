@@ -2,13 +2,11 @@
 //! `supertraits` for trait declarations.
 
 use super::{
-    rust_name_formatter::{format_module_def_full_name, format_name_with_generic_args},
-    type_formatter,
-    type_full_names::format_path_resolution_type_full_name,
+    rust_name_formatter::format_impl_trait, type_full_names::format_path_resolution_type_full_name,
 };
-use ra_ap_hir::{Adt, GenericDef, Impl, Module, ModuleDef, PathResolution, Semantics, TraitRef};
+use ra_ap_hir::{Adt, Impl, ModuleDef, PathResolution, Semantics};
 use ra_ap_ide_db::RootDatabase;
-use ra_ap_syntax::{AstNode, SyntaxNode, ast, ast::HasTypeBounds};
+use ra_ap_syntax::{ast, ast::HasTypeBounds};
 
 // NB: This is approximate (cf. all_for_type's doc). In particular, `impl<T> Trait for T` are
 // excluded, as well as compiler marker traits (Send, Sync, Unpin, UnwindSafe, etc.), and
@@ -18,7 +16,7 @@ pub(crate) fn implemented_traits_for_struct(
     semantics: &Semantics<RootDatabase>,
 ) -> Option<Vec<String>> {
     let adt = Adt::from(semantics.to_def(struct_)?);
-    implemented_traits(adt, struct_.syntax(), semantics)
+    implemented_traits(adt, semantics)
 }
 
 pub(crate) fn implemented_traits_for_enum(
@@ -26,21 +24,16 @@ pub(crate) fn implemented_traits_for_enum(
     semantics: &Semantics<RootDatabase>,
 ) -> Option<Vec<String>> {
     let adt = Adt::from(semantics.to_def(enum_)?);
-    implemented_traits(adt, enum_.syntax(), semantics)
+    implemented_traits(adt, semantics)
 }
 
-fn implemented_traits(
-    adt: Adt,
-    node: &SyntaxNode,
-    semantics: &Semantics<RootDatabase>,
-) -> Option<Vec<String>> {
-    let module = semantics.scope(node)?.module();
+fn implemented_traits(adt: Adt, semantics: &Semantics<RootDatabase>) -> Option<Vec<String>> {
+    let module = adt.module(semantics.db);
 
     let mut names: Vec<String> = Impl::all_for_type(semantics.db, adt.ty(semantics.db))
         .into_iter()
         .filter(|impl_| !impl_.is_negative(semantics.db))
-        .filter_map(|impl_| impl_.trait_ref(semantics.db))
-        .filter_map(|trait_ref| format_trait_ref_full_name(&trait_ref, module, semantics))
+        .filter_map(|impl_| format_impl_trait(impl_, module, semantics))
         .collect();
 
     names.sort();
@@ -79,25 +72,4 @@ fn supertrait_full_name(
         }
         _ => None,
     }
-}
-
-fn format_trait_ref_full_name(
-    trait_ref: &TraitRef,
-    module: Module,
-    semantics: &Semantics<RootDatabase>,
-) -> Option<String> {
-    let trait_ = trait_ref.trait_();
-    let base = format_module_def_full_name(ModuleDef::from(trait_), semantics)?;
-
-    // Parameter 0 is the `Self` (trait) type. Actual parameters start at 1.
-    // E.g. trait Tr<'a, A, const N: usize> has parameters: Self, 'a, A, N.
-    let param_count = GenericDef::from(trait_).params(semantics.db).len();
-
-    // get_type_argument already skips lifetime and const parameters.
-    let args = (1..=param_count)
-        .filter_map(|idx| trait_ref.get_type_argument(idx))
-        .map(|arg| type_formatter::format_type(&arg.to_type(semantics.db), module, semantics))
-        .collect::<Option<Vec<_>>>()?;
-
-    Some(format_name_with_generic_args(base, args))
 }

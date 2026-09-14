@@ -261,3 +261,66 @@ fn main() {}
 
     Ok(())
 }
+
+#[test]
+fn emits_implemented_trait_for_block_local_struct() -> TestResult<()> {
+    let json = no_sysroot_ast_json(
+        "rust2cpg",
+        &[(
+            "src/main.rs",
+            r#"
+trait Tr<T> {}
+
+fn f() {
+    struct S;
+    struct T;
+    impl Tr<T> for S {}
+}
+
+fn main() { f(); }
+"#,
+        )],
+        "src/main.rs",
+    )?;
+
+    assert_eq!(
+        struct_decl(&json, "struct S;").implemented_traits(),
+        vec!["rust2cpg::Tr<rust2cpg::f::T>"]
+    );
+
+    Ok(())
+}
+
+#[test]
+fn emits_defaulted_arg_of_implemented_trait() -> TestResult<()> {
+    let json = sysroot_ast_json(
+        "rust2cpg",
+        &[(
+            "src/main.rs",
+            r#"
+struct S;
+
+impl PartialEq for S {
+    fn eq(&self, _: &S) -> bool { true }
+}
+
+#[derive(PartialEq)]
+struct T;
+
+fn main() {}
+"#,
+        )],
+        "src/main.rs",
+    )?;
+
+    assert_eq!(
+        struct_decl(&json, "struct S;").implemented_traits(),
+        vec!["core::cmp::PartialEq<rust2cpg::S>"]
+    );
+    assert_eq!(
+        struct_decl(&json, "#[derive(PartialEq)]\nstruct T;").implemented_traits(),
+        vec!["core::cmp::PartialEq<rust2cpg::T>"]
+    );
+
+    Ok(())
+}

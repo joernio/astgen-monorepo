@@ -2,7 +2,7 @@ mod common;
 
 use crate::common::{
     TestResult, call_expr, enum_decl, fn_decl, ident_pat, impl_decl, method_call_expr, name_ref,
-    no_sysroot_ast_json, sysroot_ast_json,
+    no_sysroot_ast_json, struct_decl, sysroot_ast_json,
 };
 
 #[test]
@@ -790,6 +790,113 @@ impl P<'_> {
     assert_eq!(
         fn_decl(&json, "fn m(&self) {}").method_full_name(),
         "rust2cpg::P<'a>::m"
+    );
+
+    Ok(())
+}
+
+#[test]
+fn emits_trait_impl_full_name_with_every_generic_arg() -> TestResult<()> {
+    let json = no_sysroot_ast_json(
+        "rust2cpg",
+        &[(
+            "src/main.rs",
+            r#"
+trait Tr<'a, T, const N: usize> {
+    fn m(&self);
+}
+
+struct S;
+
+impl<'a> Tr<'a, u8, 3> for S {
+    fn m(&self) {}
+}
+
+fn f(s: S) {
+    s.m();
+}
+
+fn main() {}
+"#,
+        )],
+        "src/main.rs",
+    )?;
+
+    assert_eq!(
+        impl_decl(
+            &json,
+            "impl<'a> Tr<'a, u8, 3> for S {\n    fn m(&self) {}\n}"
+        )
+        .type_full_name(),
+        "<rust2cpg::S as rust2cpg::Tr<'a, u8, 3>>"
+    );
+    assert_eq!(
+        fn_decl(&json, "fn m(&self) {}").method_full_name(),
+        "<rust2cpg::S as rust2cpg::Tr<'a, u8, 3>>::m"
+    );
+    assert_eq!(
+        method_call_expr(&json, "s.m()").method_full_name(),
+        "<rust2cpg::S as rust2cpg::Tr<'a, u8, 3>>::m"
+    );
+    assert_eq!(
+        struct_decl(&json, "struct S;").implemented_traits(),
+        vec!["rust2cpg::Tr<'a, u8, 3>"]
+    );
+
+    Ok(())
+}
+
+#[test]
+fn emits_trait_impl_full_name_per_const_arg() -> TestResult<()> {
+    let json = no_sysroot_ast_json(
+        "rust2cpg",
+        &[(
+            "src/main.rs",
+            r#"
+trait Tr<const N: usize> {
+    fn m(&self);
+}
+
+struct S;
+
+impl Tr<3> for S {
+    fn m(&self) {}
+}
+
+impl Tr<4> for S {
+    fn m(&self) {}
+}
+
+fn f(s: S) {
+    <S as Tr<3>>::m(&s);
+    Tr::<4>::m(&s);
+}
+
+fn main() {}
+"#,
+        )],
+        "src/main.rs",
+    )?;
+
+    assert_eq!(
+        impl_decl(&json, "impl Tr<3> for S {\n    fn m(&self) {}\n}").type_full_name(),
+        "<rust2cpg::S as rust2cpg::Tr<3>>"
+    );
+    assert_eq!(
+        call_expr(&json, "<S as Tr<3>>::m(&s)").method_full_name(),
+        "<rust2cpg::S as rust2cpg::Tr<3>>::m"
+    );
+    assert_eq!(
+        impl_decl(&json, "impl Tr<4> for S {\n    fn m(&self) {}\n}").type_full_name(),
+        "<rust2cpg::S as rust2cpg::Tr<4>>"
+    );
+    assert_eq!(
+        call_expr(&json, "Tr::<4>::m(&s)").method_full_name(),
+        "<rust2cpg::S as rust2cpg::Tr<4>>::m"
+    );
+    assert_eq!(
+        struct_decl(&json, "struct S;").implemented_traits(),
+        vec!["rust2cpg::Tr<3>", "rust2cpg::Tr<4>"]
     );
 
     Ok(())
