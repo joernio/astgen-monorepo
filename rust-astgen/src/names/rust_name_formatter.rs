@@ -57,7 +57,7 @@ fn block_local_full_name(
     block: InFile<ast::BlockExpr>,
     semantics: &Semantics<RootDatabase>,
 ) -> Option<String> {
-    let Some(fn_) = enclosing_fn(block, semantics) else {
+    let Some(fn_) = rust_analyzer_ext::enclosing_fn(block, semantics) else {
         return anonymous_const_local_full_name(def, module, semantics);
     };
     let parent = format_function_full_name(semantics.to_def(&fn_)?, semantics)?;
@@ -93,19 +93,6 @@ fn module_source_node(source: &ModuleSource) -> Option<SyntaxNode> {
         ModuleSource::Module(it) => Some(it.item_list()?.syntax().clone()),
         ModuleSource::BlockExpr(it) => Some(it.syntax().clone()),
     }
-}
-
-fn enclosing_fn(
-    block: InFile<ast::BlockExpr>,
-    semantics: &Semantics<RootDatabase>,
-) -> Option<ast::Fn> {
-    semantics
-        .ancestors_with_macros_file(block.with_value(block.value.syntax().clone()))
-        .find_map(|ancestor| {
-            let fn_ = ast::Fn::cast(ancestor.value)?;
-            semantics.parse_or_expand(ancestor.file_id);
-            Some(fn_)
-        })
 }
 
 fn block_local_disambiguator(

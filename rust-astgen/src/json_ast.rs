@@ -176,7 +176,7 @@ impl RustAstGenJsonNode {
             match node {
                 ast::MacroCall(it) => semantics
                     .expand_macro_call(&it)
-                    .filter(|expanded| expansion_has_no_errors(expanded.file_id, semantics))
+                    .filter(|expanded| rust_analyzer_ext::expansion_has_no_errors(expanded.file_id, semantics))
                     .map(|expanded| {
                         Self::from_node(
                             &expanded.value,
@@ -336,15 +336,6 @@ fn has_inactive_cfg_attr(node: &SyntaxNode, cfg_options: &CfgOptions) -> bool {
             _ => None,
         })
         .any(|predicate| cfg_options.check(&CfgExpr::parse_from_ast(predicate)) == Some(false))
-}
-
-fn expansion_has_no_errors(hir_file_id: HirFileId, semantics: &Semantics<RootDatabase>) -> bool {
-    let Some(macro_file) = hir_file_id.macro_file() else {
-        return true;
-    };
-
-    let (parse, _) = &semantics.db.parse_macro_expansion(macro_file).value;
-    parse.errors().is_empty()
 }
 
 // Macro expansions are whitespace-stripped (via `node.text()`), but rust-analyzer
