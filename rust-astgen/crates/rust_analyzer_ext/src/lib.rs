@@ -1,5 +1,6 @@
 use ra_ap_hir::{
-    Crate, HirFileId, InFile, Semantics, Type, TypeAlias, db::DefDatabase, db::ExpandDatabase,
+    Crate, HirFileId, Impl, InFile, Semantics, Type, TypeAlias, db::DefDatabase,
+    db::ExpandDatabase, db::HirDatabase, next_solver::GenericArgs,
 };
 use ra_ap_ide_db::RootDatabase;
 use ra_ap_syntax::{AstNode, SyntaxNode, ast};
@@ -66,4 +67,12 @@ pub fn normalize_assoc_type<'db>(
         .as_associated_type_parent_trait(semantics.db)
         .is_none()
         .then_some(normalized)
+}
+
+pub fn impl_trait_args<'db>(
+    impl_: Impl,
+    semantics: &Semantics<'db, RootDatabase>,
+) -> Option<GenericArgs<'db>> {
+    let trait_ref = semantics.db.impl_trait(impl_.try_into().ok()?)?;
+    Some(trait_ref.skip_binder().args)
 }

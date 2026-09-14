@@ -5,8 +5,8 @@
 
 use super::type_formatter;
 use ra_ap_hir::{
-    AsAssocItem, AssocItemContainer, Crate, EnumVariant, Function, GenericDef, Impl, InFile,
-    Module, ModuleDef, ModuleSource, Name, Semantics, Struct, TraitRef, TypeAlias,
+    AsAssocItem, AssocItemContainer, Crate, EnumVariant, Function, GenericDef, HirDisplay, Impl,
+    InFile, Module, ModuleDef, ModuleSource, Name, Semantics, Struct, TypeAlias,
 };
 use ra_ap_ide_db::RootDatabase;
 use ra_ap_syntax::{AstNode, SyntaxNode, ast};
@@ -218,10 +218,10 @@ pub(super) fn format_impl_full_name(
 ) -> Option<String> {
     let self_ty_name =
         type_formatter::format_impl_self_ty(impl_, impl_.module(semantics.db), semantics)?;
-    let Some(trait_ref) = impl_.trait_ref(semantics.db) else {
+    if impl_.trait_(semantics.db).is_none() {
         return Some(self_ty_name);
-    };
-    let trait_name = format_trait_ref_full_name(trait_ref, impl_.module(semantics.db), semantics)?;
+    }
+    let trait_name = format_impl_trait(impl_, impl_.module(semantics.db), semantics)?;
     Some(format_trait_impl_full_name(&self_ty_name, &trait_name))
 }
 
@@ -310,19 +310,28 @@ pub fn format_enum_variant_full_name(
     Some(format_member_full_name(&enum_name, &variant_name))
 }
 
-fn format_trait_ref_full_name(
-    trait_ref: TraitRef,
+pub(super) fn format_impl_trait(
+    impl_: Impl,
     module: Module,
     semantics: &Semantics<RootDatabase>,
 ) -> Option<String> {
+    let trait_ref = impl_.trait_ref(semantics.db)?;
     let trait_ = trait_ref.trait_();
     let base = format_module_def_full_name(ModuleDef::from(trait_), semantics)?;
-    let arg_count = trait_.type_or_const_param_count(semantics.db, false);
+    // Parameter 0 is the `Self` (trait) type. Actual parameters start at 1.
+    // E.g. trait Tr<'a, A, const N: usize> has parameters: Self, 'a, A, N.
+    let param_count = GenericDef::from(trait_).params(semantics.db).len();
+    let args = rust_analyzer_ext::impl_trait_args(impl_, semantics);
+    let display_target = module.krate(semantics.db).to_display_target(semantics.db);
     // Self is 0, type args are 1+
-    let generic_args = (1..=arg_count)
-        .map(|idx| {
-            let arg = trait_ref.get_type_argument(idx)?;
-            type_formatter::format_type(&arg.to_type(semantics.db), module, semantics)
+    let generic_args = (1..param_count)
+        .map(|idx| match trait_ref.get_type_argument(idx) {
+            Some(arg) => type_formatter::format_type(&arg.to_type(semantics.db), module, semantics),
+            None => {
+                // TODO: properly match and handle each one, i.e. don't rely on get_type_argument.
+                let arg = args?.as_slice().get(idx)?;
+                Some(arg.display(semantics.db, display_target).to_string())
+            }
         })
         .collect::<Option<Vec<_>>>()?;
 
