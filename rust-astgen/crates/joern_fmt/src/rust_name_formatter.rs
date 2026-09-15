@@ -37,7 +37,7 @@ fn format_module_member_full_name(
     Some(format_member_full_name(&crate_name, &canonical_path))
 }
 
-pub(crate) fn crate_name(krate: Crate, semantics: &Semantics<RootDatabase>) -> Option<String> {
+pub fn crate_name(krate: Crate, semantics: &Semantics<RootDatabase>) -> Option<String> {
     let display_name = krate.display_name(semantics.db)?.to_string();
 
     // Build scripts are named `build_script` regardless of the crate they belong to.

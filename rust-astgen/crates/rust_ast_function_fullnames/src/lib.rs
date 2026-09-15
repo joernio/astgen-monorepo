@@ -1,12 +1,12 @@
 use anyhow::Context;
+use joern_fmt::rust_name_formatter::{
+    format_enum_variant_full_name, format_function_full_name, format_tuple_struct_ctor_full_name,
+};
 use ra_ap_hir::{
     Adt, AsAssocItem, AssocItem, AssocItemContainer, Crate, Enum, EnumVariant, Function, HasAttrs,
     HasVisibility, Impl, Module, ModuleDef, Semantics, StructKind, Trait, attach_db,
 };
 use ra_ap_ide_db::RootDatabase;
-use rust_ast_gen::names::rust_name_formatter::{
-    format_enum_variant_full_name, format_function_full_name, format_tuple_struct_ctor_full_name,
-};
 use rust_ast_gen::{cargo, config};
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;

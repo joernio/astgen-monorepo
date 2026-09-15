@@ -516,6 +516,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a037eddb7d28de1d0fc42411f501b53b75838d313908078d6698d064f3029b24"
 
 [[package]]
+name = "joern_fmt"
+version = "0.21.7"
+dependencies = [
+ "ra_ap_hir",
+ "ra_ap_ide_db",
+ "ra_ap_syntax",
+ "rust_analyzer_ext",
+]
+
+[[package]]
 name = "kqueue"
 version = "1.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1510,6 +1520,7 @@ dependencies = [
  "anyhow",
  "clap",
  "env_logger",
+ "joern_fmt",
  "ra_ap_hir",
  "ra_ap_ide_db",
  "rust_ast_gen",
@@ -1526,6 +1537,7 @@ dependencies = [
  "clap",
  "dunce",
  "env_logger",
+ "joern_fmt",
  "log",
  "ra_ap_hir",
  "ra_ap_ide_db",

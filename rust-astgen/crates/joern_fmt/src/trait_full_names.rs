@@ -11,7 +11,7 @@ use ra_ap_syntax::{ast, ast::HasTypeBounds};
 // NB: This is approximate (cf. all_for_type's doc). In particular, `impl<T> Trait for T` are
 // excluded, as well as compiler marker traits (Send, Sync, Unpin, UnwindSafe, etc.), and
 // negative impls (no use for them).
-pub(crate) fn implemented_traits_for_struct(
+pub fn implemented_traits_for_struct(
     struct_: &ast::Struct,
     semantics: &Semantics<RootDatabase>,
 ) -> Option<Vec<String>> {
@@ -19,7 +19,7 @@ pub(crate) fn implemented_traits_for_struct(
     implemented_traits(adt, semantics)
 }
 
-pub(crate) fn implemented_traits_for_enum(
+pub fn implemented_traits_for_enum(
     enum_: &ast::Enum,
     semantics: &Semantics<RootDatabase>,
 ) -> Option<Vec<String>> {
@@ -42,7 +42,7 @@ fn implemented_traits(adt: Adt, semantics: &Semantics<RootDatabase>) -> Option<V
 }
 
 // TODO: `where Self: Tr` is in essence also a supertrait, but not currently handled.
-pub(crate) fn supertraits(
+pub fn supertraits(
     trait_decl: &ast::Trait,
     semantics: &Semantics<RootDatabase>,
 ) -> Option<Vec<String>> {

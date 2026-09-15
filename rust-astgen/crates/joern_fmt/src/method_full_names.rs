@@ -8,7 +8,7 @@ use ra_ap_ide_db::RootDatabase;
 use ra_ap_syntax::ast;
 
 /// Whether a `CallExpr`'s first argument is a `self` receiver.
-pub(crate) fn has_self_receiver(
+pub fn has_self_receiver(
     call_expr: &ast::CallExpr,
     semantics: &Semantics<RootDatabase>,
 ) -> Option<bool> {
@@ -19,7 +19,7 @@ pub(crate) fn has_self_receiver(
     }
 }
 
-pub(crate) fn resolve_method_call_expr_full_name(
+pub fn resolve_method_call_expr_full_name(
     method_call_expr: &ast::MethodCallExpr,
     semantics: &Semantics<RootDatabase>,
 ) -> Option<String> {
@@ -27,7 +27,7 @@ pub(crate) fn resolve_method_call_expr_full_name(
     format_function_full_name(function, semantics)
 }
 
-pub(crate) fn resolve_path_expr_full_name(
+pub fn resolve_path_expr_full_name(
     path_expr: &ast::PathExpr,
     semantics: &Semantics<RootDatabase>,
 ) -> Option<String> {
@@ -38,7 +38,7 @@ pub(crate) fn resolve_path_expr_full_name(
     }
 }
 
-pub(crate) fn resolve_call_expr_full_name(
+pub fn resolve_call_expr_full_name(
     call_expr: &ast::CallExpr,
     semantics: &Semantics<RootDatabase>,
 ) -> Option<String> {
@@ -61,7 +61,7 @@ pub(crate) fn resolve_call_expr_full_name(
     }
 }
 
-pub(crate) fn resolve_struct_ctor_full_name(
+pub fn resolve_struct_ctor_full_name(
     struct_: &ast::Struct,
     semantics: &Semantics<RootDatabase>,
 ) -> Option<String> {
@@ -77,7 +77,7 @@ pub(crate) fn resolve_struct_ctor_full_name(
     format_tuple_struct_ctor_full_name(struct_def, semantics)
 }
 
-pub(crate) fn resolve_fn_def_full_name(
+pub fn resolve_fn_def_full_name(
     fn_: &ast::Fn,
     semantics: &Semantics<RootDatabase>,
 ) -> Option<String> {
