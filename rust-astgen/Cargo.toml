@@ -1,6 +1,6 @@
 [workspace]
 members = ["crates/joern_fmt", "crates/rust_analyzer_ext", "crates/rust_ast_function_fullnames", "crates/scala_bindings_gen"]
-default-members = ["."]
+default-members = [".", "crates/joern_fmt"]
 
 [workspace.package]
 version = "0.21.7"
@@ -12,6 +12,7 @@ ra_ap_ide_db = "0.0.332"
 ra_ap_load-cargo = "0.0.332"
 ra_ap_project_model = "0.0.332"
 ra_ap_syntax = "0.0.332"
+ra_ap_test_fixture = "0.0.332"
 ra_ap_vfs = "0.0.332"
 
 [package]

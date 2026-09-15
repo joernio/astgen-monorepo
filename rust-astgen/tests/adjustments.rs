@@ -1,7 +1,7 @@
 mod common;
 
 use crate::common::{
-    TestResult, closure_expr, no_sysroot_ast_json, path_expr, ref_expr, return_expr,
+    TestResult, closure_expr, name_ref, no_sysroot_ast_json, path_expr, ref_expr, return_expr,
     sysroot_ast_json,
 };
 use serde_json::json;
@@ -414,6 +414,49 @@ fn main() {
             json!({"kind": "borrow", "source": "alloc::string::String", "target": "&alloc::string::String"}),
             json!({"kind": "cast", "source": "&alloc::string::String", "target": "&dyn core::fmt::Display"}),
         ],
+    );
+
+    Ok(())
+}
+
+#[test]
+fn emits_unadjusted_type_for_method_receiver() -> TestResult<()> {
+    let json = no_sysroot_ast_json(
+        "rust2cpg",
+        &[(
+            "src/main.rs",
+            r#"
+mod imported {
+    pub struct Type;
+}
+
+use imported::Type;
+
+impl Type {
+    fn value(&self) -> bool {
+        true
+    }
+}
+
+fn main() {
+    let receiver = Type;
+    let method_value = receiver.value();
+}
+"#,
+        )],
+        "src/main.rs",
+    )?;
+    assert_eq!(
+        name_ref(&json, "receiver").type_full_name(),
+        "rust2cpg::imported::Type"
+    );
+    assert_eq!(
+        path_expr(&json, "receiver").adjustments(),
+        vec![json!({
+            "kind": "borrow",
+            "source": "rust2cpg::imported::Type",
+            "target": "&rust2cpg::imported::Type",
+        })],
     );
 
     Ok(())

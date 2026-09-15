@@ -172,20 +172,6 @@ impl<'a> NodeSelector<'a> {
         self.field("methodFullName")
     }
 
-    pub fn type_full_name_opt(self) -> Option<String> {
-        self.one_node()
-            .get("typeFullName")
-            .and_then(Value::as_str)
-            .map(str::to_owned)
-    }
-
-    pub fn method_full_name_opt(self) -> Option<String> {
-        self.one_node()
-            .get("methodFullName")
-            .and_then(Value::as_str)
-            .map(str::to_owned)
-    }
-
     fn field(self, field: &str) -> String {
         self.one_node()
             .get(field)
@@ -238,34 +224,6 @@ impl<'a> NodeSelector<'a> {
             .cloned()
             .unwrap_or_default()
     }
-
-    pub fn has_self_receiver(self) -> Option<bool> {
-        self.one_node()
-            .get("hasSelfReceiver")
-            .and_then(Value::as_bool)
-    }
-
-    pub fn implemented_traits(self) -> Vec<String> {
-        self.string_list("implementedTraits")
-    }
-
-    pub fn supertraits(self) -> Vec<String> {
-        self.string_list("supertraits")
-    }
-
-    fn string_list(self, field: &str) -> Vec<String> {
-        self.one_node()
-            .get(field)
-            .and_then(Value::as_array)
-            .map(|values| {
-                values
-                    .iter()
-                    .filter_map(Value::as_str)
-                    .map(str::to_owned)
-                    .collect()
-            })
-            .unwrap_or_default()
-    }
 }
 
 fn node<'a>(json: &'a Value, kind: &'static str, text: &'static str) -> NodeSelector<'a> {
@@ -293,36 +251,12 @@ pub fn ident_pat<'a>(json: &'a Value, text: &'static str) -> NodeSelector<'a> {
     node(json, "IDENT_PAT", text)
 }
 
-pub fn struct_decl<'a>(json: &'a Value, text: &'static str) -> NodeSelector<'a> {
-    node(json, "STRUCT", text)
-}
-
-pub fn enum_decl<'a>(json: &'a Value, text: &'static str) -> NodeSelector<'a> {
-    node(json, "ENUM", text)
-}
-
-pub fn trait_decl<'a>(json: &'a Value, text: &'static str) -> NodeSelector<'a> {
-    node(json, "TRAIT", text)
-}
-
 pub fn impl_decl<'a>(json: &'a Value, text: &'static str) -> NodeSelector<'a> {
     node(json, "IMPL", text)
 }
 
 pub fn fn_decl<'a>(json: &'a Value, text: &'static str) -> NodeSelector<'a> {
     node(json, "FN", text)
-}
-
-pub fn self_param<'a>(json: &'a Value, text: &'static str) -> NodeSelector<'a> {
-    node(json, "SELF_PARAM", text)
-}
-
-pub fn literal<'a>(json: &'a Value, text: &'static str) -> NodeSelector<'a> {
-    node(json, "LITERAL", text)
-}
-
-pub fn bin_expr<'a>(json: &'a Value, text: &'static str) -> NodeSelector<'a> {
-    node(json, "BIN_EXPR", text)
 }
 
 fn node_start_line<'a>(json: &'a Value, node: &Value) -> Option<&'a str> {
