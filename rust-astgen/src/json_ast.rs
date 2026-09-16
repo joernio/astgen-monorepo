@@ -3,7 +3,7 @@
 use crate::adjustments::{self, Adjustment};
 use crate::format_args::{self, ImplicitFormatArg};
 use crate::json_gen::syntax_kind_to_json_name;
-use crate::names::{method_full_names, trait_full_names, type_full_names};
+use joern_fmt::{method_full_names, trait_full_names, type_full_names};
 use ra_ap_hir::{
     CfgExpr, CfgOptions, Crate, HirFileId, Semantics, db::ExpandDatabase, prettify_macro_expansion,
 };

@@ -1,6 +1,6 @@
 [workspace]
-members = ["crates/rust_analyzer_ext", "crates/rust_ast_function_fullnames", "crates/scala_bindings_gen"]
-default-members = ["."]
+members = ["crates/joern_fmt", "crates/rust_analyzer_ext", "crates/rust_ast_function_fullnames", "crates/scala_bindings_gen"]
+default-members = [".", "crates/joern_fmt"]
 
 [workspace.package]
 version = "0.21.7"
@@ -12,6 +12,7 @@ ra_ap_ide_db = "0.0.332"
 ra_ap_load-cargo = "0.0.332"
 ra_ap_project_model = "0.0.332"
 ra_ap_syntax = "0.0.332"
+ra_ap_test_fixture = "0.0.332"
 ra_ap_vfs = "0.0.332"
 
 [package]
@@ -24,6 +25,7 @@ anyhow = "1.0.102"
 clap = { version = "4.6.0", default-features = false, features = ["std", "help", "usage", "derive"] }
 dunce = "1.0.5"
 env_logger = { version = "0.11.10", default-features = false }
+joern_fmt = { path = "crates/joern_fmt" }
 ra_ap_hir.workspace = true
 ra_ap_ide_db.workspace = true
 ra_ap_load-cargo.workspace = true

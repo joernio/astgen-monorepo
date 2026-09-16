@@ -16,7 +16,7 @@ use ra_ap_ide_db::RootDatabase;
 use ra_ap_ide_db::famous_defs::FamousDefs;
 use ra_ap_syntax::ast;
 
-pub(crate) fn format_type(
+pub fn format_type(
     typ: &Type,
     module: Module,
     semantics: &Semantics<RootDatabase>,

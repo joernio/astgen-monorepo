@@ -7,6 +7,7 @@ edition.workspace = true
 anyhow = "1.0.102"
 clap = { version = "4.6.0", default-features = false, features = ["std", "help", "usage", "derive"] }
 env_logger = { version = "0.11.10", default-features = false }
+joern_fmt = { path = "../joern_fmt" }
 ra_ap_hir.workspace = true
 ra_ap_ide_db.workspace = true
 rust_ast_gen = { path = "../.." }
