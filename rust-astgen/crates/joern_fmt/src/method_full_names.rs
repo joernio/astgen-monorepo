@@ -19,7 +19,7 @@ pub fn has_self_receiver(
     }
 }
 
-pub fn resolve_method_call_expr_full_name(
+pub fn for_method_call(
     method_call_expr: &ast::MethodCallExpr,
     semantics: &Semantics<RootDatabase>,
 ) -> Option<String> {
@@ -27,7 +27,7 @@ pub fn resolve_method_call_expr_full_name(
     format_function_full_name(function, semantics)
 }
 
-pub fn resolve_path_expr_full_name(
+pub fn for_path_expr(
     path_expr: &ast::PathExpr,
     semantics: &Semantics<RootDatabase>,
 ) -> Option<String> {
@@ -38,13 +38,13 @@ pub fn resolve_path_expr_full_name(
     }
 }
 
-pub fn resolve_call_expr_full_name(
+pub fn for_call_expr(
     call_expr: &ast::CallExpr,
     semantics: &Semantics<RootDatabase>,
 ) -> Option<String> {
     let callee_expr = call_expr.expr()?;
     if let ast::Expr::PathExpr(path_expr) = &callee_expr
-        && let Some(name) = resolve_path_expr_full_name(path_expr, semantics)
+        && let Some(name) = for_path_expr(path_expr, semantics)
     {
         return Some(name);
     }
@@ -61,7 +61,7 @@ pub fn resolve_call_expr_full_name(
     }
 }
 
-pub fn resolve_struct_ctor_full_name(
+pub fn for_struct(
     struct_: &ast::Struct,
     semantics: &Semantics<RootDatabase>,
 ) -> Option<String> {
@@ -77,7 +77,7 @@ pub fn resolve_struct_ctor_full_name(
     format_tuple_struct_ctor_full_name(struct_def, semantics)
 }
 
-pub fn resolve_fn_def_full_name(
+pub fn for_fn(
     fn_: &ast::Fn,
     semantics: &Semantics<RootDatabase>,
 ) -> Option<String> {

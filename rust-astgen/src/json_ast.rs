@@ -3,7 +3,7 @@
 use crate::adjustments::{self, Adjustment};
 use crate::format_args::{self, ImplicitFormatArg};
 use crate::json_gen::syntax_kind_to_json_name;
-use joern_fmt::{method_full_names, trait_full_names, type_full_names};
+use joern_fmt::{implemented_traits, method_full_names, supertraits, type_full_names};
 use ra_ap_hir::{
     CfgExpr, CfgOptions, Crate, HirFileId, Semantics, db::ExpandDatabase, prettify_macro_expansion,
 };
@@ -120,36 +120,36 @@ impl RustAstGenJsonNode {
         let text = macro_text(node, hir_file_id, semantics, target_crate);
         let method_full_name = match_ast! {
             match node {
-                ast::CallExpr(it) => method_full_names::resolve_call_expr_full_name(&it, semantics),
-                ast::MethodCallExpr(it) => method_full_names::resolve_method_call_expr_full_name(&it, semantics),
-                ast::PathExpr(it) => method_full_names::resolve_path_expr_full_name(&it, semantics),
-                ast::Struct(it) => method_full_names::resolve_struct_ctor_full_name(&it, semantics),
-                ast::Fn(it) => method_full_names::resolve_fn_def_full_name(&it, semantics),
+                ast::CallExpr(it) => method_full_names::for_call_expr(&it, semantics),
+                ast::MethodCallExpr(it) => method_full_names::for_method_call(&it, semantics),
+                ast::PathExpr(it) => method_full_names::for_path_expr(&it, semantics),
+                ast::Struct(it) => method_full_names::for_struct(&it, semantics),
+                ast::Fn(it) => method_full_names::for_fn(&it, semantics),
                 _ => None,
             }
         };
         let type_full_name = match_ast! {
             match node {
-                ast::Expr(it) => type_full_names::resolve_expr_type_full_name(&it, semantics),
-                ast::Enum(it) => type_full_names::resolve_enum_type_full_name(&it, semantics),
-                ast::Struct(it) => type_full_names::resolve_struct_type_full_name(&it, semantics),
-                ast::Impl(it) => type_full_names::resolve_impl_type_full_name(&it, semantics),
-                ast::IdentPat(it) => type_full_names::resolve_ident_pat_type_full_name(&it, semantics),
-                ast::SelfParam(it) => type_full_names::resolve_self_param_type_full_name(&it, semantics),
-                ast::NameRef(it) => type_full_names::resolve_name_ref_type_full_name(&it, semantics),
+                ast::Expr(it) => type_full_names::for_expr(&it, semantics),
+                ast::Enum(it) => type_full_names::for_enum(&it, semantics),
+                ast::Struct(it) => type_full_names::for_struct(&it, semantics),
+                ast::Impl(it) => type_full_names::for_impl(&it, semantics),
+                ast::IdentPat(it) => type_full_names::for_ident_pat(&it, semantics),
+                ast::SelfParam(it) => type_full_names::for_self_param(&it, semantics),
+                ast::NameRef(it) => type_full_names::for_name_ref(&it, semantics),
                 _ => None,
             }
         };
         let implemented_traits = match_ast! {
             match node {
-                ast::Struct(it) => trait_full_names::implemented_traits_for_struct(&it, semantics),
-                ast::Enum(it) => trait_full_names::implemented_traits_for_enum(&it, semantics),
+                ast::Struct(it) => implemented_traits::for_struct(&it, semantics),
+                ast::Enum(it) => implemented_traits::for_enum(&it, semantics),
                 _ => None,
             }
         };
         let supertraits = match_ast! {
             match node {
-                ast::Trait(it) => trait_full_names::supertraits(&it, semantics),
+                ast::Trait(it) => supertraits::for_trait(&it, semantics),
                 _ => None,
             }
         };
