@@ -12,33 +12,21 @@ use ra_ap_hir::{Module, ModuleDef, PathResolution, Semantics, Type, TypeAlias};
 use ra_ap_ide_db::RootDatabase;
 use ra_ap_syntax::{AstNode, SyntaxNode, ast, ast::HasGenericArgs};
 
-pub fn for_enum(
-    enum_: &ast::Enum,
-    semantics: &Semantics<RootDatabase>,
-) -> Option<String> {
+pub fn for_enum(enum_: &ast::Enum, semantics: &Semantics<RootDatabase>) -> Option<String> {
     let enum_def = semantics.to_def(enum_)?;
     format_generic_module_def_full_name(enum_def, semantics)
 }
 
-pub fn for_struct(
-    struct_: &ast::Struct,
-    semantics: &Semantics<RootDatabase>,
-) -> Option<String> {
+pub fn for_struct(struct_: &ast::Struct, semantics: &Semantics<RootDatabase>) -> Option<String> {
     let struct_def = semantics.to_def(struct_)?;
     format_generic_module_def_full_name(struct_def, semantics)
 }
 
-pub fn for_impl(
-    impl_: &ast::Impl,
-    semantics: &Semantics<RootDatabase>,
-) -> Option<String> {
+pub fn for_impl(impl_: &ast::Impl, semantics: &Semantics<RootDatabase>) -> Option<String> {
     format_impl_full_name(semantics.to_def(impl_)?, semantics)
 }
 
-pub fn for_expr(
-    expr: &ast::Expr,
-    semantics: &Semantics<RootDatabase>,
-) -> Option<String> {
+pub fn for_expr(expr: &ast::Expr, semantics: &Semantics<RootDatabase>) -> Option<String> {
     let typ = semantics.type_of_expr(expr)?.original();
     format_node_type_full_name(typ, expr.syntax(), semantics)
 }

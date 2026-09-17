@@ -124,10 +124,7 @@ fn check_call_type_full_name(ra_fixture: &str, expected: &str) {
     check(
         ra_fixture,
         |call: &ast::CallExpr, semantics| {
-            type_full_names::for_expr(
-                &ast::Expr::CallExpr(call.clone()),
-                semantics,
-            )
+            type_full_names::for_expr(&ast::Expr::CallExpr(call.clone()), semantics)
         },
         Some(expected.to_owned()),
     );
@@ -147,10 +144,7 @@ fn check_method_call_type_full_name(ra_fixture: &str, expected: &str) {
     check(
         ra_fixture,
         |method_call: &ast::MethodCallExpr, semantics| {
-            type_full_names::for_expr(
-                &ast::Expr::MethodCallExpr(method_call.clone()),
-                semantics,
-            )
+            type_full_names::for_expr(&ast::Expr::MethodCallExpr(method_call.clone()), semantics)
         },
         Some(expected.to_owned()),
     );
@@ -188,10 +182,7 @@ fn check_path_type_full_name(ra_fixture: &str, expected: &str) {
     check(
         ra_fixture,
         |path: &ast::PathExpr, semantics| {
-            type_full_names::for_expr(
-                &ast::Expr::PathExpr(path.clone()),
-                semantics,
-            )
+            type_full_names::for_expr(&ast::Expr::PathExpr(path.clone()), semantics)
         },
         Some(expected.to_owned()),
     );
@@ -211,10 +202,7 @@ fn check_bin_type_full_name(ra_fixture: &str, expected: &str) {
     check(
         ra_fixture,
         |bin: &ast::BinExpr, semantics| {
-            type_full_names::for_expr(
-                &ast::Expr::BinExpr(bin.clone()),
-                semantics,
-            )
+            type_full_names::for_expr(&ast::Expr::BinExpr(bin.clone()), semantics)
         },
         Some(expected.to_owned()),
     );
@@ -225,10 +213,7 @@ fn check_literal_type_full_name(ra_fixture: &str, expected: &str) {
     check(
         ra_fixture,
         |literal: &ast::Literal, semantics| {
-            type_full_names::for_expr(
-                &ast::Expr::Literal(literal.clone()),
-                semantics,
-            )
+            type_full_names::for_expr(&ast::Expr::Literal(literal.clone()), semantics)
         },
         Some(expected.to_owned()),
     );

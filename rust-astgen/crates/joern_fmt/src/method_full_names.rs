@@ -61,10 +61,7 @@ pub fn for_call_expr(
     }
 }
 
-pub fn for_struct(
-    struct_: &ast::Struct,
-    semantics: &Semantics<RootDatabase>,
-) -> Option<String> {
+pub fn for_struct(struct_: &ast::Struct, semantics: &Semantics<RootDatabase>) -> Option<String> {
     // We provide a `methodFullName` at struct definition to match its constructor name.
     // Only tuple structs have a callable constructor. Record/Unit structs have RecordExpr
     // and IdentExpr at call-site.
@@ -77,10 +74,7 @@ pub fn for_struct(
     format_tuple_struct_ctor_full_name(struct_def, semantics)
 }
 
-pub fn for_fn(
-    fn_: &ast::Fn,
-    semantics: &Semantics<RootDatabase>,
-) -> Option<String> {
+pub fn for_fn(fn_: &ast::Fn, semantics: &Semantics<RootDatabase>) -> Option<String> {
     let function = semantics.to_def(fn_)?;
     format_function_full_name(function, semantics)
 }
