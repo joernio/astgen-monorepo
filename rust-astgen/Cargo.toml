@@ -3,7 +3,7 @@ members = ["crates/joern_fmt", "crates/rust_analyzer_ext", "crates/rust_ast_func
 default-members = [".", "crates/joern_fmt"]
 
 [workspace.package]
-version = "0.21.7"
+version = "0.21.8"
 edition = "2024"
 
 [workspace.dependencies]
