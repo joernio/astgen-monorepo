@@ -126,6 +126,7 @@ impl RustAstGenJsonNode {
                 ast::CallExpr(it) => method_full_names::for_call_expr(&it, semantics),
                 ast::MethodCallExpr(it) => method_full_names::for_method_call(&it, semantics),
                 ast::PathExpr(it) => method_full_names::for_path_expr(&it, semantics),
+                ast::RecordExpr(it) => method_full_names::for_record_expr(&it, semantics),
                 ast::Struct(it) => method_full_names::for_struct(&it, semantics),
                 ast::Fn(it) => method_full_names::for_fn(&it, semantics),
                 _ => None,

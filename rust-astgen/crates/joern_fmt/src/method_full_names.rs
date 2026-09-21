@@ -1,9 +1,10 @@
 //! Where we finally build `methodFullName` for each call.
 
 use super::rust_name_formatter::{
-    format_enum_variant_full_name, format_function_full_name, format_tuple_struct_ctor_full_name,
+    format_enum_variant_full_name, format_function_full_name, format_generic_module_def_full_name,
+    format_tuple_struct_ctor_full_name,
 };
-use ra_ap_hir::{CallableKind, ModuleDef, PathResolution, Semantics};
+use ra_ap_hir::{CallableKind, ModuleDef, PathResolution, Semantics, Variant};
 use ra_ap_ide_db::RootDatabase;
 use ra_ap_syntax::ast;
 
@@ -58,6 +59,17 @@ pub fn for_call_expr(
         }
         // TODO(xavierp): need more time to understand what these should be named as
         CallableKind::Closure(_) | CallableKind::FnPtr | CallableKind::FnImpl(_) => None,
+    }
+}
+
+pub fn for_record_expr(
+    record_expr: &ast::RecordExpr,
+    semantics: &Semantics<RootDatabase>,
+) -> Option<String> {
+    match semantics.resolve_variant(record_expr.clone())? {
+        Variant::Struct(struct_) => format_generic_module_def_full_name(struct_, semantics),
+        Variant::Union(union) => format_generic_module_def_full_name(union, semantics),
+        Variant::EnumVariant(variant) => format_enum_variant_full_name(variant, semantics),
     }
 }
 
