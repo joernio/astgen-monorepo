@@ -64,6 +64,9 @@ pub(crate) struct RustAstGenJsonNode {
     // Only applicable when node_kind is CallExpr.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub(crate) has_self_receiver: Option<bool>,
+    // Only applicable when node_kind is FormatArgsArg.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(crate) format_spec: Option<String>,
     pub(crate) children: Vec<RustAstGenJsonNode>,
 }
 
@@ -165,6 +168,12 @@ impl RustAstGenJsonNode {
                 _ => None,
             }
         };
+        let format_spec = match_ast! {
+            match node {
+                ast::FormatArgsArg(it) => format_args::format_spec(&it),
+                _ => None,
+            }
+        };
         let implicit_format_args = match_ast! {
             match node {
                 ast::FormatArgsExpr(it) => format_args::implicit_format_args(&it, semantics),
@@ -226,6 +235,7 @@ impl RustAstGenJsonNode {
             supertraits,
             adjustments,
             has_self_receiver,
+            format_spec,
             children,
         }
     }
@@ -252,6 +262,7 @@ impl RustAstGenJsonNode {
             supertraits: None,
             adjustments: None,
             has_self_receiver: None,
+            format_spec: None,
         }
     }
 
@@ -287,6 +298,7 @@ impl RustAstGenJsonNode {
             macro_expansion: None,
             adjustments: None,
             has_self_receiver: None,
+            format_spec: None,
             children,
         }
     }
@@ -296,6 +308,7 @@ fn mk_format_args_arg(capture: ImplicitFormatArg) -> RustAstGenJsonNode {
     let ImplicitFormatArg {
         name,
         type_full_name,
+        format_spec,
     } = capture;
     let ident = RustAstGenJsonNode::mk_synthetic(SyntaxKind::IDENT, &name, None, vec![]);
     let name_ref = RustAstGenJsonNode::mk_synthetic(
@@ -309,7 +322,15 @@ fn mk_format_args_arg(capture: ImplicitFormatArg) -> RustAstGenJsonNode {
     let path = RustAstGenJsonNode::mk_synthetic(SyntaxKind::PATH, &name, None, vec![path_segment]);
     let path_expr =
         RustAstGenJsonNode::mk_synthetic(SyntaxKind::PATH_EXPR, &name, type_full_name, vec![path]);
-    RustAstGenJsonNode::mk_synthetic(SyntaxKind::FORMAT_ARGS_ARG, &name, None, vec![path_expr])
+    RustAstGenJsonNode {
+        format_spec,
+        ..RustAstGenJsonNode::mk_synthetic(
+            SyntaxKind::FORMAT_ARGS_ARG,
+            &name,
+            None,
+            vec![path_expr],
+        )
+    }
 }
 
 fn is_cfg_inactive(child: &SyntaxElement, cfg_options: Option<&CfgOptions>) -> bool {

@@ -3,10 +3,11 @@ members = ["crates/joern_fmt", "crates/rust_analyzer_ext", "crates/rust_ast_func
 default-members = [".", "crates/joern_fmt"]
 
 [workspace.package]
-version = "0.21.8"
+version = "0.22.0"
 edition = "2024"
 
 [workspace.dependencies]
+ra-ap-rustc_parse_format = "0.165.0"
 ra_ap_hir = "0.0.332"
 ra_ap_ide_db = "0.0.332"
 ra_ap_load-cargo = "0.0.332"
@@ -19,6 +20,9 @@ ra_ap_vfs = "0.0.332"
 name = "rust_ast_gen"
 version.workspace = true
 edition.workspace = true
+
+[lib]
+doctest = false
 
 [dependencies]
 anyhow = "1.0.102"

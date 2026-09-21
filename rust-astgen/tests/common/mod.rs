@@ -173,11 +173,15 @@ impl<'a> NodeSelector<'a> {
     }
 
     fn field(self, field: &str) -> String {
+        self.field_opt(field)
+            .unwrap_or_else(|| panic!("expected {field} on {}", self.description()))
+    }
+
+    fn field_opt(self, field: &str) -> Option<String> {
         self.one_node()
             .get(field)
             .and_then(Value::as_str)
-            .unwrap_or_else(|| panic!("expected {field} on {}", self.description()))
-            .to_owned()
+            .map(str::to_owned)
     }
 
     fn one_node(self) -> &'a Value {
@@ -223,6 +227,10 @@ impl<'a> NodeSelector<'a> {
             .and_then(Value::as_array)
             .cloned()
             .unwrap_or_default()
+    }
+
+    pub fn format_spec(self) -> Option<String> {
+        self.field_opt("formatSpec")
     }
 }
 

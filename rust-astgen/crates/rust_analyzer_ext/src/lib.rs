@@ -3,8 +3,10 @@ use ra_ap_hir::{
     db::ExpandDatabase, db::HirDatabase, next_solver::GenericArgs,
 };
 use ra_ap_ide_db::RootDatabase;
-use ra_ap_syntax::{AstNode, SyntaxNode, ast};
+use ra_ap_rustc_parse_format::{ParseMode, Parser, Piece, Position};
+use ra_ap_syntax::{AstNode, AstToken, SyntaxNode, ast, ast::IsString};
 use ra_ap_vfs::FileId;
+use std::ops::Range;
 
 pub fn is_include_target(
     file_id: FileId,
@@ -75,4 +77,57 @@ pub fn impl_trait_args<'db>(
 ) -> Option<GenericArgs<'db>> {
     let trait_ref = semantics.db.impl_trait(impl_.try_into().ok()?)?;
     Some(trait_ref.skip_binder().args)
+}
+
+pub struct FormatPlaceholder {
+    pub argument: FormatArgument,
+    pub range: Range<usize>,
+}
+
+pub enum FormatArgument {
+    Index(usize),
+    Named(String),
+}
+
+pub fn format_template(format_args_expr: &ast::FormatArgsExpr) -> Option<ast::String> {
+    let ast::Expr::Literal(template) = format_args_expr.template()? else {
+        return None;
+    };
+    ast::String::cast(template.token())
+}
+
+pub fn format_placeholders(string: &ast::String) -> Option<Vec<FormatPlaceholder>> {
+    let value = string.value().ok()?;
+    let raw_string_hashes = string
+        .is_raw()
+        .then(|| string.text()[1..].chars().take_while(|&c| c == '#').count());
+    let mut parser = Parser::new(
+        &value,
+        raw_string_hashes,
+        Some(string.text().to_owned()),
+        false,
+        ParseMode::Format,
+    );
+    let pieces: Vec<Piece> = parser.by_ref().collect();
+    if !parser.errors.is_empty() {
+        return None;
+    }
+    let placeholders = pieces
+        .iter()
+        .filter_map(|piece| match piece {
+            Piece::NextArgument(argument) => Some(argument),
+            Piece::Lit(_) => None,
+        })
+        .zip(&parser.arg_places)
+        .map(|(argument, range)| FormatPlaceholder {
+            argument: match argument.position {
+                Position::ArgumentImplicitlyIs(index) | Position::ArgumentIs(index) => {
+                    FormatArgument::Index(index)
+                }
+                Position::ArgumentNamed(name) => FormatArgument::Named(name.to_owned()),
+            },
+            range: range.clone(),
+        })
+        .collect();
+    Some(placeholders)
 }
