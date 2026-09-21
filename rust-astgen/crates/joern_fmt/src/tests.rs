@@ -8,6 +8,7 @@ mod literal;
 mod method_call_expr;
 mod name_ref;
 mod path_expr;
+mod record_expr;
 mod self_param;
 mod struct_decl;
 mod trait_decl;
@@ -65,6 +66,15 @@ fn check_path_method_full_name(ra_fixture: &str, expected: &str) {
     check(
         ra_fixture,
         method_full_names::for_path_expr,
+        Some(expected.to_owned()),
+    );
+}
+
+#[track_caller]
+fn check_record_method_full_name(ra_fixture: &str, expected: &str) {
+    check(
+        ra_fixture,
+        method_full_names::for_record_expr,
         Some(expected.to_owned()),
     );
 }
