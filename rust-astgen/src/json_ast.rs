@@ -3,7 +3,9 @@
 use crate::adjustments::{self, Adjustment};
 use crate::format_args::{self, ImplicitFormatArg};
 use crate::json_gen::syntax_kind_to_json_name;
-use joern_fmt::{implemented_traits, method_full_names, supertraits, type_full_names};
+use joern_fmt::{
+    ctor_type_full_names, implemented_traits, method_full_names, supertraits, type_full_names,
+};
 use ra_ap_hir::{
     CfgExpr, CfgOptions, Crate, HirFileId, Semantics, db::ExpandDatabase, prettify_macro_expansion,
 };
@@ -67,6 +69,9 @@ pub(crate) struct RustAstGenJsonNode {
     // Only applicable when node_kind is FormatArgsArg.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub(crate) format_spec: Option<String>,
+    // Only applicable when node_kind is PathExpr.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(crate) ctor_type_full_name: Option<String>,
     pub(crate) children: Vec<RustAstGenJsonNode>,
 }
 
@@ -175,6 +180,12 @@ impl RustAstGenJsonNode {
                 _ => None,
             }
         };
+        let ctor_type_full_name = match_ast! {
+            match node {
+                ast::PathExpr(it) => ctor_type_full_names::for_path_expr(&it, semantics),
+                _ => None,
+            }
+        };
         let implicit_format_args = match_ast! {
             match node {
                 ast::FormatArgsExpr(it) => format_args::implicit_format_args(&it, semantics),
@@ -237,6 +248,7 @@ impl RustAstGenJsonNode {
             adjustments,
             has_self_receiver,
             format_spec,
+            ctor_type_full_name,
             children,
         }
     }
@@ -264,6 +276,7 @@ impl RustAstGenJsonNode {
             adjustments: None,
             has_self_receiver: None,
             format_spec: None,
+            ctor_type_full_name: None,
         }
     }
 
@@ -300,6 +313,7 @@ impl RustAstGenJsonNode {
             adjustments: None,
             has_self_receiver: None,
             format_spec: None,
+            ctor_type_full_name: None,
             children,
         }
     }

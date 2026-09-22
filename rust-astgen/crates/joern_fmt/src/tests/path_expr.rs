@@ -1,4 +1,6 @@
-use super::{check_path_method_full_name, check_path_type_full_name};
+use super::{
+    check_path_ctor_type_full_name, check_path_method_full_name, check_path_type_full_name,
+};
 
 #[test]
 fn free_fn_as_callee() {
@@ -130,5 +132,19 @@ fn f() {
 fn main() { f(); }
 "#,
         "ra_test_fixture::f::E#2",
+    );
+}
+
+#[test]
+fn unit_struct_as_value() {
+    check_path_ctor_type_full_name(
+        r#"
+struct S;
+
+fn main() {
+    let s = $0S;
+}
+"#,
+        "ra_test_fixture::S",
     );
 }

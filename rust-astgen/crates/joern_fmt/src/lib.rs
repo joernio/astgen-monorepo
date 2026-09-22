@@ -1,3 +1,4 @@
+pub mod ctor_type_full_names;
 pub mod implemented_traits;
 pub mod method_full_names;
 pub mod rust_name_formatter;

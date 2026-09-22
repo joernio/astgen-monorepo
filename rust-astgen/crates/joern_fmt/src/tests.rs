@@ -13,7 +13,9 @@ mod self_param;
 mod struct_decl;
 mod trait_decl;
 
-use crate::{implemented_traits, method_full_names, supertraits, type_full_names};
+use crate::{
+    ctor_type_full_names, implemented_traits, method_full_names, supertraits, type_full_names,
+};
 use ra_ap_hir::{Semantics, attach_db};
 use ra_ap_ide_db::RootDatabase;
 use ra_ap_syntax::{AstNode, algo::find_node_at_offset, ast};
@@ -66,6 +68,15 @@ fn check_path_method_full_name(ra_fixture: &str, expected: &str) {
     check(
         ra_fixture,
         method_full_names::for_path_expr,
+        Some(expected.to_owned()),
+    );
+}
+
+#[track_caller]
+fn check_path_ctor_type_full_name(ra_fixture: &str, expected: &str) {
+    check(
+        ra_fixture,
+        ctor_type_full_names::for_path_expr,
         Some(expected.to_owned()),
     );
 }
