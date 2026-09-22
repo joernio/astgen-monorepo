@@ -176,7 +176,7 @@ fn emit_base_node_and_token_traits(
     config: &ScalaAstGenConfig,
 ) -> Result<(), Error> {
     // TODO: methodFullName, typeFullName, macroExpansion, text, adjustments, hasSelfReceiver,
-    //  implementedTraits, supertraits and formatSpec
+    //  implementedTraits, supertraits, formatSpec and ctorTypeFullName
     //  should not come built-in but rather from ScalaAstGenConfig, as they don't make sense
     //  in any other context.
     write!(
@@ -203,6 +203,7 @@ fn emit_base_node_and_token_traits(
             "    def adjustments: Option[Seq[Adjustment]] = json.obj.get(\"adjustments\").map(_.arr.toSeq.map(Adjustment(_)))\n",
             "    def hasSelfReceiver: Option[Boolean] = json.obj.get(\"hasSelfReceiver\").map(_.bool)\n",
             "    def formatSpec: Option[String] = json.obj.get(\"formatSpec\").flatMap(_.strOpt)\n",
+            "    def ctorTypeFullName: Option[String] = json.obj.get(\"ctorTypeFullName\").flatMap(_.strOpt)\n",
             "  }}\n",
             "\n",
             "  sealed trait {token_base} extends {node_base}\n"
@@ -626,6 +627,7 @@ object ExampleAst {
     def adjustments: Option[Seq[Adjustment]] = json.obj.get("adjustments").map(_.arr.toSeq.map(Adjustment(_)))
     def hasSelfReceiver: Option[Boolean] = json.obj.get("hasSelfReceiver").map(_.bool)
     def formatSpec: Option[String] = json.obj.get("formatSpec").flatMap(_.strOpt)
+    def ctorTypeFullName: Option[String] = json.obj.get("ctorTypeFullName").flatMap(_.strOpt)
   }
 
   sealed trait AstToken extends AstNode
@@ -742,6 +744,7 @@ object ExampleAst {
     def adjustments: Option[Seq[Adjustment]] = json.obj.get("adjustments").map(_.arr.toSeq.map(Adjustment(_)))
     def hasSelfReceiver: Option[Boolean] = json.obj.get("hasSelfReceiver").map(_.bool)
     def formatSpec: Option[String] = json.obj.get("formatSpec").flatMap(_.strOpt)
+    def ctorTypeFullName: Option[String] = json.obj.get("ctorTypeFullName").flatMap(_.strOpt)
   }
 
   sealed trait AstToken extends AstNode
