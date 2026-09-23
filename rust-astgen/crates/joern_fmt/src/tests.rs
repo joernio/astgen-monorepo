@@ -14,7 +14,8 @@ mod struct_decl;
 mod trait_decl;
 
 use crate::{
-    ctor_type_full_names, implemented_traits, method_full_names, supertraits, type_full_names,
+    ctor_type_full_names, implemented_traits, is_path, method_full_names, supertraits,
+    type_full_names,
 };
 use ra_ap_hir::{Semantics, attach_db};
 use ra_ap_ide_db::RootDatabase;
@@ -120,6 +121,11 @@ fn check_trait_supertraits(ra_fixture: &str, expected: Option<Vec<&str>>) {
 #[track_caller]
 fn check_call_has_self_receiver(ra_fixture: &str, expected: Option<bool>) {
     check(ra_fixture, method_full_names::has_self_receiver, expected);
+}
+
+#[track_caller]
+fn check_ident_pat_is_path(ra_fixture: &str, expected: Option<bool>) {
+    check(ra_fixture, is_path::for_ident_pat, expected);
 }
 
 #[track_caller]

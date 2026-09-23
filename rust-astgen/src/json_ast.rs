@@ -4,7 +4,8 @@ use crate::adjustments::{self, Adjustment};
 use crate::format_args::{self, ImplicitFormatArg};
 use crate::json_gen::syntax_kind_to_json_name;
 use joern_fmt::{
-    ctor_type_full_names, implemented_traits, method_full_names, supertraits, type_full_names,
+    ctor_type_full_names, implemented_traits, is_path, method_full_names, supertraits,
+    type_full_names,
 };
 use ra_ap_hir::{
     CfgExpr, CfgOptions, Crate, HirFileId, Semantics, db::ExpandDatabase, prettify_macro_expansion,
@@ -72,6 +73,9 @@ pub(crate) struct RustAstGenJsonNode {
     // Only applicable when node_kind is PathExpr.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub(crate) ctor_type_full_name: Option<String>,
+    // Only applicable when node_kind is IdentPat.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(crate) is_path: Option<bool>,
     pub(crate) children: Vec<RustAstGenJsonNode>,
 }
 
@@ -186,6 +190,12 @@ impl RustAstGenJsonNode {
                 _ => None,
             }
         };
+        let is_path = match_ast! {
+            match node {
+                ast::IdentPat(it) => is_path::for_ident_pat(&it, semantics),
+                _ => None,
+            }
+        };
         let implicit_format_args = match_ast! {
             match node {
                 ast::FormatArgsExpr(it) => format_args::implicit_format_args(&it, semantics),
@@ -249,6 +259,7 @@ impl RustAstGenJsonNode {
             has_self_receiver,
             format_spec,
             ctor_type_full_name,
+            is_path,
             children,
         }
     }
@@ -277,6 +288,7 @@ impl RustAstGenJsonNode {
             has_self_receiver: None,
             format_spec: None,
             ctor_type_full_name: None,
+            is_path: None,
         }
     }
 
@@ -314,6 +326,7 @@ impl RustAstGenJsonNode {
             has_self_receiver: None,
             format_spec: None,
             ctor_type_full_name: None,
+            is_path: None,
             children,
         }
     }
