@@ -1,4 +1,4 @@
-use super::check_ident_pat_type_full_name;
+use super::{check_ident_pat_is_path, check_ident_pat_type_full_name};
 
 #[test]
 fn turbofish_inherent_fn_call() {
@@ -453,5 +453,90 @@ fn f() {
 fn main() { f(); }
 "#,
         "ra_test_fixture::f::S#2",
+    );
+}
+
+#[test]
+fn binding_in_variant_pat() {
+    check_ident_pat_is_path(
+        r#"
+enum E { B(u32) }
+
+fn f(e: E) {
+    match e { E::B($0y) => {} }
+}
+"#,
+        None,
+    );
+}
+
+#[test]
+fn std_unit_variant_pat() {
+    check_ident_pat_is_path(
+        r#"
+//- minicore: option
+fn f(opt: Option<u32>) {
+    match opt { $0None => {} _ => {} }
+}
+"#,
+        Some(true),
+    );
+}
+
+#[test]
+fn glob_imported_unit_variant_pat() {
+    check_ident_pat_is_path(
+        r#"
+enum E { A }
+use E::*;
+
+fn f(e: E) {
+    match e { $0A => {} }
+}
+"#,
+        Some(true),
+    );
+}
+
+#[test]
+fn const_pat() {
+    check_ident_pat_is_path(
+        r#"
+const MAX: u32 = 10;
+
+fn f(n: u32) {
+    match n {
+        $0MAX => {}
+        _ => {}
+    }
+}
+"#,
+        Some(true),
+    );
+}
+
+#[test]
+fn unit_struct_in_let() {
+    check_ident_pat_is_path(
+        r#"
+struct U;
+
+fn f() {
+    let $0U = U;
+}
+"#,
+        Some(true),
+    );
+}
+
+#[test]
+fn unit_struct_in_param() {
+    check_ident_pat_is_path(
+        r#"
+struct U;
+
+fn f($0U: U) {}
+"#,
+        Some(true),
     );
 }
