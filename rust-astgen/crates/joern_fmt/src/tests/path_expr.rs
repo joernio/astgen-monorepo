@@ -148,3 +148,51 @@ fn main() {
         "ra_test_fixture::S",
     );
 }
+
+#[test]
+fn self_in_impl() {
+    check_path_ctor_type_full_name(
+        r#"
+struct S;
+
+impl S {
+    fn f() -> Self { $0Self }
+}
+"#,
+        "ra_test_fixture::S",
+    );
+}
+
+#[test]
+fn self_in_trait_impl() {
+    check_path_ctor_type_full_name(
+        r#"
+struct S;
+
+trait Tr {
+    fn m() -> Self;
+}
+
+impl Tr for S {
+    fn m() -> Self { $0Self }
+}
+"#,
+        "ra_test_fixture::S",
+    );
+}
+
+#[test]
+fn self_in_impl_on_type_alias() {
+    check_path_ctor_type_full_name(
+        r#"
+struct S;
+
+type A = S;
+
+impl A {
+    fn f() -> Self { $0Self }
+}
+"#,
+        "ra_test_fixture::S",
+    );
+}

@@ -14,6 +14,12 @@ pub fn for_path_expr(
         {
             format_generic_module_def_full_name(struct_, semantics)
         }
+        PathResolution::SelfType(impl_) => match impl_.self_ty(semantics.db).as_adt()? {
+            Adt::Struct(struct_) if struct_.kind(semantics.db) == StructKind::Unit => {
+                format_generic_module_def_full_name(struct_, semantics)
+            }
+            _ => None,
+        },
         _ => None,
     }
 }
