@@ -196,3 +196,33 @@ impl A {
         "ra_test_fixture::S",
     );
 }
+
+#[test]
+fn unit_variant_as_value() {
+    check_path_ctor_type_full_name(
+        r#"
+enum E { V }
+
+fn main() {
+    let v = $0E::V;
+}
+"#,
+        "ra_test_fixture::E::V",
+    );
+}
+
+#[test]
+fn glob_imported_unit_variant_as_value() {
+    check_path_ctor_type_full_name(
+        r#"
+enum E { V }
+
+use E::*;
+
+fn main() {
+    let v = $0V;
+}
+"#,
+        "ra_test_fixture::E::V",
+    );
+}
