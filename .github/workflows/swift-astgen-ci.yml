@@ -21,17 +21,17 @@ jobs:
           fetch-depth: '0'
 
       - name: Install sbt
-        uses: sbt/setup-sbt@82da71df4e122282484a99a8d70096bc2369dbd8 # v1.5.9
+        uses: sbt/setup-sbt@6158cb0903b8ceeae04f830055f3155e1b6a5ad7 # v1.5.11
 
       - name: Install Swift (macos-latest)
         if: matrix.os == 'macos-latest'
-        uses: SwiftyLab/setup-swift@38f54a76b70d989321de9dc7c840618c08cf56e9 # v1.14.0
+        uses: SwiftyLab/setup-swift@9014d4136569075c696d4151c7810ecde8712907 # v1.14.1
         with:
           swift-version: "6.3"
 
       - name: Install Swift
         if: matrix.os != 'macos-latest'
-        uses: SwiftyLab/setup-swift@38f54a76b70d989321de9dc7c840618c08cf56e9 # v1.14.0
+        uses: SwiftyLab/setup-swift@9014d4136569075c696d4151c7810ecde8712907 # v1.14.1
         with:
           swift-version: "6.1"
 
