@@ -226,3 +226,61 @@ fn main() {
         "ra_test_fixture::E::V",
     );
 }
+
+#[test]
+fn tuple_struct_as_value() {
+    check_path_method_full_name(
+        r#"
+struct S(u8);
+
+fn main() {
+    let f = $0S;
+}
+"#,
+        "ra_test_fixture::S",
+    );
+}
+
+#[test]
+fn self_in_tuple_struct_impl() {
+    check_path_method_full_name(
+        r#"
+struct S(u8);
+
+impl S {
+    fn f() -> fn(u8) -> Self { $0Self }
+}
+"#,
+        "ra_test_fixture::S",
+    );
+}
+
+#[test]
+fn tuple_variant_as_value() {
+    check_path_method_full_name(
+        r#"
+enum E { V(u8) }
+
+fn main() {
+    let f = $0E::V;
+}
+"#,
+        "ra_test_fixture::E::V",
+    );
+}
+
+#[test]
+fn glob_imported_tuple_variant_as_value() {
+    check_path_method_full_name(
+        r#"
+enum E { V(u8) }
+
+use E::*;
+
+fn main() {
+    let f = $0V;
+}
+"#,
+        "ra_test_fixture::E::V",
+    );
+}
