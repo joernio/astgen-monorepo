@@ -4,7 +4,7 @@ use super::rust_name_formatter::{
     format_enum_variant_full_name, format_function_full_name, format_generic_module_def_full_name,
     format_tuple_struct_ctor_full_name,
 };
-use ra_ap_hir::{CallableKind, ModuleDef, PathResolution, Semantics, Variant};
+use ra_ap_hir::{Adt, CallableKind, ModuleDef, PathResolution, Semantics, StructKind, Variant};
 use ra_ap_ide_db::RootDatabase;
 use ra_ap_syntax::ast;
 
@@ -35,6 +35,22 @@ pub fn for_path_expr(
     let path = path_expr.path()?;
     match semantics.resolve_path(&path)? {
         PathResolution::Def(ModuleDef::Function(f)) => format_function_full_name(f, semantics),
+        PathResolution::Def(ModuleDef::Adt(Adt::Struct(struct_)))
+            if struct_.kind(semantics.db) == StructKind::Tuple =>
+        {
+            format_tuple_struct_ctor_full_name(struct_, semantics)
+        }
+        PathResolution::Def(ModuleDef::EnumVariant(variant))
+            if variant.kind(semantics.db) == StructKind::Tuple =>
+        {
+            format_enum_variant_full_name(variant, semantics)
+        }
+        PathResolution::SelfType(impl_) => match impl_.self_ty(semantics.db).as_adt()? {
+            Adt::Struct(struct_) if struct_.kind(semantics.db) == StructKind::Tuple => {
+                format_tuple_struct_ctor_full_name(struct_, semantics)
+            }
+            _ => None,
+        },
         _ => None,
     }
 }
