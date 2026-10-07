@@ -29,7 +29,11 @@ func (mod *ModFile) Parse() (string, error) {
 		log.Println(err)
 		return "", err
 	}
-	modFile, err := modfile.Parse(mod.File, contents, nil)
+	// ParseLax keeps the module, go, require and retract statements, which are
+	// all goastgen reports, and skips directives it does not know. Strict
+	// Parse rejects the whole file on any directive newer than the vendored
+	// golang.org/x/mod (godebug, tool, ignore, ...).
+	modFile, err := modfile.ParseLax(mod.File, contents, nil)
 	if err != nil {
 		log.SetPrefix("[ERROR]")
 		log.Printf("Error while processing '%s' \n", mod.File)
