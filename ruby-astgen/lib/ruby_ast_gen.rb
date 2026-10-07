@@ -45,6 +45,8 @@ module RubyAstGen
 
     FileUtils.mkdir_p(output_dir)
 
+    warm_up
+
     if File.file?(input_path)
       process_file(input_path, output_dir, exclude_regex, input_path)
     elsif File.directory?(input_path)
@@ -56,6 +58,19 @@ module RubyAstGen
   end
 
   private
+
+  ERB_TRANSFORM_MUTEX = Mutex.new
+
+  # Forces all lazily loaded (autoloaded / required on first use) constants that are needed for parsing and ERB
+  # lowering to be loaded on the calling thread before any worker threads start. Concurrent first use of these under
+  # JRuby can fail non-deterministically, which previously caused ERB files to silently fall back to a heredoc.
+  def self.warm_up
+    ParserProvider.parse(Parser::Source::Buffer.new("(warm_up)").tap { |b| b.source = "1" })
+    [Parser::AST::Node, Parser::Source::Range, Parser::Source::Buffer, Temple::ERB::Parser].each(&:name)
+    ErbToRubyTransformer.new.transform("<% if a %><%= b %><% end %><%= c if d %>")
+  rescue StandardError => e
+    RubyAstGen::Logger::warn "Warm-up failed: #{e.class} - #{e.message}"
+  end
 
   # Process a single file and generate its AST
   def self.process_file(file_path, output_dir, exclude_regex, base_dir)
@@ -125,7 +140,7 @@ module RubyAstGen
       else
         is_erb = true
         file_content = File.read(file_path)
-        get_erb_content(file_content)
+        get_erb_content(file_content, relative_input_path)
       end
     RubyAstGen::Logger::debug "code: #{code}"
     buffer = Parser::Source::Buffer.new(file_path)
@@ -151,12 +166,14 @@ module RubyAstGen
     ['.erb'].include?(ext) || file_path.end_with?('.erb')
   end
 
-  def self.get_erb_content(file_content)
+  def self.get_erb_content(file_content, relative_input_path = nil)
     begin
-      transformer = ErbToRubyTransformer.new
-      transformer.transform(file_content)
-    rescue StandardError => e
-      RubyAstGen::Logger::debug "Failed to lower ERB: #{e}"
+      # Serialized: the transformer lazily loads gems/constants and re-enters the parser, which is not reliably
+      # thread-safe under JRuby.
+      ERB_TRANSFORM_MUTEX.synchronize { ErbToRubyTransformer.new.transform(file_content) }
+    rescue StandardError, ScriptError => e
+      # Format is picked up by joern's `skippedFiles` diagnostics.
+      RubyAstGen::Logger::warn "Failed to lower ERB (#{e.class}: #{e.message}), falling back to raw content - #{relative_input_path}"
       # Wrap the file_content in HEREDOC so the AST parser gives a String output of the ERB file
       # in case the transformation fell over
       <<~RUBY
