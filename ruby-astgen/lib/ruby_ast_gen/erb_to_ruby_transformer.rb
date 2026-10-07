@@ -56,7 +56,11 @@ class ErbToRubyTransformer
 
       if code.include?(" if ") || code.include?(" unless ")
         ast = extract_ast(code)
-        if ast.is_a?(::Parser::AST::Node)
+        if !ast.is_a?(::Parser::AST::Node)
+          template_call = escape_enabled ? @joern_template_out_raw : @joern_template_out_escape
+          buffer = @in_do_block ? @inner_buffer : @output_tmp_var
+          @output << "#{@output_tmp_append_func}(#{buffer}, #{template_call}(#{code}))"
+        else
           case ast.type
           when :if
             if code.strip.start_with?("if") || code.strip.start_with?("unless")
@@ -195,8 +199,10 @@ class ErbToRubyTransformer
             @output << "#{@output_tmp_append_func}(#{@inner_buffer}, #{body})"
             @output << "end"
           else
-            code
+            @output << code
           end
+        else
+          @output << code
         end
       else
         @current_lambda_vars = code_match[1]
@@ -233,6 +239,8 @@ class ErbToRubyTransformer
   def extract_ast(code)
     parser_buffer = Parser::Source::Buffer.new("internal_tmp_#{Time.now.nsec}")
     parser_buffer.source = code
-    RubyAstGen::ParserProvider.parse(parser_buffer)
+    ast = RubyAstGen::ParserProvider.parse(parser_buffer)
+    RubyAstGen::Logger::warn "Unable to parse ERB code snippet, emitting it unmodified: #{code.strip}" if ast.nil?
+    ast
   end
 end
