@@ -61,6 +61,54 @@ describe("cleanVueCode", () => {
         expect(output).toContain("<img src=\"y\" />")
     })
 
+    it("rewrites slot shorthands, valueless and dotted directives into JSX-safe attributes", () => {
+        const input = [
+            "<template>",
+            "<Foo #info :flag @click.stop v-model.number=\"n\" update:a:b=\"x\" #[`item.name`]=\"{ item }\">",
+            "</Foo>",
+            "</template>",
+        ].join("\n")
+        const output = cleanVueCode(input)
+        expect(output).toContain("<Foo  info  flag  click-stop v-model-number=\"n\" update:a-b=\"x\"")
+        expect(output).not.toContain("#")
+        expect(output).not.toContain("`")
+        expect(output.length).toBe(input.length)
+    })
+
+    it("does not touch text content or attribute values containing '#'", () => {
+        const input = "<template>\n<p title=\"a #b\">issue #5</p>\n</template>"
+        expect(cleanVueCode(input)).toContain("<p title=\"a #b\">issue #5</p>")
+    })
+
+    it("blanks multi-line <script> tags whose attributes contain '>' and self-closing <style> tags", () => {
+        const input = "<script\n  setup\n  generic=\"T extends Foo<Bar>\"\n>\nlet x = 1;\n</script>\n<style module src=\"a.scss\" />\n<template><div/></template>"
+        const output = cleanVueCode(input)
+        expect(output).toContain("let x = 1;")
+        expect(output).not.toContain("generic")
+        expect(output).not.toContain("<style")
+        expect(output.length).toBe(input.length)
+    })
+
+    it("ignores <style>/<script> text inside script strings", () => {
+        const input = "<script>\nconst a = '<style>'.length;\nconst b = '<script>';\n</script>\n<style>.a { color: red }</style>"
+        const output = cleanVueCode(input)
+        expect(output).toContain("'<style>'.length")
+        expect(output).toContain("'<script>'")
+        expect(output).not.toContain("color")
+    })
+
+    it("blanks braces in template text but keeps interpolations and tag attributes", () => {
+        const input = "<template>\n<p :style=\"{ a: 1 }\">css { color: red } {{ f({ x: 1 }) }}</p>\n</template>"
+        const output = cleanVueCode(input)
+        expect(output).toContain("css   color: red   {  f({ x: 1 })  }")
+        expect(output).toContain("style=\"{ a: 1 }\"")
+    })
+
+    it("does not treat generics like <TemplateFoo> in script code as the template", () => {
+        const input = "<script>\nconst f = (p: Array<TemplateFoo>) => { return {a: 1}; };\n</script>\n<template><div/></template>"
+        expect(cleanVueCode(input)).toContain("=> { return {a: 1}; };")
+    })
+
     it("returns empty string unchanged", () => {
         expect(cleanVueCode("")).toBe("")
     })
