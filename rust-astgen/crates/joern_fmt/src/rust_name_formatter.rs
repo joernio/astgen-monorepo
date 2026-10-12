@@ -61,6 +61,9 @@ pub fn crate_name(krate: Crate, semantics: &Semantics<RootDatabase>) -> Option<S
     // Both `lib.rs` and `main.rs` from the same package share the crateName.
     // The bin (main.rs) depends on the lib (which has the same name), so to prevent duplicate
     // typeNames/etc downstream, we rename the bin's.
+    // NB: file names (lib.rs, main.rs) are irrelevant (could be anything.)
+    // NB: the criteria is: "do i have a dependency with my own display name?" When so, that
+    // means i'm not the lib but the bin.
     let depends_on_same_named_lib = krate.dependencies(semantics.db).iter().any(|dependency| {
         dependency
             .krate
