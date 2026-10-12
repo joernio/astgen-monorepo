@@ -122,11 +122,11 @@ pub mod foo;
 pub fn baz() {}
 "#;
     let main = r#"
-fn helper() {}
+fn bar() {}
 
 fn main() {
     my_crate::foo::bar();
-    helper();
+    bar();
 }
 "#;
     let foo = r#"
@@ -152,7 +152,7 @@ pub fn bar() {}
     assert_eq!(
         fn_decl(
             &json,
-            "fn main() {\n    my_crate::foo::bar();\n    helper();\n}"
+            "fn main() {\n    my_crate::foo::bar();\n    bar();\n}"
         )
         .method_full_name(),
         "my_crate_bin::main"
@@ -162,8 +162,8 @@ pub fn bar() {}
         "my_crate::foo::bar"
     );
     assert_eq!(
-        call_expr(&json, "helper()").method_full_name(),
-        "my_crate_bin::helper"
+        call_expr(&json, "bar()").method_full_name(),
+        "my_crate_bin::bar"
     );
 
     let json = no_sysroot_ast_json("my_crate", &files, "src/lib.rs")?;
