@@ -14,8 +14,8 @@ mod struct_decl;
 mod trait_decl;
 
 use crate::{
-    ctor_type_full_names, implemented_traits, is_path, method_full_names, supertraits,
-    type_full_names,
+    ctor_type_full_names, implemented_traits, is_path, method_full_names, owner_full_names,
+    supertraits, type_full_names,
 };
 use ra_ap_hir::{Semantics, attach_db};
 use ra_ap_ide_db::RootDatabase;
@@ -79,6 +79,15 @@ fn check_path_ctor_type_full_name(ra_fixture: &str, expected: &str) {
         ra_fixture,
         ctor_type_full_names::for_path_expr,
         Some(expected.to_owned()),
+    );
+}
+
+#[track_caller]
+fn check_path_owner_full_name(ra_fixture: &str, expected: Option<&str>) {
+    check(
+        ra_fixture,
+        owner_full_names::for_path_expr,
+        expected.map(str::to_owned),
     );
 }
 

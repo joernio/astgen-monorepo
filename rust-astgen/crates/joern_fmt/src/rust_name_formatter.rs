@@ -37,6 +37,16 @@ fn format_module_member_full_name(
     Some(format_member_full_name(&crate_name, &canonical_path))
 }
 
+pub(crate) fn format_module_full_name(
+    module: Module,
+    semantics: &Semantics<RootDatabase>,
+) -> Option<String> {
+    if module.is_crate_root(semantics.db) {
+        return crate_name(module.krate(semantics.db), semantics);
+    }
+    format_module_member_full_name(ModuleDef::Module(module), module, semantics)
+}
+
 pub fn crate_name(krate: Crate, semantics: &Semantics<RootDatabase>) -> Option<String> {
     let display_name = krate.display_name(semantics.db)?.to_string();
 
