@@ -62,7 +62,10 @@ pub fn crate_name(krate: Crate, semantics: &Semantics<RootDatabase>) -> Option<S
     // The bin (main.rs) depends on the lib (which has the same name), so to prevent duplicate
     // typeNames/etc downstream, we rename the bin's.
     let depends_on_same_named_lib = krate.dependencies(semantics.db).iter().any(|dependency| {
-        dependency.krate.display_name(semantics.db) == krate.display_name(semantics.db)
+        dependency
+            .krate
+            .display_name(semantics.db)
+            .is_some_and(|dependency_name| dependency_name.as_str() == display_name)
     });
     if depends_on_same_named_lib {
         return Some(format!("{display_name}_bin"));
