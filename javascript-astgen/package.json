@@ -20,7 +20,7 @@
   },
   "scripts": {
     "test": "bun test --parallel",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "bun check",
     "sync-version": "bun scripts/sync-version.ts",
     "prebinary": "bun scripts/sync-version.ts",
     "binary": "bun run scripts/build-binaries.ts",
