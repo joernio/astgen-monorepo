@@ -1,6 +1,6 @@
 use crate::common::{
-    TestResult, fn_decl, no_sysroot_ast_json, no_sysroot_ast_json_generated, nodes_by_kind,
-    sysroot_ast_json, sysroot_ast_json_generated,
+    TestResult, call_expr, fn_decl, no_sysroot_ast_json, no_sysroot_ast_json_generated,
+    nodes_by_kind, sysroot_ast_json, sysroot_ast_json_generated,
 };
 use std::path::Path;
 
@@ -119,9 +119,15 @@ fn emits_relative_file_path() -> TestResult<()> {
 fn lib_and_main_coexist() -> TestResult<()> {
     let lib = r#"
 pub mod foo;
+pub fn baz() {}
 "#;
     let main = r#"
-fn main() {}
+fn bar() {}
+
+fn main() {
+    my_crate::foo::bar();
+    bar();
+}
 "#;
     let foo = r#"
 pub fn bar() {}
@@ -135,14 +141,53 @@ pub fn bar() {}
     let json = no_sysroot_ast_json("my_crate", &files, "src/foo.rs")?;
     assert_eq!(json["crateName"].as_str(), Some("my_crate"));
     assert_eq!(json["modulePath"].as_str(), Some("foo"));
+    assert_eq!(
+        fn_decl(&json, "pub fn bar() {}").method_full_name(),
+        "my_crate::foo::bar"
+    );
 
     let json = no_sysroot_ast_json("my_crate", &files, "src/main.rs")?;
-    assert_eq!(json["crateName"].as_str(), Some("my_crate"));
+    assert_eq!(json["crateName"].as_str(), Some("my_crate_bin"));
     assert_eq!(json["modulePath"].as_str(), None);
+    assert_eq!(
+        fn_decl(
+            &json,
+            "fn main() {\n    my_crate::foo::bar();\n    bar();\n}"
+        )
+        .method_full_name(),
+        "my_crate_bin::main"
+    );
+    assert_eq!(
+        call_expr(&json, "my_crate::foo::bar()").method_full_name(),
+        "my_crate::foo::bar"
+    );
+    assert_eq!(
+        call_expr(&json, "bar()").method_full_name(),
+        "my_crate_bin::bar"
+    );
 
     let json = no_sysroot_ast_json("my_crate", &files, "src/lib.rs")?;
     assert_eq!(json["crateName"].as_str(), Some("my_crate"));
     assert_eq!(json["modulePath"].as_str(), None);
+    assert_eq!(
+        fn_decl(&json, "pub fn baz() {}").method_full_name(),
+        "my_crate::baz"
+    );
+
+    Ok(())
+}
+
+#[test]
+fn named_bin_keeps_its_target_name() -> TestResult<()> {
+    let files = [("src/lib.rs", ""), ("src/bin/tool.rs", "fn main() {}")];
+
+    let json = no_sysroot_ast_json("my_crate", &files, "src/bin/tool.rs")?;
+
+    assert_eq!(json["crateName"].as_str(), Some("tool"));
+    assert_eq!(
+        fn_decl(&json, "fn main() {}").method_full_name(),
+        "tool::main"
+    );
 
     Ok(())
 }
