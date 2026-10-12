@@ -1,5 +1,6 @@
 use super::{
-    check_path_ctor_type_full_name, check_path_method_full_name, check_path_type_full_name,
+    check_path_ctor_type_full_name, check_path_method_full_name, check_path_owner_full_name,
+    check_path_type_full_name,
 };
 
 #[test]
@@ -282,5 +283,97 @@ fn main() {
 }
 "#,
         "ra_test_fixture::E::V",
+    );
+}
+
+#[test]
+fn const_in_mod_owner_full_name() {
+    check_path_owner_full_name(
+        r#"
+mod m {
+    pub const K: u32 = 1;
+}
+
+fn main() {
+    let v = $0m::K;
+}
+"#,
+        Some("ra_test_fixture::m"),
+    );
+}
+
+#[test]
+fn const_in_nested_mod_owner_full_name() {
+    check_path_owner_full_name(
+        r#"
+mod m {
+    pub mod n {
+        pub const K: u32 = 1;
+    }
+}
+
+fn main() {
+    let v = $0m::n::K;
+}
+"#,
+        Some("ra_test_fixture::m::n"),
+    );
+}
+
+#[test]
+fn imported_const_owner_full_name() {
+    check_path_owner_full_name(
+        r#"
+mod m {
+    pub const K: u32 = 1;
+}
+
+use m::K;
+
+fn main() {
+    let v = $0K;
+}
+"#,
+        Some("ra_test_fixture::m"),
+    );
+}
+
+#[test]
+fn static_in_crate_root_owner_full_name() {
+    check_path_owner_full_name(
+        r#"
+static mut S: u32 = 0;
+
+fn main() {
+    unsafe { $0S = 1; }
+}
+"#,
+        Some("ra_test_fixture"),
+    );
+}
+
+#[test]
+fn const_in_fn_body_owner_full_name() {
+    check_path_owner_full_name(
+        r#"
+fn main() {
+    const K: u32 = 1;
+    let v = $0K;
+}
+"#,
+        None,
+    );
+}
+
+#[test]
+fn local_owner_full_name() {
+    check_path_owner_full_name(
+        r#"
+fn main() {
+    let k = 1;
+    let v = $0k;
+}
+"#,
+        None,
     );
 }

@@ -4,8 +4,8 @@ use crate::adjustments::{self, Adjustment};
 use crate::format_args::{self, ImplicitFormatArg};
 use crate::json_gen::syntax_kind_to_json_name;
 use joern_fmt::{
-    ctor_type_full_names, implemented_traits, is_path, method_full_names, supertraits,
-    type_full_names,
+    ctor_type_full_names, implemented_traits, is_path, method_full_names, owner_full_names,
+    supertraits, type_full_names,
 };
 use ra_ap_hir::{
     CfgExpr, CfgOptions, Crate, HirFileId, Semantics, db::ExpandDatabase, prettify_macro_expansion,
@@ -73,6 +73,9 @@ pub(crate) struct RustAstGenJsonNode {
     // Only applicable when node_kind is PathExpr.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub(crate) ctor_type_full_name: Option<String>,
+    // Only applicable when node_kind is PathExpr.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(crate) owner_full_name: Option<String>,
     // Only applicable when node_kind is IdentPat.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub(crate) is_path: Option<bool>,
@@ -190,6 +193,12 @@ impl RustAstGenJsonNode {
                 _ => None,
             }
         };
+        let owner_full_name = match_ast! {
+            match node {
+                ast::PathExpr(it) => owner_full_names::for_path_expr(&it, semantics),
+                _ => None,
+            }
+        };
         let is_path = match_ast! {
             match node {
                 ast::IdentPat(it) => is_path::for_ident_pat(&it, semantics),
@@ -259,6 +268,7 @@ impl RustAstGenJsonNode {
             has_self_receiver,
             format_spec,
             ctor_type_full_name,
+            owner_full_name,
             is_path,
             children,
         }
@@ -288,6 +298,7 @@ impl RustAstGenJsonNode {
             has_self_receiver: None,
             format_spec: None,
             ctor_type_full_name: None,
+            owner_full_name: None,
             is_path: None,
         }
     }
@@ -326,6 +337,7 @@ impl RustAstGenJsonNode {
             has_self_receiver: None,
             format_spec: None,
             ctor_type_full_name: None,
+            owner_full_name: None,
             is_path: None,
             children,
         }
