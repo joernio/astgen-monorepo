@@ -176,9 +176,9 @@ fn emit_base_node_and_token_traits(
     config: &ScalaAstGenConfig,
 ) -> Result<(), Error> {
     // TODO: methodFullName, typeFullName, macroExpansion, text, adjustments, hasSelfReceiver,
-    //  implementedTraits, supertraits, formatSpec, ctorTypeFullName, ownerFullName and isPath
-    //  should not come built-in but rather from ScalaAstGenConfig, as they don't make sense
-    //  in any other context.
+    //  implementedTraits, supertraits, formatSpec, ctorTypeFullName, ownerFullName, isPath and
+    //  totalElements should not come built-in but rather from ScalaAstGenConfig, as they don't
+    //  make sense in any other context.
     write!(
         out,
         concat!(
@@ -206,6 +206,7 @@ fn emit_base_node_and_token_traits(
             "    def ctorTypeFullName: Option[String] = json.obj.get(\"ctorTypeFullName\").flatMap(_.strOpt)\n",
             "    def ownerFullName: Option[String] = json.obj.get(\"ownerFullName\").flatMap(_.strOpt)\n",
             "    def isPath: Option[Boolean] = json.obj.get(\"isPath\").map(_.bool)\n",
+            "    def totalElements: Option[Int] = json.obj.get(\"totalElements\").map(_.num.toInt)\n",
             "  }}\n",
             "\n",
             "  sealed trait {token_base} extends {node_base}\n"
@@ -632,6 +633,7 @@ object ExampleAst {
     def ctorTypeFullName: Option[String] = json.obj.get("ctorTypeFullName").flatMap(_.strOpt)
     def ownerFullName: Option[String] = json.obj.get("ownerFullName").flatMap(_.strOpt)
     def isPath: Option[Boolean] = json.obj.get("isPath").map(_.bool)
+    def totalElements: Option[Int] = json.obj.get("totalElements").map(_.num.toInt)
   }
 
   sealed trait AstToken extends AstNode
@@ -751,6 +753,7 @@ object ExampleAst {
     def ctorTypeFullName: Option[String] = json.obj.get("ctorTypeFullName").flatMap(_.strOpt)
     def ownerFullName: Option[String] = json.obj.get("ownerFullName").flatMap(_.strOpt)
     def isPath: Option[Boolean] = json.obj.get("isPath").map(_.bool)
+    def totalElements: Option[Int] = json.obj.get("totalElements").map(_.num.toInt)
   }
 
   sealed trait AstToken extends AstNode

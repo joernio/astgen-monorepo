@@ -5,7 +5,7 @@ use crate::format_args::{self, ImplicitFormatArg};
 use crate::json_gen::syntax_kind_to_json_name;
 use joern_fmt::{
     ctor_type_full_names, implemented_traits, is_path, method_full_names, owner_full_names,
-    supertraits, type_full_names,
+    supertraits, total_elements, type_full_names,
 };
 use ra_ap_hir::{
     CfgExpr, CfgOptions, Crate, HirFileId, Semantics, db::ExpandDatabase, prettify_macro_expansion,
@@ -79,6 +79,9 @@ pub(crate) struct RustAstGenJsonNode {
     // Only applicable when node_kind is IdentPat.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub(crate) is_path: Option<bool>,
+    // Only applicable when node_kind is TuplePat.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(crate) total_elements: Option<usize>,
     pub(crate) children: Vec<RustAstGenJsonNode>,
 }
 
@@ -205,6 +208,12 @@ impl RustAstGenJsonNode {
                 _ => None,
             }
         };
+        let total_elements = match_ast! {
+            match node {
+                ast::TuplePat(it) => total_elements::for_tuple_pat(&it, semantics),
+                _ => None,
+            }
+        };
         let implicit_format_args = match_ast! {
             match node {
                 ast::FormatArgsExpr(it) => format_args::implicit_format_args(&it, semantics),
@@ -270,6 +279,7 @@ impl RustAstGenJsonNode {
             ctor_type_full_name,
             owner_full_name,
             is_path,
+            total_elements,
             children,
         }
     }
@@ -300,6 +310,7 @@ impl RustAstGenJsonNode {
             ctor_type_full_name: None,
             owner_full_name: None,
             is_path: None,
+            total_elements: None,
         }
     }
 
@@ -339,6 +350,7 @@ impl RustAstGenJsonNode {
             ctor_type_full_name: None,
             owner_full_name: None,
             is_path: None,
+            total_elements: None,
             children,
         }
     }

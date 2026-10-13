@@ -12,10 +12,11 @@ mod record_expr;
 mod self_param;
 mod struct_decl;
 mod trait_decl;
+mod tuple_pat;
 
 use crate::{
     ctor_type_full_names, implemented_traits, is_path, method_full_names, owner_full_names,
-    supertraits, type_full_names,
+    supertraits, total_elements, type_full_names,
 };
 use ra_ap_hir::{Semantics, attach_db};
 use ra_ap_ide_db::RootDatabase;
@@ -253,4 +254,9 @@ fn check_literal_type_full_name(ra_fixture: &str, expected: &str) {
         },
         Some(expected.to_owned()),
     );
+}
+
+#[track_caller]
+fn check_tuple_pat_total_elements(ra_fixture: &str, expected: Option<usize>) {
+    check(ra_fixture, total_elements::for_tuple_pat, expected);
 }
