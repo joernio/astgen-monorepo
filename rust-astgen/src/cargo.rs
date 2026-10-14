@@ -1,6 +1,6 @@
 use crate::config::RustAstGenConfig;
 use anyhow::{Context, Result};
-use log::{error, info};
+use log::{error, info, warn};
 use ra_ap_ide_db::RootDatabase;
 use ra_ap_load_cargo::{
     LoadCargoConfig, ProcMacroServerChoice, load_workspace as load_workspace_into_db,
@@ -11,12 +11,19 @@ use ra_ap_project_model::{
 use ra_ap_vfs::{AbsPathBuf, FileId, Vfs, VfsPath};
 
 pub fn load_workspace(config: &RustAstGenConfig) -> Result<(RootDatabase, Vfs)> {
+    let expand_proc_macros = config.expand_proc_macros && config.load_sysroot;
+
     let load_cargo_config = LoadCargoConfig {
-        load_out_dirs_from_check: false,
-        with_proc_macro_server: ProcMacroServerChoice::None,
+        load_out_dirs_from_check: expand_proc_macros,
+        with_proc_macro_server: if expand_proc_macros {
+            ProcMacroServerChoice::Sysroot
+        } else {
+            ProcMacroServerChoice::None
+        },
         // doesn't seem necessary? slight runtime performance improvement by disabling it
         prefill_caches: false,
-        proc_macro_processes: 0,
+        // TODO: maybe config.worker_threads.
+        proc_macro_processes: 1,
         num_worker_threads: config.worker_threads,
     };
 
@@ -71,9 +78,25 @@ fn load_workspace_at(
         );
     }
 
-    let workspace = ProjectWorkspace::load(manifest, cargo_config, &|progress_msg| {
+    let mut workspace = ProjectWorkspace::load(manifest, cargo_config, &|progress_msg| {
         info!("progress: {}", progress_msg)
     })?;
+
+    // proc-macro expansions requires running build scripts, which can fail.
+    // We only log and proceed without expansion.
+    if load_cargo_config.load_out_dirs_from_check {
+        match workspace.run_build_scripts(cargo_config, &|progress_msg| {
+            info!("progress: {}", progress_msg)
+        }) {
+            Ok(build_scripts) => {
+                if let Some(reason) = build_scripts.error() {
+                    warn!("build script error: {}", reason);
+                }
+                workspace.set_build_scripts(build_scripts);
+            }
+            Err(reason) => warn!("failed to run build scripts: {}", reason),
+        }
+    }
 
     if config.load_sysroot {
         match workspace.sysroot.error() {

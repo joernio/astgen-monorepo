@@ -81,6 +81,7 @@ pub fn load_sysroot_workspace(
         features,
         no_default_features,
         false,
+        true,
     )?;
     Ok(cargo::load_workspace(&config)?.0)
 }

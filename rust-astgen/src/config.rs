@@ -19,6 +19,8 @@ pub struct RustAstGenConfig {
     pub(crate) no_default_features: bool,
     /// When true, pretty-print JSON output.
     pub(crate) pretty_print: bool,
+    /// When true, run build scripts and expand proc-macros.
+    pub(crate) expand_proc_macros: bool,
 }
 
 impl RustAstGenConfig {
@@ -32,6 +34,7 @@ impl RustAstGenConfig {
         features: Vec<String>,
         no_default_features: bool,
         pretty_print: bool,
+        expand_proc_macros: bool,
     ) -> Result<Self> {
         Self::ensure_paths_are_absolute(&input_dir_full_path, &output_dir_full_path)?;
 
@@ -45,6 +48,7 @@ impl RustAstGenConfig {
             features,
             no_default_features,
             pretty_print,
+            expand_proc_macros,
         };
 
         Ok(config)
@@ -108,6 +112,7 @@ mod tests {
             vec![],
             false,
             false,
+            true,
         )?;
 
         let input_file = input_dir.join("subdir").join("file.rs");
@@ -134,6 +139,7 @@ mod tests {
             vec![],
             false,
             false,
+            true,
         )?;
 
         let input_file = input_dir.join("subdir").join("file.rs");
@@ -163,6 +169,7 @@ mod tests {
             vec![],
             false,
             false,
+            true,
         )?;
 
         let input_file = PathBuf::from(r"\\?\C:\input\subdir\file.rs");
@@ -189,6 +196,7 @@ mod tests {
             vec![],
             false,
             false,
+            true,
         )?;
 
         let other_file = PathBuf::from("/other/file.rs");
@@ -216,6 +224,7 @@ mod tests {
             vec![],
             false,
             false,
+            true,
         )?;
 
         let other_file = PathBuf::from(r"C:\other\file.rs");

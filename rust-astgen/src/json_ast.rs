@@ -16,6 +16,7 @@ use ra_ap_syntax::{
     AstNode, NodeOrToken, SyntaxElement, SyntaxKind, SyntaxNode, SyntaxToken, TextRange, ast,
     match_ast,
 };
+use rust_analyzer_ext::expansion_has_no_errors;
 use serde::Serialize;
 
 /// Per-file envelope wrapping the AST.
@@ -221,24 +222,30 @@ impl RustAstGenJsonNode {
             }
         }
         .unwrap_or_default();
-        let macro_expansion = match_ast! {
-            match node {
-                ast::MacroCall(it) => semantics
-                    .expand_macro_call(&it)
-                    .filter(|expanded| rust_analyzer_ext::expansion_has_no_errors(expanded.file_id, semantics))
-                    .map(|expanded| {
-                        Self::from_node(
-                            &expanded.value,
-                            expanded.file_id,
-                            line_index,
-                            semantics,
-                            target_crate,
-                            cfg_options,
-                        )
-                        .into()
-                    }),
-                _ => None,
-            }
+        let macro_expansion = {
+            let expansion = match_ast! {
+                match node {
+                    ast::MacroCall(it) => semantics.expand_macro_call(&it),
+                    ast::Item(it) => semantics
+                        .expand_attr_macro(&it)
+                        .filter(|expanded| expanded.err.is_none())
+                        .map(|expanded| expanded.value),
+                    _ => None,
+                }
+            };
+            expansion
+                .filter(|expanded| expansion_has_no_errors(expanded.file_id, semantics))
+                .map(|expanded| {
+                    Self::from_node(
+                        &expanded.value,
+                        expanded.file_id,
+                        line_index,
+                        semantics,
+                        target_crate,
+                        cfg_options,
+                    )
+                    .into()
+                })
         };
 
         let mut children: Vec<_> = node
