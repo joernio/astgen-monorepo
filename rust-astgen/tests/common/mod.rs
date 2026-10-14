@@ -14,7 +14,7 @@ pub fn no_sysroot_ast_json(
     file_code_pairs: &[(&str, &str)],
     target_file: &str,
 ) -> TestResult<Value> {
-    run(crate_name, file_code_pairs, false, false, target_file)
+    run(crate_name, file_code_pairs, false, false, true, target_file)
 }
 
 pub fn no_sysroot_resolve_cfg_ast_json(
@@ -22,7 +22,7 @@ pub fn no_sysroot_resolve_cfg_ast_json(
     file_code_pairs: &[(&str, &str)],
     target_file: &str,
 ) -> TestResult<Value> {
-    run(crate_name, file_code_pairs, false, true, target_file)
+    run(crate_name, file_code_pairs, false, true, true, target_file)
 }
 
 pub fn no_sysroot_ast_json_generated(
@@ -30,7 +30,7 @@ pub fn no_sysroot_ast_json_generated(
     file_code_pairs: &[(&str, &str)],
     target_file: &str,
 ) -> bool {
-    run(crate_name, file_code_pairs, false, false, target_file).is_ok()
+    run(crate_name, file_code_pairs, false, false, true, target_file).is_ok()
 }
 
 pub fn sysroot_ast_json(
@@ -38,7 +38,15 @@ pub fn sysroot_ast_json(
     file_code_pairs: &[(&str, &str)],
     target_file: &str,
 ) -> TestResult<Value> {
-    run(crate_name, file_code_pairs, true, false, target_file)
+    run(crate_name, file_code_pairs, true, false, true, target_file)
+}
+
+pub fn sysroot_no_proc_macro_ast_json(
+    crate_name: &str,
+    file_code_pairs: &[(&str, &str)],
+    target_file: &str,
+) -> TestResult<Value> {
+    run(crate_name, file_code_pairs, true, false, false, target_file)
 }
 
 pub fn sysroot_ast_json_generated(
@@ -46,7 +54,7 @@ pub fn sysroot_ast_json_generated(
     file_code_pairs: &[(&str, &str)],
     target_file: &str,
 ) -> bool {
-    run(crate_name, file_code_pairs, true, false, target_file).is_ok()
+    run(crate_name, file_code_pairs, true, false, true, target_file).is_ok()
 }
 
 fn run(
@@ -54,22 +62,28 @@ fn run(
     file_code_pairs: &[(&str, &str)],
     with_sysroot: bool,
     resolve_cfg: bool,
+    expand_proc_macros: bool,
     target_file: &str,
 ) -> TestResult<Value> {
     // NB: automatically deleted when dropped
     let root = TempDir::with_prefix("rust_ast_gen_integration_test_")?;
     let output_dir = root.child("out");
 
-    fs::write(
-        root.child("Cargo.toml"),
-        format!(
-            r#"[package]
+    if !file_code_pairs
+        .iter()
+        .any(|(path, _)| *path == "Cargo.toml")
+    {
+        fs::write(
+            root.child("Cargo.toml"),
+            format!(
+                r#"[package]
 name = "{crate_name}"
 version = "0.1.0"
 edition = "2021"
 "#
-        ),
-    )?;
+            ),
+        )?;
+    }
 
     for (relative_path, content) in file_code_pairs {
         let path = root.path().join(relative_path);
@@ -90,6 +104,9 @@ edition = "2021"
     }
     if resolve_cfg {
         command.arg("--resolve-cfg");
+    }
+    if !expand_proc_macros {
+        command.arg("--no-proc-macro");
     }
     let output = command.output()?;
 
@@ -170,6 +187,10 @@ impl<'a> NodeSelector<'a> {
 
     pub fn method_full_name(self) -> String {
         self.field("methodFullName")
+    }
+
+    pub fn method_full_name_opt(self) -> Option<String> {
+        self.field_opt("methodFullName")
     }
 
     fn field(self, field: &str) -> String {

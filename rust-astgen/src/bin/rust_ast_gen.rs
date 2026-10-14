@@ -35,7 +35,7 @@ struct RustAstGenCliArgs {
     #[arg(short = 'o', long = "output-dir")]
     output_dir: PathBuf,
 
-    #[arg(help = "Skip sysroot loading. Faster, but will not resolve std symbols")]
+    #[arg(help = "Skip sysroot loading. Faster, but will not resolve std symbols nor proc-macros")]
     #[arg(long = "no-sysroot", default_value_t = false)]
     no_sysroot: bool,
 
@@ -61,6 +61,12 @@ struct RustAstGenCliArgs {
     #[arg(help = "Pretty-print JSON output")]
     #[arg(long = "pretty-print", default_value_t = false)]
     pretty_print: bool,
+
+    #[arg(
+        help = "Skip proc-macro expansion. Faster, but will not resolve proc-macro-generated items"
+    )]
+    #[arg(long = "no-proc-macro", default_value_t = false)]
+    no_proc_macro: bool,
 }
 
 impl RustAstGenCliArgs {
@@ -120,6 +126,7 @@ impl TryFrom<RustAstGenCliArgs> for RustAstGenConfig {
             args.features,
             args.no_default_features,
             args.pretty_print,
+            !args.no_proc_macro,
         )
     }
 }
