@@ -1,4 +1,4 @@
-use super::check_trait_supertraits;
+use super::{check_trait_supertraits, check_trait_type_full_name};
 
 #[test]
 fn trait_with_supertrait() {
@@ -56,5 +56,144 @@ fn trait_without_supertraits() {
 trait $0Tr {}
 "#,
         None,
+    );
+}
+
+#[test]
+fn trait_type_full_name() {
+    check_trait_type_full_name(
+        r#"
+trait $0Tr {}
+"#,
+        "ra_test_fixture::Tr",
+    );
+}
+
+#[test]
+fn generic_trait_type_full_name() {
+    check_trait_type_full_name(
+        r#"
+trait $0Tr<T> {}
+"#,
+        "ra_test_fixture::Tr<T>",
+    );
+}
+
+#[test]
+fn trait_in_module_type_full_name() {
+    check_trait_type_full_name(
+        r#"
+mod m {
+    pub trait $0Tr {}
+}
+"#,
+        "ra_test_fixture::m::Tr",
+    );
+}
+
+#[test]
+fn local_trait_type_full_name() {
+    check_trait_type_full_name(
+        r#"
+fn f() {
+    trait $0Tr {}
+}
+"#,
+        "ra_test_fixture::f::Tr",
+    );
+}
+
+#[test]
+fn local_traits_in_sibling_blocks_type_full_name() {
+    check_trait_type_full_name(
+        r#"
+fn f() {
+    {
+        trait Tr {}
+    }
+    {
+        trait $0Tr {}
+    }
+}
+"#,
+        "ra_test_fixture::f::Tr#2",
+    );
+}
+
+#[test]
+fn trait_in_anonymous_const_in_fn_type_full_name() {
+    check_trait_type_full_name(
+        r#"
+fn f() {
+    const _: () = if false {
+        trait $0Tr {}
+    };
+}
+"#,
+        "ra_test_fixture::f::Tr",
+    );
+}
+
+#[test]
+fn traits_in_sibling_anonymous_consts_type_full_name_1() {
+    check_trait_type_full_name(
+        r#"
+const _: () = {
+    trait $0Tr {}
+};
+const _: () = {
+    trait Tr {}
+};
+"#,
+        "ra_test_fixture::Tr#1",
+    );
+}
+
+#[test]
+fn traits_in_sibling_anonymous_consts_type_full_name_2() {
+    check_trait_type_full_name(
+        r#"
+const _: () = {
+    trait Tr {}
+};
+const _: () = {
+    trait $0Tr {}
+};
+"#,
+        "ra_test_fixture::Tr#2",
+    );
+}
+
+#[test]
+fn trait_in_attribute_expanded_anonymous_const_type_full_name() {
+    check_trait_type_full_name(
+        r#"
+//- proc_macros: identity
+#[proc_macros::identity]
+const _: () = {
+    trait $0Tr {}
+};
+const _: () = {
+    trait Tr {}
+};
+"#,
+        "ra_test_fixture::Tr#1",
+    );
+}
+
+#[test]
+fn trait_next_to_attribute_expanded_anonymous_const_type_full_name() {
+    check_trait_type_full_name(
+        r#"
+//- proc_macros: identity
+#[proc_macros::identity]
+const _: () = {
+    trait Tr {}
+};
+const _: () = {
+    trait $0Tr {}
+};
+"#,
+        "ra_test_fixture::Tr#2",
     );
 }

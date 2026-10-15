@@ -4,11 +4,12 @@ use super::{
     rust_name_formatter::{
         format_enum_variant_full_name, format_generic_module_def_full_name,
         format_generic_type_alias_full_name, format_impl_full_name, format_item_name,
-        format_module_def_full_name, format_name_with_generic_args, format_type_alias_full_name,
+        format_module_def_full_name, format_module_full_name, format_name_with_generic_args,
+        format_type_alias_full_name,
     },
     type_formatter,
 };
-use ra_ap_hir::{Module, ModuleDef, PathResolution, Semantics, Type, TypeAlias};
+use ra_ap_hir::{InFile, Module, ModuleDef, PathResolution, Semantics, Type, TypeAlias};
 use ra_ap_ide_db::RootDatabase;
 use ra_ap_syntax::{AstNode, SyntaxNode, ast, ast::HasGenericArgs};
 
@@ -67,6 +68,24 @@ pub fn for_type_alias(
     semantics: &Semantics<RootDatabase>,
 ) -> Option<String> {
     format_generic_type_alias_full_name(semantics.to_def(type_alias)?, semantics)
+}
+
+pub fn for_module(module: &ast::Module, semantics: &Semantics<RootDatabase>) -> Option<String> {
+    let module_def = semantics.to_def(module)?;
+    let this = InFile::new(
+        semantics.hir_file_for(module.syntax()),
+        module.syntax().text_range(),
+    );
+    let is_declaration = module_def.declaration_source_range(semantics.db) == Some(this);
+    let is_definition = module_def.definition_source_range(semantics.db) == this;
+    if !is_declaration && !is_definition {
+        return None;
+    }
+    format_module_full_name(module_def, semantics)
+}
+
+pub fn for_trait(trait_: &ast::Trait, semantics: &Semantics<RootDatabase>) -> Option<String> {
+    format_generic_module_def_full_name(semantics.to_def(trait_)?, semantics)
 }
 
 fn path_for_name_ref(name_ref: &ast::NameRef) -> Option<ast::Path> {

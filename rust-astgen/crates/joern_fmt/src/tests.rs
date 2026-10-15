@@ -6,6 +6,7 @@ mod ident_pat;
 mod impl_decl;
 mod literal;
 mod method_call_expr;
+mod module;
 mod name_ref;
 mod path_expr;
 mod record_expr;
@@ -267,6 +268,24 @@ fn check_type_alias_type_full_name(ra_fixture: &str, expected: &str) {
     check(
         ra_fixture,
         type_full_names::for_type_alias,
+        Some(expected.to_owned()),
+    );
+}
+
+#[track_caller]
+fn check_module_type_full_name(ra_fixture: &str, expected: Option<&str>) {
+    check(
+        ra_fixture,
+        type_full_names::for_module,
+        expected.map(str::to_owned),
+    );
+}
+
+#[track_caller]
+fn check_trait_type_full_name(ra_fixture: &str, expected: &str) {
+    check(
+        ra_fixture,
+        type_full_names::for_trait,
         Some(expected.to_owned()),
     );
 }
