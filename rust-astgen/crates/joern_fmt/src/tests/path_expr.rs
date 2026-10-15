@@ -137,6 +137,28 @@ fn main() { f(); }
 }
 
 #[test]
+fn local_enum_in_block_module_inside_method() {
+    check_path_type_full_name(
+        r#"
+struct S;
+
+impl S {
+    fn m(&self) {
+        mod util { pub(super) enum Out { A } }
+        let _ = $0util::Out::A;
+    }
+
+    fn n(&self) {
+        mod util { pub(super) enum Out { B } }
+        let _ = util::Out::B;
+    }
+}
+"#,
+        "ra_test_fixture::S::m::util::Out",
+    );
+}
+
+#[test]
 fn unit_struct_as_value() {
     check_path_ctor_type_full_name(
         r#"
@@ -375,5 +397,55 @@ fn main() {
 }
 "#,
         None,
+    );
+}
+
+#[test]
+fn local_enum_in_macro_generated_block_module_inside_if() {
+    check_path_type_full_name(
+        r#"
+macro_rules! blk {
+    () => {
+        mod util { pub(super) enum Out { A } }
+    };
+}
+
+fn f() {
+    if true {
+        blk!();
+        let _ = $0util::Out::A;
+    }
+    if false {
+        blk!();
+        let _ = util::Out::A;
+    }
+}
+"#,
+        "ra_test_fixture::f::util#1::Out",
+    );
+}
+
+#[test]
+fn local_enum_in_macro_generated_block_module_inside_if2() {
+    check_path_type_full_name(
+        r#"
+macro_rules! blk {
+    () => {
+        mod util { pub(super) enum Out { A } }
+    };
+}
+
+fn f() {
+    if true {
+        blk!();
+        let _ = util::Out::A;
+    }
+    if false {
+        blk!();
+        let _ = $0util::Out::A;
+    }
+}
+"#,
+        "ra_test_fixture::f::util#2::Out",
     );
 }

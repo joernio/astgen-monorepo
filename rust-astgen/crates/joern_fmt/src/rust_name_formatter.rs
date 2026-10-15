@@ -23,7 +23,32 @@ pub(crate) fn format_module_def_full_name(
     if let ModuleSource::BlockExpr(block) = &source.value {
         return block_local_full_name(def, module, source.with_value(block.clone()), semantics);
     }
+    if is_nested_in_block(module, semantics) {
+        return block_nested_full_name(def, module, semantics);
+    }
     format_module_member_full_name(def, module, semantics)
+}
+
+fn is_nested_in_block(module: Module, semantics: &Semantics<RootDatabase>) -> bool {
+    module
+        .path_to_root(semantics.db)
+        .into_iter()
+        .any(|ancestor| {
+            matches!(
+                ancestor.definition_source(semantics.db).value,
+                ModuleSource::BlockExpr(_)
+            )
+        })
+}
+
+fn block_nested_full_name(
+    def: ModuleDef,
+    module: Module,
+    semantics: &Semantics<RootDatabase>,
+) -> Option<String> {
+    let parent = format_module_full_name(module, semantics)?;
+    let name = format_item_name(def.name(semantics.db)?, module, semantics);
+    Some(format_member_full_name(&parent, &name))
 }
 
 fn format_module_member_full_name(
@@ -44,7 +69,7 @@ pub(crate) fn format_module_full_name(
     if module.is_crate_root(semantics.db) {
         return crate_name(module.krate(semantics.db), semantics);
     }
-    format_module_member_full_name(ModuleDef::Module(module), module, semantics)
+    format_module_def_full_name(ModuleDef::Module(module), semantics)
 }
 
 pub fn crate_name(krate: Crate, semantics: &Semantics<RootDatabase>) -> Option<String> {
@@ -174,6 +199,7 @@ fn block_item_def(semantics: &Semantics<RootDatabase>, item: &ast::Item) -> Opti
     match item {
         ast::Item::Enum(it) => Some(semantics.to_def(it)?.into()),
         ast::Item::Fn(it) => Some(semantics.to_def(it)?.into()),
+        ast::Item::Module(it) => Some(semantics.to_def(it)?.into()),
         ast::Item::Struct(it) => Some(semantics.to_def(it)?.into()),
         _ => None,
     }
