@@ -457,6 +457,27 @@ fn main() { f(); }
 }
 
 #[test]
+fn local_struct_inside_if() {
+    check_ident_pat_type_full_name(
+        r#"
+fn f() {
+    if true {
+        mod util { pub(super) struct Out; }
+        let a = util::Out;
+    }
+    if false {
+        mod util { pub(super) struct Out; }
+        let $0b = util::Out;
+    }
+}
+
+fn main() { f(); }
+"#,
+        "ra_test_fixture::f::util#2::Out",
+    );
+}
+
+#[test]
 fn binding_in_variant_pat() {
     check_ident_pat_is_path(
         r#"

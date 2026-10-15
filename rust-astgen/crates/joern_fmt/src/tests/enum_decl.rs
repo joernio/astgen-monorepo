@@ -97,3 +97,98 @@ fn main() { f(); }
         "ra_test_fixture::f::E#2",
     );
 }
+
+#[test]
+fn local_enum_in_block_module_inside_fn() {
+    check_enum_type_full_name(
+        r#"
+fn f() {
+    mod util { pub(super) enum $0Out { A } }
+    let _ = util::Out::A;
+}
+"#,
+        "ra_test_fixture::f::util::Out",
+    );
+}
+
+#[test]
+fn local_enum_in_block_module_inside_method() {
+    check_enum_type_full_name(
+        r#"
+struct S;
+
+impl S {
+    fn m(&self) {
+        mod util { pub(super) enum $0Out { A } }
+        let _ = util::Out::A;
+    }
+
+    fn n(&self) {
+        mod util { pub(super) enum Out { B } }
+        let _ = util::Out::B;
+    }
+}
+"#,
+        "ra_test_fixture::S::m::util::Out",
+    );
+}
+
+#[test]
+fn local_enum_in_block_module_inside_method2() {
+    check_enum_type_full_name(
+        r#"
+struct S;
+
+impl S {
+    fn m(&self) {
+        mod util { pub(super) enum Out { A } }
+        let _ = util::Out::A;
+    }
+
+    fn n(&self) {
+        mod util { pub(super) enum $0Out { B } }
+        let _ = util::Out::B;
+    }
+}
+"#,
+        "ra_test_fixture::S::n::util::Out",
+    );
+}
+
+#[test]
+fn local_enum_in_block_module_inside_if_1() {
+    check_enum_type_full_name(
+        r#"
+fn f() {
+    if true {
+        mod util { pub(super) enum $0Out { A } }
+        let _ = util::Out::A;
+    }
+    if false {
+        mod util { pub(super) enum Out { B } }
+        let _ = util::Out::B;
+    }
+}
+"#,
+        "ra_test_fixture::f::util#1::Out",
+    );
+}
+
+#[test]
+fn local_enum_in_block_module_inside_if_2() {
+    check_enum_type_full_name(
+        r#"
+fn f() {
+    if true {
+        mod util { pub(super) enum Out { A } }
+        let _ = util::Out::A;
+    }
+    if false {
+        mod util { pub(super) enum $0Out { B } }
+        let _ = util::Out::B;
+    }
+}
+"#,
+        "ra_test_fixture::f::util#2::Out",
+    );
+}
