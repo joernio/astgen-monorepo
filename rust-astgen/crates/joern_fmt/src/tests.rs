@@ -13,6 +13,7 @@ mod self_param;
 mod struct_decl;
 mod trait_decl;
 mod tuple_pat;
+mod type_alias;
 
 use crate::{
     ctor_type_full_names, implemented_traits, is_path, method_full_names, owner_full_names,
@@ -259,4 +260,13 @@ fn check_literal_type_full_name(ra_fixture: &str, expected: &str) {
 #[track_caller]
 fn check_tuple_pat_total_elements(ra_fixture: &str, expected: Option<usize>) {
     check(ra_fixture, total_elements::for_tuple_pat, expected);
+}
+
+#[track_caller]
+fn check_type_alias_type_full_name(ra_fixture: &str, expected: &str) {
+    check(
+        ra_fixture,
+        type_full_names::for_type_alias,
+        Some(expected.to_owned()),
+    );
 }

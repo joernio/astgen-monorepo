@@ -231,3 +231,18 @@ fn skips_an_included_file() {
 
     assert!(!sysroot_ast_json_generated("my_crate", &files, "src/s.rs"));
 }
+
+#[test]
+fn emits_type_alias_type_full_name() -> TestResult<()> {
+    let json = no_sysroot_ast_json(
+        "my_crate",
+        &[("src/lib.rs", "type A = u8;\n")],
+        "src/lib.rs",
+    )?;
+
+    let aliases = nodes_by_kind(&json, "TYPE_ALIAS");
+    assert_eq!(aliases.len(), 1);
+    assert_eq!(aliases[0]["typeFullName"].as_str(), Some("my_crate::A"));
+
+    Ok(())
+}

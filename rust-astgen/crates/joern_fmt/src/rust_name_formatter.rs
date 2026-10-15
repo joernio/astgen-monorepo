@@ -201,6 +201,7 @@ fn block_item_def(semantics: &Semantics<RootDatabase>, item: &ast::Item) -> Opti
         ast::Item::Fn(it) => Some(semantics.to_def(it)?.into()),
         ast::Item::Module(it) => Some(semantics.to_def(it)?.into()),
         ast::Item::Struct(it) => Some(semantics.to_def(it)?.into()),
+        ast::Item::TypeAlias(it) => Some(semantics.to_def(it)?.into()),
         _ => None,
     }
 }
@@ -394,17 +395,35 @@ pub(super) fn format_type_alias_full_name(
     type_alias: TypeAlias,
     semantics: &Semantics<RootDatabase>,
 ) -> Option<String> {
-    let Some(AssocItemContainer::Trait(trait_)) = type_alias
-        .as_assoc_item(semantics.db)
-        .map(|item| item.container(semantics.db))
-    else {
+    let Some(assoc_item) = type_alias.as_assoc_item(semantics.db) else {
         return format_module_def_full_name(ModuleDef::from(type_alias), semantics);
     };
-    let trait_name = format_module_def_full_name(ModuleDef::from(trait_), semantics)?;
     let name = format_item_name(
         type_alias.name(semantics.db),
         type_alias.module(semantics.db),
         semantics,
     );
-    Some(format_member_full_name(&trait_name, &name))
+    match assoc_item.container(semantics.db) {
+        AssocItemContainer::Impl(impl_) => Some(format_member_full_name(
+            &format_impl_full_name(impl_, semantics)?,
+            &name,
+        )),
+        AssocItemContainer::Trait(trait_) => {
+            let trait_name = format_module_def_full_name(ModuleDef::from(trait_), semantics)?;
+            Some(format_member_full_name(&trait_name, &name))
+        }
+    }
+}
+
+pub(super) fn format_generic_type_alias_full_name(
+    type_alias: TypeAlias,
+    semantics: &Semantics<RootDatabase>,
+) -> Option<String> {
+    let base = format_type_alias_full_name(type_alias, semantics)?;
+    Some(format_generic_name(
+        base,
+        GenericDef::from(type_alias),
+        type_alias.module(semantics.db),
+        semantics,
+    ))
 }

@@ -2,9 +2,9 @@
 
 use super::{
     rust_name_formatter::{
-        format_enum_variant_full_name, format_generic_module_def_full_name, format_impl_full_name,
-        format_item_name, format_module_def_full_name, format_name_with_generic_args,
-        format_type_alias_full_name,
+        format_enum_variant_full_name, format_generic_module_def_full_name,
+        format_generic_type_alias_full_name, format_impl_full_name, format_item_name,
+        format_module_def_full_name, format_name_with_generic_args, format_type_alias_full_name,
     },
     type_formatter,
 };
@@ -60,6 +60,13 @@ pub fn for_name_ref(
         let resolution = semantics.resolve_path(&path)?;
         format_path_resolution_type_full_name(resolution, &path, semantics)
     }
+}
+
+pub fn for_type_alias(
+    type_alias: &ast::TypeAlias,
+    semantics: &Semantics<RootDatabase>,
+) -> Option<String> {
+    format_generic_type_alias_full_name(semantics.to_def(type_alias)?, semantics)
 }
 
 fn path_for_name_ref(name_ref: &ast::NameRef) -> Option<ast::Path> {
