@@ -157,6 +157,7 @@ impl RustAstGenJsonNode {
                 ast::IdentPat(it) => type_full_names::for_ident_pat(&it, semantics),
                 ast::SelfParam(it) => type_full_names::for_self_param(&it, semantics),
                 ast::NameRef(it) => type_full_names::for_name_ref(&it, semantics),
+                ast::TypeAlias(it) => type_full_names::for_type_alias(&it, semantics),
                 _ => None,
             }
         };
