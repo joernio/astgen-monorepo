@@ -180,11 +180,16 @@ fn collect_block_local_defs(
             }
             continue;
         }
-        if let Some(item) = ast::Item::cast(child.clone())
-            && let Some(def) = block_item_def(semantics, &item)
-            && def.name(semantics.db).as_ref() == Some(name)
-        {
-            out.push(def);
+        if let Some(item) = ast::Item::cast(child.clone()) {
+            if let Some(expansion) = semantics.expand_attr_macro(&item) {
+                collect_block_local_defs(semantics, &expansion.value.value, name, out);
+                continue;
+            }
+            if let Some(def) = block_item_def(semantics, &item)
+                && def.name(semantics.db).as_ref() == Some(name)
+            {
+                out.push(def);
+            }
         }
         if !ast::Fn::can_cast(child.kind())
             && !ast::Module::can_cast(child.kind())
@@ -202,6 +207,7 @@ fn block_item_def(semantics: &Semantics<RootDatabase>, item: &ast::Item) -> Opti
         ast::Item::Module(it) => Some(semantics.to_def(it)?.into()),
         ast::Item::Struct(it) => Some(semantics.to_def(it)?.into()),
         ast::Item::TypeAlias(it) => Some(semantics.to_def(it)?.into()),
+        ast::Item::Trait(it) => Some(semantics.to_def(it)?.into()),
         _ => None,
     }
 }

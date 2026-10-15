@@ -479,3 +479,22 @@ fn main() {}
         "ra_test_fixture::S#2",
     );
 }
+
+#[test]
+fn local_struct_behind_attribute_macro_type_full_name() {
+    check_struct_type_full_name(
+        r#"
+//- proc_macros: identity
+fn f() {
+    {
+        #[proc_macros::identity]
+        struct $0S;
+    }
+    {
+        struct S;
+    }
+}
+"#,
+        "ra_test_fixture::f::S#1",
+    );
+}

@@ -449,3 +449,18 @@ fn f() {
         "ra_test_fixture::f::util#2::Out",
     );
 }
+
+#[test]
+fn const_in_block_local_mod_owner_full_name() {
+    check_path_owner_full_name(
+        r#"
+fn f() {
+    mod m {
+        pub const K: u32 = 1;
+    }
+    let _ = $0m::K;
+}
+"#,
+        Some("ra_test_fixture::f::m"),
+    );
+}

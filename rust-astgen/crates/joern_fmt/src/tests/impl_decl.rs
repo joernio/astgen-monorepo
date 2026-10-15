@@ -143,3 +143,20 @@ $0impl Tr for S {
         "<ra_test_fixture::S as ra_test_fixture::Tr>",
     );
 }
+
+#[test]
+fn impl_of_trait_in_anonymous_const() {
+    check_impl_type_full_name(
+        r#"
+const _: () = {
+    trait Tr {}
+    impl Tr for i32 {}
+};
+const _: () = {
+    trait Tr {}
+    $0impl Tr for i64 {}
+};
+"#,
+        "<i64 as ra_test_fixture::Tr#2>",
+    );
+}
