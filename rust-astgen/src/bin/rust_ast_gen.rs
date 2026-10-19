@@ -62,11 +62,9 @@ struct RustAstGenCliArgs {
     #[arg(long = "pretty-print", default_value_t = false)]
     pretty_print: bool,
 
-    #[arg(
-        help = "Skip proc-macro expansion. Faster, but will not resolve proc-macro-generated items"
-    )]
-    #[arg(long = "no-proc-macro", default_value_t = false)]
-    no_proc_macro: bool,
+    #[arg(help = "Run build scripts and expand proc-macros")]
+    #[arg(long = "expand-proc-macros", default_value_t = false)]
+    expand_proc_macros: bool,
 }
 
 impl RustAstGenCliArgs {
@@ -126,7 +124,7 @@ impl TryFrom<RustAstGenCliArgs> for RustAstGenConfig {
             args.features,
             args.no_default_features,
             args.pretty_print,
-            !args.no_proc_macro,
+            args.expand_proc_macros,
         )
     }
 }

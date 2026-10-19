@@ -105,8 +105,8 @@ edition = "2021"
     if resolve_cfg {
         command.arg("--resolve-cfg");
     }
-    if !expand_proc_macros {
-        command.arg("--no-proc-macro");
+    if expand_proc_macros {
+        command.arg("--expand-proc-macros");
     }
     let output = command.output()?;
 
