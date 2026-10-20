@@ -7,6 +7,7 @@ use joern_fmt::{
     ctor_type_full_names, implemented_traits, is_path, method_full_names, owner_full_names,
     supertraits, total_elements, type_full_names,
 };
+use log::warn;
 use ra_ap_hir::{
     CfgExpr, CfgOptions, Crate, HirFileId, Semantics, db::ExpandDatabase, prettify_macro_expansion,
 };
@@ -16,7 +17,7 @@ use ra_ap_syntax::{
     AstNode, NodeOrToken, SyntaxElement, SyntaxKind, SyntaxNode, SyntaxToken, TextRange, ast,
     match_ast,
 };
-use rust_analyzer_ext::expansion_has_no_errors;
+use rust_analyzer_ext::expansion_errors;
 use serde::Serialize;
 
 /// Per-file envelope wrapping the AST.
@@ -237,7 +238,17 @@ impl RustAstGenJsonNode {
                 }
             };
             expansion
-                .filter(|expanded| expansion_has_no_errors(expanded.file_id, semantics))
+                .filter(|expanded| {
+                    let errors = expansion_errors(expanded.file_id, semantics);
+                    if let Some(error) = errors.first() {
+                        warn!(
+                            "failed to parse macro expansion of `{}`: {}",
+                            node.text().to_string().lines().next().unwrap_or_default(),
+                            error
+                        );
+                    }
+                    errors.is_empty()
+                })
                 .map(|expanded| {
                     Self::from_node(
                         &expanded.value,
