@@ -4,7 +4,7 @@ use ra_ap_hir::{
 };
 use ra_ap_ide_db::RootDatabase;
 use ra_ap_rustc_parse_format::{ParseMode, Parser, Piece, Position};
-use ra_ap_syntax::{AstNode, AstToken, SyntaxNode, ast, ast::IsString};
+use ra_ap_syntax::{AstNode, AstToken, SyntaxError, SyntaxNode, ast, ast::IsString};
 use ra_ap_vfs::FileId;
 use std::ops::Range;
 
@@ -31,16 +31,16 @@ pub fn crate_for_file(
         .into()
 }
 
-pub fn expansion_has_no_errors(
+pub fn expansion_errors(
     hir_file_id: HirFileId,
     semantics: &Semantics<RootDatabase>,
-) -> bool {
+) -> Vec<SyntaxError> {
     let Some(macro_file) = hir_file_id.macro_file() else {
-        return true;
+        return Vec::new();
     };
 
     let (parse, _) = &semantics.db.parse_macro_expansion(macro_file).value;
-    parse.errors().is_empty()
+    parse.errors().to_vec()
 }
 
 pub fn enclosing_fn(
