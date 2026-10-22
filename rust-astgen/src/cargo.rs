@@ -22,8 +22,7 @@ pub fn load_workspace(config: &RustAstGenConfig) -> Result<(RootDatabase, Vfs)> 
         },
         // doesn't seem necessary? slight runtime performance improvement by disabling it
         prefill_caches: false,
-        // TODO: maybe config.worker_threads.
-        proc_macro_processes: 1,
+        proc_macro_processes: config.worker_threads,
         num_worker_threads: config.worker_threads,
     };
 
