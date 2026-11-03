@@ -71,3 +71,10 @@ astgen-debug*
 .tool-versions
 .idea/
 test/obj
+
+# Generated Scala AST wrapper (astgen --scala-ast-only) and sbt build output
+/BabelNodeSyntax.scala
+scala-tests/target/
+scala-tests/project/target/
+scala-tests/project/project/
+scala-tests/.bsp/

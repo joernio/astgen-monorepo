@@ -1,0 +1,10 @@
+let dup = 1
+let dup = 2
+const noInit
+function f(a, a) { "use strict" }
+return 1
+await 2
+x = { a: 1, a: 2 }
+class K { constructor() {} constructor() {} }
+label: label: ;
+with (obj) { x }

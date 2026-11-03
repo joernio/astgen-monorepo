@@ -110,6 +110,9 @@ const COMMON_BABEL_PLUGINS: babelParser.ParserPlugin[] = [
     "numericSeparator",
     "dynamicImport",
     "typescript",
+    // `accessor x = 1` (ClassAccessorProperty). Additive: without it a class using the keyword is a syntax error that
+    // gets the whole file skipped; code that does not use it, including `accessor` as a plain name, parses identically.
+    "decoratorAutoAccessors",
 ]
 
 /**

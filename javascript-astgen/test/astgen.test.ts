@@ -47,6 +47,33 @@ describe("astgen basic functionality", () => {
         })
     })
 
+    it("keeps loc.start and loc.end on every node (Babel shares Position objects)", async () => {
+        const code = [
+            "import {x} from \"y\"",
+            "class A<T> { m(a?: T): void {} }",
+            "const f = (a: string) => a + x",
+            "",
+        ].join("\n")
+
+        await setupTestFixture(code, "main.ts", {tsTypes: false}, (tmpDir) => {
+            const parsed = JSON.parse(fs.readFileSync(path.join(tmpDir, "ast_out", "main.ts.json")).toString())
+            const offenders: string[] = []
+            let nodes = 0
+            const visit = (n: any): void => {
+                if (Array.isArray(n)) return n.forEach(visit)
+                if (n === null || typeof n !== "object") return
+                if (typeof n.type === "string" && typeof n.start === "number") {
+                    nodes++
+                    if (!n.loc?.start || !n.loc?.end) offenders.push(`${n.type}@${n.start}`)
+                }
+                for (const k of Object.keys(n)) if (k !== "loc") visit(n[k])
+            }
+            visit(parsed.ast)
+            expect(nodes).toBeGreaterThan(20)
+            expect(offenders).toEqual([])
+        })
+    })
+
     it("should exclude files by relative file path correctly", async () => {
         const code = "console.log(\"Hello, world!\");"
         const config = {tsTypes: false, "exclude-file": ["main.js"]}

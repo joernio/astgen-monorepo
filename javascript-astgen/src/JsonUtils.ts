@@ -85,16 +85,25 @@ export function writeMapToJsonFile(filePath: string, map: Map<number, string>): 
 /**
  * Writes a value as JSON directly to a file using buffered streaming,
  * handling circular references without materializing the full JSON string in memory.
- * Semantics match JSON.stringify with getCircularReplacer:
- * - Circular/duplicate object references are omitted (skipped in objects, null in arrays)
+ * Semantics:
+ * - Circular references (an object that is its own ancestor) are omitted
+ *   (skipped in objects, null in arrays). This matches JSON.stringify's own
+ *   circular check, which also only looks at the current ancestor path.
+ * - Objects that are merely *shared* (reachable twice, but not through
+ *   themselves) are written in full every time. Babel shares `Position`
+ *   objects between neighbouring nodes (the end of one node is the start of
+ *   the next), so dropping repeat visits would silently strip `loc.start` /
+ *   `loc.end` from roughly half of all nodes.
  * - undefined, functions, and symbols are omitted in objects and become null in arrays
  */
 export function writeJsonStreamCircular(filePath: string, data: any): void {
-    const seen = new WeakSet<object>()
+    // Objects currently being written, i.e. the ancestors of the value in
+    // hand. Entries are removed again once their subtree is complete.
+    const ancestors = new WeakSet<object>()
 
     function shouldSkip(v: any): boolean {
         return v === undefined || typeof v === "function" || typeof v === "symbol" ||
-            (typeof v === "object" && v !== null && seen.has(v))
+            (typeof v === "object" && v !== null && ancestors.has(v))
     }
 
     withBufferedWriter(filePath, (write) => {
@@ -111,17 +120,19 @@ export function writeJsonStreamCircular(filePath: string, data: any): void {
                     write(value ? "true" : "false")
                     return
                 case "object":
-                    seen.add(value)
-                    if (typeof value.toJSON === "function") {
-                        const resolved = value.toJSON()
-                        if (typeof resolved === "object" && resolved !== null) seen.add(resolved)
-                        writeValue(resolved)
-                        return
-                    }
-                    if (Array.isArray(value)) {
-                        writeArray(value)
-                    } else {
-                        writeObject(value)
+                    ancestors.add(value)
+                    try {
+                        if (typeof value.toJSON === "function") {
+                            writeValue(value.toJSON())
+                            return
+                        }
+                        if (Array.isArray(value)) {
+                            writeArray(value)
+                        } else {
+                            writeObject(value)
+                        }
+                    } finally {
+                        ancestors.delete(value)
                     }
                     return
                 default:

@@ -60,8 +60,28 @@ async function main(argv: string[]) {
             },
             description: "Exclude files matching this regex (matches the absolute path)."
         })
+        .option("scala-ast-only", {
+            alias: "s",
+            default: false,
+            type: "boolean",
+            description:
+                "Only write the Scala wrapper for the Babel AST nodes " +
+                "(./BabelNodeSyntax.scala) and exit; no sources are parsed.",
+        })
         .version(VERSION)
         .help("h").parseSync()
+
+    if (parsed["scala-ast-only"]) {
+        try {
+            // Loaded on demand: it pulls in all of @babel/types, which a normal run does not need.
+            const {generateScalaAst} = await import("./ScalaAstGenerator")
+            generateScalaAst()
+            return
+        } catch (e) {
+            Logger.error("Failed to write the Scala wrapper:", getErrorMessage(e))
+            process.exit(1)
+        }
+    }
 
     const args: Options = {
         src: parsed.src,
