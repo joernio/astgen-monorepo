@@ -59,6 +59,26 @@ describe("writeJsonStreamCircular", () => {
         expect("a" in parsed.b).toBe(false)
     })
 
+    it("writes shared (non-circular) references in full every time", () => {
+        const f = tmpFile()
+        const shared = {line: 1, column: 4}
+        // Same shape as Babel's AST: neighbouring nodes share one Position object.
+        writeJsonStreamCircular(f, {a: {end: shared}, b: {start: shared}, list: [shared, shared]})
+        expect(JSON.parse(readAndCleanup(f))).toEqual({
+            a: {end: {line: 1, column: 4}},
+            b: {start: {line: 1, column: 4}},
+            list: [{line: 1, column: 4}, {line: 1, column: 4}],
+        })
+    })
+
+    it("still breaks a cycle that runs through a shared object", () => {
+        const f = tmpFile()
+        const shared: any = {name: "s"}
+        shared.self = shared
+        writeJsonStreamCircular(f, {x: shared, y: shared})
+        expect(JSON.parse(readAndCleanup(f))).toEqual({x: {name: "s"}, y: {name: "s"}})
+    })
+
     it("invokes toJSON when present (Date-like objects)", () => {
         const f = tmpFile()
         const date = new Date("2024-01-02T03:04:05.000Z")

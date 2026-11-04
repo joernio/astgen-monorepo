@@ -1,0 +1,6 @@
+import React from "react"
+const el = <div className="x" id={id} {...props} data-a='b'>text {expr} <b>bold</b>{/* c */}</div>
+const frag = <><A.B.C prop /><ns:tag a:b="1" /></>
+const gen = <T,>(p: T) => <Comp<T> value={p} render={() => <span />} />
+function C(): JSX.Element { return cond ? <a href="x">&nbsp;&amp;</a> : null }
+const spread = <ul>{...items}</ul>

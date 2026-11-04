@@ -68,6 +68,9 @@ Options:
                        Default is empty.                   [array] [default: []]
       --exclude-regex  Exclude files matching this regex (matches the absolute
                        path).
+  -s, --scala-ast-only Only write the Scala wrapper for the Babel AST nodes
+                       (./BabelNodeSyntax.scala) and exit; no sources are
+                       parsed.                        [boolean] [default: false]
       --version        Show version number                             [boolean]
   -h                   Show help                                       [boolean]
 ```
@@ -94,6 +97,32 @@ Exclude individual files or whole directories with `--exclude-file` (repeatable,
 astgen --exclude-file generated/ --exclude-file build/legacy.js
 astgen --exclude-regex '\.generated\.[jt]s$'
 ```
+
+## Scala accessors
+
+The JSON AST follows the node definitions of `@babel/types`. `astgen --scala-ast-only` (or `-s`) writes `./BabelNodeSyntax.scala`, a Scala 3 file (depends on `ujson`) with one case class per Babel node type, so consumers do not have to navigate the JSON by key:
+
+```scala
+import BabelNodeSyntax.*
+
+val file = BabelAstFile(ujson.read(os.read(path))).ast       // File
+file.program.body.foreach {
+  case fn: FunctionDeclaration => println(fn.id.map(_.name))  // Option[Identifier]
+  case _                       =>
+}
+```
+
+Alias groups (`Expression`, `Statement`, ...) are sealed traits, union-typed fields use Scala 3 union types, optional fields are `Option`, and array fields are always a `Seq` (a `Vector`, so indexing is cheap).
+
+Things to know when using it:
+
+- **Unknown node types** (say, from a newer parser than the one the file was generated for) decode to `UnknownNode`, which extends every alias trait so it fits wherever an alias such as `Expression` is expected. Consequently, an unknown statement also matches `case e: Expression`; test for `UnknownNode` first if that matters. Fields typed as concrete node classes (or unions of them) cannot hold it: reading one throws an `IllegalStateException` naming the node type and field. Missing or null required fields fail the same way.
+- **Unexpected parser output never crashes with anything but a descriptive error.** Accessors throw only an `IllegalStateException` (a value of the wrong kind, such as a number where a string is expected, or an unexpected node) or a `NoSuchElementException` (a required key is missing); both name the node type and field. No `ujson` exception escapes. `BabelNodeSyntaxTest` fuzzes this with thousands of mutated ASTs.
+- **Equality** is identity of the wrapped JSON object: nodes can be used as map keys, and reading the same child twice yields equal nodes. Structurally identical nodes at different places are not equal.
+- `NumericLiteral.value` is `None` for numbers JSON cannot hold (`1e999`); the source text is in `extra("raw")`.
+- Alias traits such as `Class`, `Function` or `File` shadow the standard names under `import BabelNodeSyntax.*`; import the ones you need by name.
+
+The generated file is attached to each release as `BabelNodeSyntax.scala`; `scala-tests/` contains an sbt project that checks it against real `astgen` output.
 
 ## File skip rules
 

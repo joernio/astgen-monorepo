@@ -20,6 +20,17 @@ jobs:
         uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
         with:
           bun-version: 1.4.3
+      - name: Install sbt
+        uses: sbt/setup-sbt@b113b960ba361e87e08ce02a390d51871b7ee459 # v1.5.13
+      - name: Set up JDK
+        uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: sbt
+          cache-dependency-path: |
+            javascript-astgen/scala-tests/build.sbt
+            javascript-astgen/scala-tests/project/build.properties
       - name: Install ldid
         uses: MOZGIII/install-ldid-action@d5ab465f3a66a4d60a59882b935eb30e18e8d043 # v1
         with:
@@ -50,3 +61,8 @@ jobs:
           ASTGEN_VERSION=$(./astgen-linux --version)
           echo "ASTGEN_VERSION=$ASTGEN_VERSION" >> $GITHUB_ENV
           echo "astgen version is: $ASTGEN_VERSION"
+      - name: Generate BabelNodeSyntax.scala
+        run: ./astgen-linux --scala-ast-only
+      - name: Run Scala Tests
+        run: sbt testFull
+        working-directory: javascript-astgen/scala-tests

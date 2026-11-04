@@ -5,7 +5,8 @@
     "": {
       "name": "@joernio/astgen",
       "dependencies": {
-        "@babel/parser": "^7.29.3",
+        "@babel/parser": "^7.29.8",
+        "@babel/types": "^7.29.8",
         "readdirp": "^5.0.0",
         "typescript": "^6.0.3",
         "yargs": "^17.7.2",

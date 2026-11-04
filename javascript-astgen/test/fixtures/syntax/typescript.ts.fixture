@@ -1,0 +1,114 @@
+import type {T1} from "t"
+import {type T2, v} from "t"
+import fs = require("fs")
+import Alias = ns.Inner.Deep
+export type {T1}
+export = thing
+export as namespace Global
+declare module "m" { export const x: number }
+declare global { interface Window { foo: string } }
+namespace Outer.Inner { export const x = 1 }
+module Legacy {}
+declare function over(a: string): void
+declare const dc: number
+declare class DC { m(): void }
+enum E { A = 1, B = "b", C = A | 2 }
+const enum CE { X }
+declare enum DE { Y }
+interface I<T extends object = {}> extends J, K<T> {
+  readonly a: number
+  b?: string
+  [key: string]: any
+  m<U>(x: U): void
+  new (x: number): I<T>
+  (call: string): void
+  get g(): number
+  set g(v: number)
+}
+type Alias2<T> = T extends string ? "s" : T extends number ? "n" : never
+type Mapped = { readonly [K in keyof T as `x${K}`]?: T[K] }
+type Tpl = `a${string}b`
+type Fn = (a: number, ...rest: string[]) => void
+type Ctor = new (a: number) => Foo
+type AbstractCtor = abstract new () => Foo
+type Tup = [a: string, b?: number, ...rest: boolean[]]
+type U = A | B & C | (D | E)[]
+type Q = typeof x | keyof T | unique symbol | readonly string[]
+type Idx = T["a"][number]
+type Imp = import("mod").Foo<string>
+type Lit = 1 | -1 | "s" | true | null | undefined | void | never | unknown | any | object | bigint | symbol | 10n
+type Pred = (x: unknown) => x is string
+type Assert = (x: unknown) => asserts x
+type Infer = T extends Array<infer U extends string> ? U : never
+abstract class C<T> extends B<T> implements I, J {
+  private readonly p: number = 1
+  protected static s?: string
+  public declare d: number
+  override m(): void {}
+  abstract am(): void
+  constructor(private x: number, public readonly y?: string) { super() }
+  [key: string]: any
+  static { }
+  @dec() deco!: string
+}
+function f<T>(this: Window, a?: number, b: T = null!): asserts a is number {}
+function over(a: string): void
+function over(a: number): void
+function over(a: any) {}
+const x = <T,>(a: T) => a
+const y = a as unknown as string
+const z = <string>a
+const nn = a!.b!
+const sat = {a: 1} satisfies Rec
+let tuple: [number, string] = [1, "a"]
+for (const k of (arr as any[])) {}
+export default interface DI {}
+export abstract class AC {}
+declare module Foo.Bar {}
+let v1: typeof import("x")
+let fnType: { (a: number): string; new (): Foo; readonly [i: number]: string }
+using res = getResource()
+type ThisT = this
+type OptTuple = [string?, ...number[]]
+const inst = makeBox<string>
+
+// Ambient module declaration without a body
+declare module "ambient-no-body";
+
+type Intrinsic = intrinsic
+
+// Modifiers, generics and annotations on every kind of member and pattern
+abstract class Mods<T> extends Base<string> implements I<T> {
+  private static override readonly rp?: number
+  abstract ap: string
+  declare dp: number
+  definite!: string
+  public accessibleMethod?<U>(x: U): void {}
+  protected abstract abm?<U>(): void
+  private override pm(): number { return 1 }
+  @dec() decoratedMethod() {}
+  #privMethod<U>(): string { return "" }
+  readonly #roField: number = 1
+  #definite!: string
+  static #typed?: number
+  constructor(@Inject() injected: Dep, private override readonly po: number) { super() }
+}
+const fexp = function <U>(x: U): U { return x }
+const arrowTyped = <U,>(x: U): U => x
+const objWithGenerics = { m<U>(x: U): U { return x } }
+declare function df<U>(x: U): void
+declare interface DI {}
+declare type DT = string
+type GenFn = <U>(x: U) => U
+type GenCtor = new <U>() => U
+interface Sig { <U>(x: U): U; new <U>(x: U): Sig; m?<U>(): void; static?: never }
+class StaticIdx { static [key: string]: number }
+type Var<in out U> = [U]
+function constParam<const V>(v: V) {}
+type TQ = typeof w<string>
+const genericCall = f<string>(x), optGenericCall = a?.b<string>(), genericNew = new Foo<string>()
+const tagged = tag<string>`x`
+function patterns([a]: number[], {b}: Obj, c: number = 1, ...rest: any[]) {}
+declare let dl: number
+enum Color { Red = 1, Green = "g" }
+abstract class AccTs extends Base { private accessor a: number = 1; public static accessor b: string = ""; protected abstract accessor c: number; override accessor d = 2; declare accessor e: number; readonly accessor f = 3; accessor g!: number }

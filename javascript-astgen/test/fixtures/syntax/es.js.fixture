@@ -1,0 +1,55 @@
+#!/usr/bin/env node
+"use strict"
+import def, {a as b, c} from "mod"
+import * as ns from "ns"
+import json from "./data.json" with {type: "json"}
+export {b, c as d}
+export * from "other"
+export * as everything from "other2"
+export default class Base extends (cond ? A : B) {
+  static #count = 0
+  #priv = 1
+  static { Base.#count++ }
+  field = 1
+  static sfield
+  constructor(x, ...rest) { super(x); this.x = x }
+  get v() { return this.#priv }
+  set v(n) { this.#priv = n }
+  static async *gen() { yield* other(); await 1 }
+  #m() {}
+  [computed]() {}
+}
+export const arrow = async ({a, b: [c, , d = 1], ...r}, [e, ...f] = [], g = () => {}) => a?.b?.[c]?.(d) ?? e
+function* g() { const x = yield 1; return x }
+async function h() { for await (const x of y) { label: for (;;) { break label } } }
+var o = {a, b: 1, "c": 2, 3: 4, [k]: 5, get x() { return 1 }, set x(v) {}, m() {}, async am() {}, *gm() {}, ...spread, __proto__: null}
+let t = `a${1}b${tag`x`}`, re = /ab+c/giu, big = 10n, n = 1_000, hex = 0xff, nul = null, undef = void 0, tru = true
+if (a) b(); else if (c) d(); else { e() }
+switch (x) { case 1: case 2: f(); break; default: g() }
+try { throw new Error("x") } catch ({message}) { log(message) } finally { done() }
+try {} catch {}
+while (i--) continue
+do { i++ } while (i < 10)
+for (const k in o) {}
+for (let i = 0, j = 1; i < j; i++, j--) {}
+debugger
+new.target; import.meta; import("dyn"); new Foo; new Foo(1)
+a ||= 1; a &&= 2; a ??= 3; a **= 2; ++a; a--; !a; -a; typeof a; delete a.b; void 0
+x = a ? b : c, y = (1, 2)
+const {p = 1, q: {r}} = obj, [s, [u]] = arr
+class Empty {}
+(function iife() {})()
+;(() => {})()
+const fn = function* () {}
+do_expr = do { 1 }
+export default from "x"
+@deco class Decorated { @prop p; @method m() {} }
+if (a) { function inner() {} }
+const ce = class {}, named = class Named extends Base {}
+var big1 = 1e999, big2 = 0xfff_fff
+outer: for (;;) { continue outer }
+/* block before */ const commented = /* inner */ 1 // trailing
+// own line before
+function withComments(/* none */) { /* empty */ }
+class Acc { accessor a = 1; static accessor b; accessor [k] = 2; accessor #p = 3; @deco accessor d = 4; accessor accessor = 5 }
+class AccName { accessor; accessor = 1; accessor() {} static accessor = 2 }
