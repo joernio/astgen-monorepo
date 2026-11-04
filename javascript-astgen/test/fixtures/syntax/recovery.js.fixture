@@ -8,3 +8,12 @@ x = { a: 1, a: 2 }
 class K { constructor() {} constructor() {} }
 label: label: ;
 with (obj) { x }
+// A type annotation where none is allowed: the parser recovers with a TSTypeCastExpression.
+f(x: any[])
+;(y: string)
+;[z: number]
+w = (v: T)
+new C(x: T)
+o = { a: (b: T) }
+x => (y: T)
+;(a: T, b: U)

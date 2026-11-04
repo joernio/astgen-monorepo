@@ -68,10 +68,17 @@ export const UNIVERSAL_KEYS: ReadonlySet<string> = new Set([
 export const COMMENT_ALIAS = "Comment"
 const COMMENT_TYPES = ["CommentBlock", "CommentLine"]
 
+/**
+ * The TypeScript plugin's recovery node for a type annotation where none is allowed, e.g. the argument of
+ * `f(x: any[])`. `@babel/types` has no definition for it, so it is added by hand (see `PARSER_ONLY_NODES`).
+ */
+const TYPE_CAST = "TSTypeCastExpression"
+
 /** Alias name -> member node types. Static data, so it is computed once. */
 const ALIAS_MEMBERS: ReadonlyMap<string, ReadonlySet<string>> = new Map([
     ...Object.entries(babelTypes.FLIPPED_ALIAS_KEYS as Record<string, string[]>)
-        .map(([alias, members]) => [alias, new Set(members)] as const),
+        // It stands wherever an expression does: `f(x: T)`, `(x: T)`, `[x: T]`.
+        .map(([alias, members]) => [alias, new Set(alias === "Expression" ? [...members, TYPE_CAST] : members)] as const),
     [COMMENT_ALIAS, new Set(COMMENT_TYPES)],
 ])
 
@@ -101,9 +108,14 @@ const field = (name: string, type: ValueType, optional = false): FieldSpec => ({
 // ---------------------------------------------------------------------------
 
 /** Node types the parser emits that `@babel/types` has no entry for. */
-const PARSER_ONLY_NODES: NodeSpec[] = COMMENT_TYPES.map((type) => ({
-    type, aliases: [COMMENT_ALIAS], fields: [field("value", {kind: "string"})],
-}))
+const PARSER_ONLY_NODES: NodeSpec[] = [
+    ...COMMENT_TYPES.map((type) => ({type, aliases: [COMMENT_ALIAS], fields: [field("value", {kind: "string"})]})),
+    {
+        type: TYPE_CAST,
+        aliases: ["Expression"],
+        fields: [field("expression", nodeOf("Expression")), field("typeAnnotation", nodeOf("TSTypeAnnotation"))],
+    },
+]
 
 /**
  * The parser puts `id: null` on every function-like node, though only some of them can have a name. The key is part of
