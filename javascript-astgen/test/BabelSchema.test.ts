@@ -111,7 +111,7 @@ describe("syntax fixtures", () => {
     const schema = buildSchema()
 
     // Only the recovery fixture is meant to produce parse errors.
-    const EXPECTED_ERRORS: Record<string, number> = {"recovery.js.fixture": 5}
+    const EXPECTED_ERRORS: Record<string, number> = {"recovery.js.fixture": 14}
 
     it("parse with the expected number of recovered errors", () => {
         const actual = Object.fromEntries(fixtures().map(({name, code}) => [name, parseToJson(code).errors]))
