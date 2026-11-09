@@ -1,9 +1,7 @@
 name: JavaScript AST Generator Regression
 
 on:
-  pull_request:
-    paths:
-      - 'javascript-astgen/**'
+  workflow_call:  # Called by monorepo-ci.yml
 
 defaults:
   run:

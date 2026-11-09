@@ -1,9 +1,7 @@
 name: Swift AST Generator Regression
 
 on:
-  pull_request:
-    paths:
-      - 'swift-astgen/**'
+  workflow_call:  # Called by monorepo-ci.yml
 
 defaults:
   run:
