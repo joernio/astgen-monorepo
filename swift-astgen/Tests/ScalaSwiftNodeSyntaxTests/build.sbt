@@ -2,14 +2,14 @@ ThisBuild / version := "0.1.0-SNAPSHOT"
 
 ThisBuild / scalaVersion := "3.8.4"
 
-lazy val copyFile = taskKey[Unit]("Copy SwiftNodeSyntax.scala")
-
-copyFile := {
+// The generated `../../SwiftNodeSyntax.scala` (see README.md) is the code under test: copy it into the build on every
+// compilation. The generator must not be cached (sbt 2 would skip it as its inputs do not change).
+Compile / sourceGenerators += Def.uncached(Def.task {
   val from = baseDirectory.value / ".." / ".." / "SwiftNodeSyntax.scala"
-  val to   = baseDirectory.value / "src" / "main" / "scala" / "SwiftNodeSyntax.scala"
-  IO.delete(to)
+  val to   = (Compile / sourceManaged).value / "SwiftNodeSyntax.scala"
   IO.copyFile(from, to)
-}
+  Seq(to)
+})
 
 lazy val root = (project in file("."))
   .settings(name := "ScalaSwiftNodeSyntaxTests")
