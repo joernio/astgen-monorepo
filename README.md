@@ -83,7 +83,9 @@ Expected output: `astgen-linux: OK`
 
 ## Contributing
 
-Contributions are welcome. Please open an issue or pull request on [GitHub](https://github.com/joernio/astgen-monorepo). See each tool's README for language-specific build and test instructions.
+Contributions are welcome. Please open an issue or pull request on [GitHub](https://github.com/joernio/astgen-monorepo). The [Contributor's guide](./contributing-docs/README.md) covers the development environment, coding style, tests, pull requests and releases. See each tool's README for language-specific build and test instructions.
+
+Coding agents should start with [AGENTS.md](./AGENTS.md) (`CLAUDE.md` is a symlink to it).
 
 ## License
 
