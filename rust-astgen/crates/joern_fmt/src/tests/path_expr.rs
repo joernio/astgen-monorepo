@@ -375,6 +375,85 @@ fn main() {
 }
 
 #[test]
+fn inherent_assoc_const_owner_full_name() {
+    check_path_owner_full_name(
+        r#"
+struct Foo;
+
+impl Foo {
+    const K: u32 = 1;
+}
+
+fn main() {
+    let v = $0Foo::K;
+}
+"#,
+        Some("ra_test_fixture::Foo"),
+    );
+}
+
+#[test]
+fn self_assoc_const_owner_full_name() {
+    check_path_owner_full_name(
+        r#"
+struct Foo;
+
+impl Foo {
+    const K: u32 = 1;
+    fn k(&self) -> u32 { $0Self::K }
+}
+"#,
+        Some("ra_test_fixture::Foo"),
+    );
+}
+
+#[test]
+fn trait_impl_assoc_const_owner_full_name() {
+    check_path_owner_full_name(
+        r#"
+trait Tr { const K: u32; }
+struct S;
+impl Tr for S { const K: u32 = 1; }
+
+fn main() {
+    let v = $0<S as Tr>::K;
+}
+"#,
+        Some("<ra_test_fixture::S as ra_test_fixture::Tr>"),
+    );
+}
+
+#[test]
+fn trait_default_assoc_const_owner_full_name() {
+    check_path_owner_full_name(
+        r#"
+trait Tr { const K: u32 = 1; }
+struct S;
+impl Tr for S {}
+
+fn main() {
+    let v = $0S::K;
+}
+"#,
+        Some("ra_test_fixture::Tr"),
+    );
+}
+
+#[test]
+fn type_param_assoc_const_owner_full_name() {
+    check_path_owner_full_name(
+        r#"
+trait Tr { const K: u32; }
+
+fn f<T: Tr>() -> u32 {
+    $0<T as Tr>::K
+}
+"#,
+        Some("ra_test_fixture::Tr"),
+    );
+}
+
+#[test]
 fn const_in_fn_body_owner_full_name() {
     check_path_owner_full_name(
         r#"
