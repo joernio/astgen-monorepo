@@ -38,7 +38,7 @@ export ASTGEN_BIN=/tmp/astgen
 
 ```bash
 cd scala-tests
-sbt "testOnly *"
+sbt "testFull"
 ```
 
 The build copies `../BabelNodeSyntax.scala` into its managed sources on every compilation, so a
@@ -56,4 +56,4 @@ it cannot see that the generated file, the fixtures or the `astgen` binary chang
 ## CI
 
 The `javascript-astgen-ci.yml` workflow builds the binaries, generates the wrapper, and runs
-`sbt test` here.
+`sbt testFull` here.

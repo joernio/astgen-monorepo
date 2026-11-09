@@ -27,27 +27,29 @@ mv .build/debug/SwiftAstGen.exe SwiftAstGen-win.exe  # Windows
 
 # 2. Generate the Scala wrapper into the repository root.
 ./SwiftAstGen-mac --scala-ast-only
-# This writes ./SwiftNodeSyntax.scala (which sbt copies into src/main/scala on `sbt compile`).
+# This writes ./SwiftNodeSyntax.scala (which the sbt build compiles together with the tests).
 ```
 
 ## Running the tests
 
 ```bash
 cd Tests/ScalaSwiftNodeSyntaxTests
-sbt copyFile test
+sbt "testFull"
 ```
 
-The `copyFile` task in `build.sbt` pulls
-`swift-astgen/SwiftNodeSyntax.scala` into `src/main/scala/SwiftNodeSyntax.scala`.
-It must be run explicitly before (or together with) `test`.
+The build copies `../../SwiftNodeSyntax.scala` into its managed sources on every compilation, so a
+regenerated file is always picked up.
+
+Use `testOnly *` (or `testFull`) rather than `test`: sbt 2's `test` skips suites that passed before, and
+it cannot see that the generated file or the `SwiftAstGen` binary changed.
 
 ## Layout
 
-- `build.sbt` &mdash; sbt project + `copyFile` task.
+- `build.sbt` &mdash; sbt project; compiles the generated `../../SwiftNodeSyntax.scala` together with the tests.
 - `project/build.properties` &mdash; sbt version pin.
-- `src/main/scala/.keep` &mdash; placeholder; the real source is copied in at build time.
 - `src/test/scala/SwiftNodeSyntaxTest.scala` &mdash; the actual test suite.
 
 ## CI
 
-The `swift-astgen-ci.yml` workflow performs steps (1)+(2) before invoking `sbt test` here.
+The `swift-astgen-ci.yml` workflow builds the binaries, generates the wrapper, and runs
+`sbt testFull` here.
