@@ -15,3 +15,9 @@ target/
 /.worktrees
 /regression-diffs
 __pycache__
+
+# Renamed binaries used by the Scala round-trip tests
+/SwiftAstGen-mac
+/SwiftAstGen-linux
+/SwiftAstGen-linux-arm64
+/SwiftAstGen-win.exe
