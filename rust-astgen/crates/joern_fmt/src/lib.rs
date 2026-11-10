@@ -1,4 +1,5 @@
 pub mod ctor_type_full_names;
+pub mod fn_traits;
 pub mod implemented_traits;
 pub mod is_path;
 pub mod method_full_names;
