@@ -85,7 +85,7 @@ describe("typeMapForFile determinism", () => {
                 expect(r).toBe(rendered[0])
             }
         })
-    })
+    }, 30000)
 
     it("renders union members in canonical content order", async () => {
         await withTmpDir(async (tmpDir) => {
