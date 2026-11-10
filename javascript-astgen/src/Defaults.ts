@@ -62,6 +62,16 @@ export const IGNORE_DIRS: string[] = [
 ]
 
 /**
+ * Start of a file-name word: the beginning of the name or the character after `.`, `-` or `_`. Keywords such as
+ * `test` only count as a whole word, so `foo.test.js` and `foo_test.js` are skipped while `latest.js` and
+ * `contest.ts` are not.
+ */
+const WORD_START = "(?:^|[._-])"
+
+/** The extensions of {@link JS_TS_EXTENSIONS} without the leading dot, as a regex alternation. */
+const JS_TS_EXTENSIONS_ALTERNATION = JS_TS_EXTENSIONS.map((e) => e.slice(1)).join("|")
+
+/**
  * File-name patterns treated as non-source noise:
  *
  * - `chunk-vendors`, `app~` — Webpack/Vue CLI bundler outputs
@@ -72,10 +82,60 @@ export const IGNORE_DIRS: string[] = [
  * - `\.d` — TypeScript declaration files (`*.d.ts`)
  *
  * Matched against the file basename; the extension list mirrors
- * {@link JS_TS_EXTENSIONS}.
+ * {@link JS_TS_EXTENSIONS}. Keywords must be a whole word, see {@link WORD_START}.
  */
-export const IGNORE_FILE_PATTERN: RegExp =
-    new RegExp("(chunk-vendors|app~|mock|e2e|conf|test|spec|[.-]min|\\.d)\\.(js|jsx|cjs|mjs|xsjs|xsjslib|ts|tsx)$", "i")
+export const IGNORE_FILE_PATTERN: RegExp = new RegExp(
+    `(?:${WORD_START}(?:chunk-vendors|app~|mock|e2e|conf|test|spec)|[.-]min|\\.d)\\.(?:${JS_TS_EXTENSIONS_ALTERNATION})$`,
+    "i",
+)
+
+/**
+ * Alternatives of {@link IGNORE_TOOLING_FILE_PATTERN} that start at a whole word, see {@link WORD_START}. Each one
+ * carries its own end anchor, so they can be joined with `|`.
+ */
+const TOOLING_WORD_PATTERNS: string[] = [
+    // Bundler output. The wildcard forms cover hashed names such as `chunk-vendors.1a2b3c.js` and `app~1a2b3c.js`.
+    "chunk-vendors.*\\.js$",
+    "app~.*\\.js$",
+    "bundle\\.js$",
+    // Build, test and lint tooling configuration.
+    "jest\\.config",
+    "rollup\\.config",
+    "webpack\\..*\\.js$",
+    "vue\\.config\\.js$",
+    "babel\\.config\\.js$",
+    "eslint-local-rules\\.js$",
+    "Gruntfile\\.js$",
+]
+
+/** Alternatives of {@link IGNORE_TOOLING_FILE_PATTERN} that are delimited by a leading `.` or `-` already. */
+const TOOLING_SUFFIX_PATTERNS: string[] = [
+    "\\.chunk\\.js$",
+    "[.-]min\\..*js$",
+    // Generated type and transpilation artifacts.
+    "\\.types\\.js$",
+    "\\.cjs\\.js$",
+    "\\.t\\.ts$",
+]
+
+/**
+ * File-name patterns for bundler output and tooling configuration that
+ * {@link IGNORE_FILE_PATTERN} does not cover, so downstream consumers (Joern's
+ * `jssrc2cpg`) need no skip list of their own:
+ *
+ * - **Bundler output**: `chunk-vendors*.js`, `app~*.js`, `*.chunk.js`,
+ *   `bundle.js`, `*[.-]min.*js`
+ * - **Tooling configuration**: `jest.config*`, `rollup.config*`,
+ *   `webpack.*.js`, `vue.config.js`, `babel.config.js`,
+ *   `eslint-local-rules.js`, `Gruntfile.js`
+ * - **Generated artifacts**: `*.types.js`, `*.cjs.js`, `*.t.ts`
+ *
+ * Matched against the file basename, case-insensitively.
+ */
+export const IGNORE_TOOLING_FILE_PATTERN: RegExp = new RegExp(
+    `${WORD_START}(?:${TOOLING_WORD_PATTERNS.join("|")})|${TOOLING_SUFFIX_PATTERNS.join("|")}`,
+    "i",
+)
 
 /**
  * Skip files with more than this many lines. Avoids spending minutes on

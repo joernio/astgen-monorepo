@@ -134,11 +134,12 @@ Some files are skipped by design with a warning on stderr. None of these are con
 | Total lines in a file                                     | `MAX_LOC_IN_FILE`                 | 50 000         |
 | Length of any single line                                 | `MAX_LINE_LENGTH`                 | 10 000 bytes   |
 | File contains the marker `// EMSCRIPTEN_START_ASM`        | hard-coded                        | always skipped |
-| File name matches `IGNORE_FILE_PATTERN`                   | `IGNORE_FILE_PATTERN`             | tests, specs, mocks, `*.min.*`, `*.d.ts`, `chunk-vendors`, etc. |
+| File name matches `IGNORE_FILE_PATTERN`                   | `IGNORE_FILE_PATTERN`             | tests, specs, mocks, `*.min.*`, `*.d.ts`, `chunk-vendors`, etc. Keywords must be a whole word: `foo.test.js` and `foo_test.js` are skipped, `latest.js` is not. |
+| File name matches `IGNORE_TOOLING_FILE_PATTERN`           | `IGNORE_TOOLING_FILE_PATTERN`     | bundler output (`bundle.js`, `*.chunk.js`), tooling configuration (`webpack.*.js`, `jest.config*`, `rollup.config*`, `babel.config.js`, `Gruntfile.js`, ...), `*.types.js`, `*.cjs.js`, `*.t.ts` |
 | Containing directory's basename is in `IGNORE_DIRS`       | `IGNORE_DIRS`                     | `node_modules`, `dist`, `build`, `test`, `tests`, `e2e`, `examples`, `cypress`, `i18n`, `flow-typed`, `vendor`, `www`, `venv`, `eslint-rules`, `codemods`, `docs`, `jest-cache`, `e2e-beta` |
 | Hidden directories or files (`.` or `__` prefix)          | hard-coded                        | always skipped |
 
-The full list of `IGNORE_DIRS` and the regex used by `IGNORE_FILE_PATTERN` are documented in [`src/Defaults.ts`](src/Defaults.ts).
+The full list of `IGNORE_DIRS` and the regexes used by `IGNORE_FILE_PATTERN` and `IGNORE_TOOLING_FILE_PATTERN` are documented in [`src/Defaults.ts`](src/Defaults.ts).
 
 ## Regression Testing
 

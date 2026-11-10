@@ -49,14 +49,52 @@ function resolveExcludePath(srcDir: string, excludePath: string): string {
     return path.resolve(path.isAbsolute(excludePath) ? excludePath : path.join(srcDir, excludePath))
 }
 
+function realpathOrSelf(candidate: string): string {
+    try {
+        return fs.realpathSync(candidate)
+    } catch {
+        return candidate
+    }
+}
+
+/**
+ * Resolves symlinks in the directory part of `candidate` but not in its last segment, so that excluding a symlink
+ * itself still matches the entry the traversal reports for it.
+ */
+function realpathOfParent(candidate: string): string {
+    const parent = path.dirname(candidate)
+    return parent === candidate ? candidate : path.join(realpathOrSelf(parent), path.basename(candidate))
+}
+
+/**
+ * Every spelling of an exclude path the traversal could report it under.
+ *
+ * The traversal yields paths below `srcDir` exactly as it was given, while a user (or a calling process whose working
+ * directory the OS reports with symlinks resolved, as on macOS where `/var` is `/private/var`) may name the same
+ * location through a different symlinked prefix. Besides the path as written, this returns its fully resolved form
+ * and the form re-rooted at `srcDir`, so that all combinations of symlinked and real source directory and exclude
+ * path match.
+ */
+function excludePathSpellings(srcDir: string, realSrcDir: string, excludePath: string): string[] {
+    const resolved = resolveExcludePath(srcDir, excludePath)
+    const canonical = realpathOfParent(resolved)
+    const spellings = new Set([resolved, canonical])
+    if (pathIsInDirectory(canonical, realSrcDir)) {
+        spellings.add(path.join(srcDir, path.relative(realSrcDir, canonical)))
+    }
+    return [...spellings]
+}
+
 function buildExcludeRules(options: Options): ExcludeRules {
     const srcDir = path.resolve(options.src)
+    const realSrcDir = realpathOrSelf(srcDir)
     const prefixPaths: string[] = []
     const exactPaths = new Set<string>()
     for (const excludePath of options["exclude-file"]) {
-        const resolved = resolveExcludePath(srcDir, excludePath)
-        prefixPaths.push(resolved)
-        exactPaths.add(resolved)
+        for (const spelling of excludePathSpellings(srcDir, realSrcDir, excludePath)) {
+            prefixPaths.push(spelling)
+            exactPaths.add(spelling)
+        }
     }
     return {prefixPaths, exactPaths, regex: options["exclude-regex"]}
 }
@@ -87,6 +125,7 @@ function ignoreFileByName(
         fileName.startsWith(".") ||
         fileName.startsWith("__") ||
         Defaults.IGNORE_FILE_PATTERN.test(fileName) ||
+        Defaults.IGNORE_TOOLING_FILE_PATTERN.test(fileName) ||
         rules.exactPaths.has(fullPath) ||
         (rules.regex?.test(fullPath) ?? false)
 }
