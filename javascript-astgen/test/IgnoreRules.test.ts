@@ -21,88 +21,112 @@ async function parsedFiles(names: string[]): Promise<string[]> {
     return parsed.sort()
 }
 
+const SKIPPED_TESTS_AND_MINIFIED = [
+    "a.test.js",
+    "a.spec.ts",
+    "a.mock.js",
+    "a.e2e.js",
+    "a.min.js",
+    "a-min.js",
+    "a.d.ts",
+    "a-test.js",
+    "a_test.js",
+    "test.js",
+    "Test.js",
+    "spec.ts",
+    "webpack.conf.js",
+    "conf.js",
+]
+
+const SKIPPED_BUNDLER_OUTPUT = [
+    "chunk-vendors.js",
+    "chunk-vendors.1a2b3c.js",
+    "app~.js",
+    "app~1a2b3c.js",
+    "main.chunk.js",
+    "bundle.js",
+    "app.bundle.js",
+    "app.min.map.js",
+]
+
+const SKIPPED_TOOLING_CONFIG = [
+    "jest.config.js",
+    "jest.config.ts",
+    "webpack.config.js",
+    "webpack.dev.js",
+    "vue.config.js",
+    "babel.config.js",
+    "rollup.config.js",
+    "rollup.config.mjs",
+    "eslint-local-rules.js",
+    "Gruntfile.js",
+    "src/Gruntfile.js",
+]
+
+const SKIPPED_GENERATED = ["api.types.js", "api.cjs.js", "api.t.ts"]
+
+const KEPT_LOOKALIKES = [
+    "webpack.js",
+    "rollup.ts",
+    "types.js",
+    "config.js",
+    "bundler.js",
+    "chunk.js",
+    "src/app.ts",
+    "latest.js",
+    "contest.ts",
+    "attest.js",
+    "protest.js",
+    "respec.js",
+    "userTest.js",
+    "reconf.js",
+    "mybundle.js",
+    "myjest.config.js",
+]
+
+const KEPT_BY_PATH = ["webpack.stuff/main.js", "jest.config.d/main.js", "my.chunk/main.js"]
+
 describe("default file skip rules", () => {
-    it("skips test, spec, mock, minified and declaration files", async () => {
-        const skipped = [
-            "a.test.js",
-            "a.spec.ts",
-            "a.mock.js",
-            "a.e2e.js",
-            "a.min.js",
-            "a-min.js",
-            "a.d.ts",
-            "a-test.js",
-            "a_test.js",
-            "test.js",
-            "Test.js",
-            "spec.ts",
-            "webpack.conf.js",
-            "conf.js",
-        ]
-        expect(await parsedFiles([...skipped, "main.js"])).toEqual(["main.js"])
+    // One run for all cases: every pipeline run starts a worker pool, which is slow on loaded CI machines.
+    let parsed: Set<string>
+
+    beforeAll(async () => {
+        parsed = new Set(
+            await parsedFiles([
+                ...SKIPPED_TESTS_AND_MINIFIED,
+                ...SKIPPED_BUNDLER_OUTPUT,
+                ...SKIPPED_TOOLING_CONFIG,
+                ...SKIPPED_GENERATED,
+                ...KEPT_LOOKALIKES,
+                ...KEPT_BY_PATH,
+            ]),
+        )
+    }, 60000)
+
+    const parsedOf = (names: string[]): string[] => names.filter((name) => parsed.has(name))
+
+    it("skips test, spec, mock, minified and declaration files", () => {
+        expect(parsedOf(SKIPPED_TESTS_AND_MINIFIED)).toEqual([])
     })
 
-    it("skips bundler output", async () => {
-        const skipped = [
-            "chunk-vendors.js",
-            "chunk-vendors.1a2b3c.js",
-            "app~.js",
-            "app~1a2b3c.js",
-            "main.chunk.js",
-            "bundle.js",
-            "app.bundle.js",
-            "app.min.map.js",
-        ]
-        expect(await parsedFiles([...skipped, "main.js"])).toEqual(["main.js"])
+    it("skips bundler output", () => {
+        expect(parsedOf(SKIPPED_BUNDLER_OUTPUT)).toEqual([])
     })
 
-    it("skips build and linter tooling configuration", async () => {
-        const skipped = [
-            "jest.config.js",
-            "jest.config.ts",
-            "webpack.config.js",
-            "webpack.dev.js",
-            "vue.config.js",
-            "babel.config.js",
-            "rollup.config.js",
-            "rollup.config.mjs",
-            "eslint-local-rules.js",
-            "Gruntfile.js",
-            "src/Gruntfile.js",
-        ]
-        expect(await parsedFiles([...skipped, "main.js"])).toEqual(["main.js"])
+    it("skips build and linter tooling configuration", () => {
+        expect(parsedOf(SKIPPED_TOOLING_CONFIG)).toEqual([])
     })
 
-    it("skips generated type files", async () => {
-        const skipped = ["api.types.js", "api.cjs.js", "api.t.ts"]
-        expect(await parsedFiles([...skipped, "main.js"])).toEqual(["main.js"])
+    it("skips generated type files", () => {
+        expect(parsedOf(SKIPPED_GENERATED)).toEqual([])
     })
 
-    it("keeps files that merely resemble ignored names", async () => {
-        const kept = [
-            "webpack.js",
-            "rollup.ts",
-            "types.js",
-            "config.js",
-            "bundler.js",
-            "chunk.js",
-            "src/app.ts",
-            "latest.js",
-            "contest.ts",
-            "attest.js",
-            "protest.js",
-            "respec.js",
-            "userTest.js",
-            "reconf.js",
-            "mybundle.js",
-            "myjest.config.js"
-        ]
-        expect(await parsedFiles(kept)).toEqual([...kept].sort())
+    it("keeps files that merely resemble ignored names", () => {
+        expect(parsedOf(KEPT_LOOKALIKES)).toEqual(KEPT_LOOKALIKES)
     })
 
-    it("only matches the file name, not the surrounding path", async () => {
-        const kept = ["webpack.stuff/main.js", "jest.config.d/main.js", "my.chunk/main.js"]
-        expect(await parsedFiles(kept)).toEqual([...kept].sort())
+    it("only matches the file name, not the surrounding path", () => {
+        expect(parsedOf(KEPT_BY_PATH)).toEqual(KEPT_BY_PATH)
     })
 })
 
