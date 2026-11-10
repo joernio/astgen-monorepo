@@ -17,8 +17,8 @@ mod tuple_pat;
 mod type_alias;
 
 use crate::{
-    ctor_type_full_names, implemented_traits, is_path, method_full_names, owner_full_names,
-    supertraits, total_elements, type_full_names,
+    ctor_type_full_names, fn_traits, implemented_traits, is_path, method_full_names,
+    owner_full_names, supertraits, total_elements, type_full_names,
 };
 use ra_ap_hir::{Semantics, attach_db};
 use ra_ap_ide_db::RootDatabase;
@@ -287,5 +287,14 @@ fn check_trait_type_full_name(ra_fixture: &str, expected: &str) {
         ra_fixture,
         type_full_names::for_trait,
         Some(expected.to_owned()),
+    );
+}
+
+#[track_caller]
+fn check_call_fn_trait(ra_fixture: &str, expected: Option<&str>) {
+    check(
+        ra_fixture,
+        fn_traits::for_call_expr,
+        expected.map(str::to_owned),
     );
 }

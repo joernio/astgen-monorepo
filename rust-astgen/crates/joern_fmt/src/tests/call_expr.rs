@@ -1,4 +1,7 @@
-use super::{check_call_has_self_receiver, check_call_method_full_name, check_call_type_full_name};
+use super::{
+    check_call_fn_trait, check_call_has_self_receiver, check_call_method_full_name,
+    check_call_type_full_name,
+};
 
 #[test]
 fn free_fn() {
@@ -1031,5 +1034,101 @@ const _: () = {
 fn main() {}
 "#,
         "ra_test_fixture::S#2::new",
+    );
+}
+
+#[test]
+fn free_fn_fn_trait() {
+    check_call_fn_trait(
+        r#"
+//- minicore: fn
+fn f() {}
+fn main() { $0f(); }
+"#,
+        None,
+    );
+}
+
+#[test]
+fn unresolved_callee() {
+    check_call_fn_trait(
+        r#"
+fn main() { $0g(1); }
+"#,
+        None,
+    );
+}
+
+#[test]
+fn closure_without_sysroot() {
+    check_call_fn_trait(
+        r#"
+fn main() { let f = |x: i32| x; $0f(1); }
+"#,
+        Some("core::ops::function::Fn"),
+    );
+}
+
+#[test]
+fn fn_pointer_param_without_sysroot() {
+    check_call_fn_trait(
+        r#"
+fn f(g: fn(i32)) { $0g(1); }
+"#,
+        Some("core::ops::function::Fn"),
+    );
+}
+
+#[test]
+fn fn_mut_bound_param() {
+    check_call_fn_trait(
+        r#"
+//- minicore: fn
+fn f<F: FnMut(i32)>(mut g: F) { $0g(1); }
+"#,
+        Some("core::ops::function::FnMut"),
+    );
+}
+
+#[test]
+fn fn_once_bound_param() {
+    check_call_fn_trait(
+        r#"
+//- minicore: fn
+fn f<F: FnOnce(i32)>(g: F) { $0g(1); }
+"#,
+        Some("core::ops::function::FnOnce"),
+    );
+}
+
+#[test]
+fn async_closure_without_sysroot() {
+    check_call_fn_trait(
+        r#"
+fn main() { let f = async |x: i32| x; $0f(1); }
+"#,
+        Some("core::ops::async_function::AsyncFn"),
+    );
+}
+
+#[test]
+fn async_fn_mut_closure_without_sysroot() {
+    check_call_fn_trait(
+        r#"
+fn main() { let mut n = 0; let mut f = async |x: i32| n = x; $0f(1); }
+"#,
+        Some("core::ops::async_function::AsyncFnMut"),
+    );
+}
+
+#[test]
+fn async_fn_once_closure_without_sysroot() {
+    check_call_fn_trait(
+        r#"
+struct S;
+fn consume(s: S) {}
+fn main() { let s = S; let f = async move || consume(s); $0f(); }
+"#,
+        Some("core::ops::async_function::AsyncFnOnce"),
     );
 }
