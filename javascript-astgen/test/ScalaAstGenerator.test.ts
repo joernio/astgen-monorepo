@@ -42,7 +42,7 @@ describe("renderScalaSource", () => {
     })
 
     it("treats the body of a TSModuleDeclaration as optional", () => {
-        expect(source).toMatch(/lazy val body: Option\[TSModuleBlock \| TSModuleDeclaration\] = /)
+        expect(source).toMatch(/lazy val body: Option\[TSModuleBlock\] = /)
     })
 
     it("backticks Scala keywords used as field names", () => {

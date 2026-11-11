@@ -1,6 +1,6 @@
 {
   "name": "@joernio/astgen",
-  "version": "3.54.0",
+  "version": "3.55.0",
   "description": "Generate JavaScript/TypeScript AST in JSON format with Babel. CLI-only — invoke via the `astgen` binary; programmatic imports are not supported.",
   "keywords": [
     "AST",
@@ -13,8 +13,8 @@
   "author": "Max Leuthaeuser",
   "license": "Apache-2.0",
   "dependencies": {
-    "@babel/parser": "^7.29.8",
-    "@babel/types": "^7.29.8",
+    "@babel/parser": "^8.1.0",
+    "@babel/types": "^8.1.0",
     "readdirp": "^5.0.0",
     "typescript": "^6.0.3",
     "yargs": "^17.7.2"

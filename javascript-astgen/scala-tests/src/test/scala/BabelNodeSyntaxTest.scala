@@ -202,7 +202,7 @@ class BabelNodeSyntaxTest extends AnyWordSpec with Matchers {
 
         val shape = iface.asInstanceOf[TSInterfaceDeclaration]
         shape.id.name shouldBe "Shape"
-        shape.typeParameters.get.params.head.name shouldBe "T"
+        shape.typeParameters.get.params.head.name.asInstanceOf[Identifier].name shouldBe "T"
         shape.body.body.map(_.nodeType) shouldBe Seq("TSPropertySignature", "TSMethodSignature")
         shape.body.body.head.asInstanceOf[TSPropertySignature].readonly shouldBe Some(true)
 
@@ -217,7 +217,7 @@ class BabelNodeSyntaxTest extends AnyWordSpec with Matchers {
         val ctorParam = base.body.body(1).asInstanceOf[ClassMethod].params.head.asInstanceOf[TSParameterProperty]
         ctorParam.accessibility shouldBe Some("public")
 
-        enm.asInstanceOf[TSEnumDeclaration].members.map(_.id.asInstanceOf[Identifier].name) shouldBe Seq("Red", "Green")
+        enm.asInstanceOf[TSEnumDeclaration].body.members.map(_.id.asInstanceOf[Identifier].name) shouldBe Seq("Red", "Green")
         alias.asInstanceOf[TSTypeAliasDeclaration].typeAnnotation.nodeType shouldBe "TSFunctionType"
       }
     }

@@ -8,7 +8,7 @@ export as namespace Global
 declare module "m" { export const x: number }
 declare global { interface Window { foo: string } }
 namespace Outer.Inner { export const x = 1 }
-module Legacy {}
+namespace Legacy {}
 declare function over(a: string): void
 declare const dc: number
 declare class DC { m(): void }
@@ -64,7 +64,7 @@ let tuple: [number, string] = [1, "a"]
 for (const k of (arr as any[])) {}
 export default interface DI {}
 export abstract class AC {}
-declare module Foo.Bar {}
+declare namespace Foo.Bar {}
 let v1: typeof import("x")
 let fnType: { (a: number): string; new (): Foo; readonly [i: number]: string }
 using res = getResource()
@@ -87,6 +87,8 @@ abstract class Mods<T> extends Base<string> implements I<T> {
   protected abstract abm?<U>(): void
   private override pm(): number { return 1 }
   @dec() decoratedMethod() {}
+  @dec() decoratedOverload(a: number): void
+  decoratedOverload(a: any) {}
   #privMethod<U>(): string { return "" }
   readonly #roField: number = 1
   #definite!: string
@@ -101,7 +103,7 @@ declare interface DI {}
 declare type DT = string
 type GenFn = <U>(x: U) => U
 type GenCtor = new <U>() => U
-interface Sig { <U>(x: U): U; new <U>(x: U): Sig; m?<U>(): void; static?: never }
+interface Sig { <U>(x: U): U; new <U>(x: U): Sig; m?<U>(): void; static?: never; new?: string }
 class StaticIdx { static [key: string]: number }
 type Var<in out U> = [U]
 function constParam<const V>(v: V) {}

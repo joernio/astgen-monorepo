@@ -21,7 +21,7 @@ This package is **CLI-only** — install it for the `astgen` binary; programmati
 
 ## Key Dependencies
 
-- **@babel/parser** 7.29.x — JavaScript/TypeScript parsing
+- **@babel/parser** 8.1.x — JavaScript/TypeScript parsing
 - **TypeScript** 6.0.x — Type checking and analysis
 - **readdirp** 5.0.x — Recursive directory traversal
 - **yargs** 17.7.x — Command-line argument parsing
