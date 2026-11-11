@@ -24,6 +24,12 @@ describe("writeJsonStreamCircular", () => {
         expect(readAndCleanup(f)).toBe(JSON.stringify(data))
     })
 
+    it("writes bigint values as decimal strings", () => {
+        const f = tmpFile()
+        writeJsonStreamCircular(f, {value: 10n ** 20n, list: [1n]})
+        expect(readAndCleanup(f)).toBe("{\"value\":\"100000000000000000000\",\"list\":[\"1\"]}")
+    })
+
     it("omits undefined, function, and symbol values in objects", () => {
         const f = tmpFile()
         const data = {a: 1, b: undefined, c: () => 42, d: Symbol("x"), e: 5}

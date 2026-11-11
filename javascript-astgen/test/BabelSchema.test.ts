@@ -124,22 +124,21 @@ describe("syntax fixtures", () => {
     // so that every generated accessor is exercised. Adding a fixture for one of these (or an upgrade that makes one
     // reachable) means removing it from here; a new node type means adding a fixture.
     const UNREACHABLE = `
-        AnyTypeAnnotation ArgumentPlaceholder ArrayTypeAnnotation BindExpression BooleanLiteralTypeAnnotation
-        BooleanTypeAnnotation ClassImplements DecimalLiteral DeclareClass DeclareExportAllDeclaration
+        AnyTypeAnnotation ArgumentPlaceholder ArrayTypeAnnotation BigIntLiteralTypeAnnotation BindExpression
+        BooleanLiteralTypeAnnotation BooleanTypeAnnotation ClassImplements DeclareClass DeclareExportAllDeclaration
         DeclareExportDeclaration DeclareFunction DeclareInterface DeclareModule DeclareModuleExports DeclareOpaqueType
         DeclareTypeAlias DeclareVariable DeclaredPredicate EmptyTypeAnnotation EnumBooleanBody EnumBooleanMember
-        EnumDeclaration EnumDefaultedMember EnumNumberBody EnumNumberMember EnumStringBody EnumStringMember EnumSymbolBody
-        ExistsTypeAnnotation FunctionTypeAnnotation FunctionTypeParam GenericTypeAnnotation ImportExpression
+        EnumDeclaration EnumDefaultedMember EnumNumberBody EnumNumberMember EnumStringBody EnumStringMember
+        EnumSymbolBody ExistsTypeAnnotation FunctionTypeAnnotation FunctionTypeParam GenericTypeAnnotation Import
         IndexedAccessType InferredPredicate InterfaceDeclaration InterfaceExtends InterfaceTypeAnnotation
-        IntersectionTypeAnnotation MixedTypeAnnotation ModuleExpression Noop NullLiteralTypeAnnotation
-        NullableTypeAnnotation NumberLiteralTypeAnnotation NumberTypeAnnotation ObjectTypeAnnotation ObjectTypeCallProperty
-        ObjectTypeIndexer ObjectTypeInternalSlot ObjectTypeProperty ObjectTypeSpreadProperty OpaqueType
-        OptionalIndexedAccessType ParenthesizedExpression PipelineBareFunction PipelinePrimaryTopicReference
-        PipelineTopicExpression Placeholder QualifiedTypeIdentifier RecordExpression StringLiteralTypeAnnotation
-        StringTypeAnnotation SymbolTypeAnnotation TSEnumBody TSTemplateLiteralType ThisTypeAnnotation TopicReference
-        TupleExpression TupleTypeAnnotation TypeAlias TypeAnnotation TypeCastExpression TypeParameter
-        TypeParameterDeclaration TypeParameterInstantiation TypeofTypeAnnotation UnionTypeAnnotation V8IntrinsicIdentifier
-        Variance VoidPattern VoidTypeAnnotation
+        IntersectionTypeAnnotation MixedTypeAnnotation ModuleExpression NullLiteralTypeAnnotation
+        NullableTypeAnnotation NumberLiteralTypeAnnotation NumberTypeAnnotation ObjectTypeAnnotation
+        ObjectTypeCallProperty ObjectTypeIndexer ObjectTypeInternalSlot ObjectTypeProperty ObjectTypeSpreadProperty
+        OpaqueType OptionalIndexedAccessType ParenthesizedExpression Placeholder QualifiedTypeIdentifier
+        StringLiteralTypeAnnotation StringTypeAnnotation StructBody StructDeclaration SymbolTypeAnnotation
+        TSParenthesizedType ThisTypeAnnotation TopicReference TupleTypeAnnotation TypeAlias TypeAnnotation
+        TypeCastExpression TypeParameter TypeParameterDeclaration TypeParameterInstantiation TypeofTypeAnnotation
+        UnionTypeAnnotation V8IntrinsicIdentifier Variance VoidPattern VoidTypeAnnotation
     `.split(/\s+/).filter(Boolean).sort()
 
     it("contain every node type the parser can produce", () => {
@@ -156,20 +155,20 @@ describe("syntax fixtures", () => {
     const UNEXERCISED_FIELDS = `
         ArrayPattern.optional ArrayPattern.decorators ArrowFunctionExpression.expression
         ArrowFunctionExpression.predicate ArrowFunctionExpression.id AssignmentPattern.typeAnnotation
-        AssignmentPattern.optional AssignmentPattern.decorators CallExpression.typeArguments CallExpression.optional
-        ClassAccessorProperty.optional ClassAccessorProperty.variance ClassDeclaration.mixins ClassExpression.typeParameters ClassExpression.superTypeParameters
+        AssignmentPattern.optional AssignmentPattern.decorators
+        ClassAccessorProperty.optional ClassAccessorProperty.variance ClassDeclaration.mixins ClassExpression.typeParameters ClassExpression.superTypeArguments
         ClassExpression.implements ClassExpression.decorators ClassExpression.mixins ClassMethod.abstract
         ClassMethod.access ClassMethod.id ClassPrivateMethod.abstract ClassPrivateMethod.accessibility
         ClassPrivateMethod.override ClassPrivateMethod.computed ClassPrivateMethod.optional ClassPrivateMethod.access
         ClassPrivateMethod.decorators ClassPrivateMethod.id ClassPrivateProperty.decorators
-        ClassPrivateProperty.variance ClassProperty.variance ExportAllDeclaration.assertions
-        ExportNamedDeclaration.assertions File.tokens FunctionDeclaration.declare FunctionDeclaration.predicate
-        FunctionExpression.predicate ImportDeclaration.assertions ImportDeclaration.module ImportDeclaration.phase
-        JSXElement.selfClosing JSXOpeningElement.typeArguments MemberExpression.optional NewExpression.typeArguments
+        ClassPrivateProperty.variance ClassProperty.variance ExportNamedDeclaration.phase ExportNamespaceSpecifier.exportsFilter
+        File.tokens FunctionDeclaration.declare FunctionDeclaration.predicate
+        FunctionExpression.predicate ImportDeclaration.module ImportDeclaration.phase ImportExpression.phase
+        ImportExpression.sync ImportExpression.options ImportNamespaceSpecifier.exportsFilter
         ObjectMethod.decorators ObjectMethod.id ObjectPattern.optional ObjectPattern.decorators
-        ObjectProperty.decorators OptionalCallExpression.typeArguments RestElement.optional RestElement.decorators
-        TSDeclareMethod.override TSDeclareMethod.access TSDeclareMethod.decorators TSDeclareMethod.id
-        TSEnumDeclaration.initializer TSEnumDeclaration.body TSImportType.options TSParameterProperty.decorators
+        ObjectProperty.decorators RestElement.optional RestElement.decorators
+        TSDeclareMethod.override TSDeclareMethod.access TSDeclareMethod.id
+        TSImportType.options TSParameterProperty.decorators
         TSPropertySignature.kind VariableDeclarator.definite
     `.split(/\s+/).filter(Boolean)
 

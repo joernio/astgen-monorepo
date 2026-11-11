@@ -132,16 +132,16 @@ const PARSER_FIELDS: Record<string, FieldSpec[]> = {
     ArrowFunctionExpression: [OPTIONAL_ID],
     ClassMethod: [OPTIONAL_ID],
     ClassPrivateMethod: [OPTIONAL_ID],
-    TSDeclareMethod: [OPTIONAL_ID],
-    // Declared in the visitor keys, but the only field of `NODE_FIELDS` without a validator.
-    NewExpression: [field("typeParameters", nodeOf("TSTypeParameterInstantiation"), true)],
+    // `@babel/types` 8 dropped `decorators` from the node, but the parser still attaches them: `@dec() m(): void`.
+    TSDeclareMethod: [OPTIONAL_ID, field("decorators", arrayOf(nodeOf("Decorator")), true)],
 }
 
 /** Fields `@babel/types` calls required, but the parser leaves out. */
 const OPTIONAL_FIELDS = new Set([
-    "ArrowFunctionExpression.expression", // never emitted
-    // `namespace A.B {}` is a TSModuleDeclaration nested in a TSModuleDeclaration; only the outer one has a kind.
-    "TSModuleDeclaration.kind",
+    // `class A { #m() {} }`: `@babel/types` requires the flag, but private names cannot be computed.
+    "ClassPrivateMethod.computed",
+    // `interface I { new?: string }`: the parser leaves the flag out when the key is `new`.
+    "TSPropertySignature.computed",
     // `declare module "x";` has no body at all.
     "TSModuleDeclaration.body",
     // `1e999` is Infinity, which JSON cannot represent: astgen writes `null` (the source is in `extra.raw`).

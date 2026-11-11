@@ -1,4 +1,4 @@
-import babelParser from "@babel/parser"
+import * as babelParser from "@babel/parser"
 import tsc from "typescript"
 
 /**
@@ -162,13 +162,9 @@ export const MAX_LINE_LENGTH: number = 10_000
  * drift apart on plugins they share.
  */
 const COMMON_BABEL_PLUGINS: babelParser.ParserPlugin[] = [
-    "optionalChaining",
-    "classProperties",
     "decorators-legacy",
     "exportDefaultFrom",
     "doExpressions",
-    "numericSeparator",
-    "dynamicImport",
     "typescript",
     // `accessor x = 1` (ClassAccessorProperty). Additive: without it a class using the keyword is a syntax error that
     // gets the whole file skipped; code that does not use it, including `accessor` as a plain name, parses identically.

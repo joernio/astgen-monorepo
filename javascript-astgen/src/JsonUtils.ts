@@ -119,6 +119,10 @@ export function writeJsonStreamCircular(filePath: string, data: any): void {
                 case "boolean":
                     write(value ? "true" : "false")
                     return
+                case "bigint":
+                    // `BigIntLiteral.value` is a native bigint since Babel 8; keep the decimal string of Babel 7.
+                    write(JSON.stringify(value.toString()))
+                    return
                 case "object":
                     ancestors.add(value)
                     try {
