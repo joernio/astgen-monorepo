@@ -7,6 +7,9 @@ pub fn for_call_expr(
     semantics: &Semantics<RootDatabase>,
 ) -> Option<String> {
     let callee = call_expr.expr()?;
+    if semantics.type_of_expr(&callee)?.original().is_unknown() {
+        return None;
+    }
     let fn_trait = match semantics.resolve_expr_as_callable(&callee)?.kind() {
         CallableKind::Function(_)
         | CallableKind::TupleStruct(_)
