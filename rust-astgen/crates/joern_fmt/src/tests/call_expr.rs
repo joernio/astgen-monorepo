@@ -1132,3 +1132,14 @@ fn main() { let s = S; let f = async move || consume(s); $0f(); }
         Some("core::ops::async_function::AsyncFnOnce"),
     );
 }
+
+#[test]
+fn fn_bound_param_unknown_call() {
+    check_call_fn_trait(
+        r#"
+//- minicore: fn
+fn f(task: impl Fn(i32)) { $0g(1); }
+"#,
+        None,
+    );
+}
