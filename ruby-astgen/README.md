@@ -61,4 +61,4 @@ java -jar jruby.jar -S vendor/bundle/jruby/3.1.0/bin/bundle exec exe/ruby_ast_ge
 
 ## License
 
-Available as open source under the terms of the [MIT License](https://opensource.org/licenses/MIT).
+Available as open source under the terms of the [Apache License 2.0](LICENSE.txt).
