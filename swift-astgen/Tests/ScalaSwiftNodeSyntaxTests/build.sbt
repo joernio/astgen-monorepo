@@ -1,6 +1,6 @@
 ThisBuild / version := "0.1.0-SNAPSHOT"
 
-ThisBuild / scalaVersion := "3.8.4"
+ThisBuild / scalaVersion := "3.9.0"
 
 // The generated `../../SwiftNodeSyntax.scala` (see README.md) is the code under test: copy it into the build on every
 // compilation. The generator must not be cached (sbt 2 would skip it as its inputs do not change).
