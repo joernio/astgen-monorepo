@@ -15,7 +15,7 @@ everything is never the right answer.
 | Tool | Directory | Toolchain | Build | Test |
 |------|-----------|-----------|-------|------|
 | ABAP | `abap-astgen/` | Bun | `bun install` | `bun run test` |
-| C# / .NET | `dotnet-astgen/` | .NET 8 | `dotnet build` | `dotnet test` |
+| C# / .NET | `dotnet-astgen/` | .NET 10 | `dotnet build` | `dotnet test` |
 | Go | `go-astgen/` | Go | `go build ./...` | `go test ./...` |
 | JavaScript / TS | `javascript-astgen/` | Bun | `bun install` | `bun run test` |
 | Ruby | `ruby-astgen/` | Ruby / JRuby | `bundle install` | `bundle exec rake` |
