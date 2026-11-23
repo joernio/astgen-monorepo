@@ -11,7 +11,7 @@ Gem::Specification.new do |spec|
   spec.summary = "A Ruby parser than dumps the AST as JSON output"
   spec.description = "A Ruby parser than dumps the AST as JSON output for Joern's `rubysrc2cpg` frontend"
   spec.homepage = "https://github.com/whirlylabs/ruby_ast_gen"
-  spec.license = "MIT"
+  spec.license = "Apache-2.0"
   spec.required_ruby_version = ">= 3.0.7"
 
   spec.metadata["homepage_uri"] = spec.homepage

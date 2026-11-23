@@ -28,7 +28,6 @@ while i < ARGV.size
     i += 1
     options[:exclude] = ARGV[i]
   when '-d', '--debug'
-    i += 1
     options[:debug] = true 
   when '--version'
     puts RubyAstGen::VERSION
