@@ -13,7 +13,7 @@ what they use at the time of writing.
 |------|----------|---------|
 | `abap-astgen` | [Bun](https://bun.sh) | Bun 1.4.3 |
 | `javascript-astgen` | Bun, plus JDK and sbt for the [Scala tests](04_tests.md) | Bun 1.4.3, Temurin JDK 21 |
-| `dotnet-astgen` | .NET SDK | 8.x |
+| `dotnet-astgen` | .NET SDK | 10.x |
 | `go-astgen` | Go | 1.18 for CI (matches `go.mod`), 1.21.12 for release builds |
 | `ruby-astgen` | Ruby or JRuby, Bundler | Ruby 3.1.7, and JRuby 9.4.15.0 with JDK 21 |
 | `rust-astgen` | Rust (stable) with the `rust-src` component, plus JDK and sbt for the Scala tests | stable, Temurin JDK 21 |

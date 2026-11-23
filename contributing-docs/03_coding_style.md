@@ -52,7 +52,7 @@ Per tool
 ### C# (`dotnet-astgen`)
 
 - Style comes from [.editorconfig](../dotnet-astgen/.editorconfig). `dotnet format --verify-no-changes` runs in CI.
-- Targets .NET 8.
+- Targets .NET 10.
 
 ### Go (`go-astgen`)
 

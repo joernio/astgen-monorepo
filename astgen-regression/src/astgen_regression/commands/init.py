@@ -81,7 +81,7 @@ LANGUAGE_DEFAULTS: dict[str, dict[str, Any]] = {
         "language": "dotnet",
         "install_command": None,
         "build_command": "dotnet build -c Release",
-        "dist_dir": "DotNetAstGen/bin/Release/net8.0",
+        "dist_dir": "DotNetAstGen/bin/Release/net10.0",
         "exec_command": "dotnet run --project DotNetAstGen -i {input_dir} -o {output_dir}",
         "artifacts": [
             {
@@ -99,7 +99,7 @@ LANGUAGE_DEFAULTS: dict[str, dict[str, Any]] = {
         "python_version": "3.12",
         "setup_action": {
             "uses": "actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0",
-            "with": {"dotnet-version": "8.0.x"},
+            "with": {"dotnet-version": "10.0.x"},
         },
     },
     "ruby": {
