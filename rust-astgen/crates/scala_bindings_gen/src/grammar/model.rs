@@ -430,7 +430,7 @@ mod tests {
         //   Attr* '&' (('raw' 'const'?)| ('raw'? 'mut') ) Expr
 
         assert_eq!(
-            find_element(elements, "Attr").cardinality,
+            find_element(elements, "AnyAttr").cardinality,
             Cardinality::Many
         );
         assert_eq!(find_element(elements, "&").cardinality, Cardinality::One);
@@ -467,7 +467,7 @@ mod tests {
         //   rhs:Expr
 
         assert_eq!(
-            find_element(elements, "Attr").cardinality,
+            find_element(elements, "AnyAttr").cardinality,
             Cardinality::Many
         );
         assert_eq!(

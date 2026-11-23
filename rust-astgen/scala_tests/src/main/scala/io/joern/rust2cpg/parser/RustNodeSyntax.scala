@@ -46,6 +46,8 @@ object RustNodeSyntax {
     "CFG_ATTR_META" -> (json => CfgAttrMeta(json)),
     "CFG_COMPOSITE" -> (json => CfgComposite(json)),
     "CFG_META" -> (json => CfgMeta(json)),
+    "CFG_PRED_EXPR" -> (json => CfgPredExpr(json)),
+    "CFG_PRED_PAT" -> (json => CfgPredPat(json)),
     "CLOSURE_EXPR" -> (json => ClosureExpr(json)),
     "CONST" -> (json => Const(json)),
     "CONST_ARG" -> (json => ConstArg(json)),
@@ -53,6 +55,7 @@ object RustNodeSyntax {
     "CONST_PARAM" -> (json => ConstParam(json)),
     "CONTINUE_EXPR" -> (json => ContinueExpr(json)),
     "DEREF_PAT" -> (json => DerefPat(json)),
+    "DOC_COMMENT" -> (json => DocComment(json)),
     "DYN_TRAIT_TYPE" -> (json => DynTraitType(json)),
     "ENUM" -> (json => Enum(json)),
     "EXPR_STMT" -> (json => ExprStmt(json)),
@@ -66,7 +69,6 @@ object RustNodeSyntax {
     "FOR_EXPR" -> (json => ForExpr(json)),
     "FOR_TYPE" -> (json => ForType(json)),
     "FORMAT_ARGS_ARG" -> (json => FormatArgsArg(json)),
-    "FORMAT_ARGS_ARG_NAME" -> (json => FormatArgsArgName(json)),
     "FORMAT_ARGS_EXPR" -> (json => FormatArgsExpr(json)),
     "GENERIC_ARG_LIST" -> (json => GenericArgList(json)),
     "GENERIC_PARAM_LIST" -> (json => GenericParamList(json)),
@@ -75,6 +77,7 @@ object RustNodeSyntax {
     "IMPL" -> (json => Impl(json)),
     "IMPL_RESTRICTION" -> (json => ImplRestriction(json)),
     "IMPL_TRAIT_TYPE" -> (json => ImplTraitType(json)),
+    "INCLUDE_BYTES_EXPR" -> (json => IncludeBytesExpr(json)),
     "INDEX_EXPR" -> (json => IndexExpr(json)),
     "INFER_TYPE" -> (json => InferType(json)),
     "ITEM_LIST" -> (json => ItemList(json)),
@@ -107,6 +110,7 @@ object RustNodeSyntax {
     "NAME" -> (json => Name(json)),
     "NAME_REF" -> (json => NameRef(json)),
     "NEVER_TYPE" -> (json => NeverType(json)),
+    "NOT_NULL" -> (json => NotNull(json)),
     "OFFSET_OF_EXPR" -> (json => OffsetOfExpr(json)),
     "OR_PAT" -> (json => OrPat(json)),
     "PARAM" -> (json => Param(json)),
@@ -121,6 +125,7 @@ object RustNodeSyntax {
     "PATH_PAT" -> (json => PathPat(json)),
     "PATH_SEGMENT" -> (json => PathSegment(json)),
     "PATH_TYPE" -> (json => PathType(json)),
+    "PATTERN_TYPE" -> (json => PatternType(json)),
     "PREFIX_EXPR" -> (json => PrefixExpr(json)),
     "PTR_TYPE" -> (json => PtrType(json)),
     "RANGE_EXPR" -> (json => RangeExpr(json)),
@@ -187,7 +192,9 @@ object RustNodeSyntax {
     "POUND" -> (json => PoundToken(json)),
     "FRONTMATTER" -> (json => FrontmatterToken(json)),
     "IDENT" -> (json => IdentToken(json)),
+    "INNER_DOC_COMMENT" -> (json => InnerDocCommentToken(json)),
     "LIFETIME_IDENT" -> (json => LifetimeIdentToken(json)),
+    "OUTER_DOC_COMMENT" -> (json => OuterDocCommentToken(json)),
     "SHEBANG" -> (json => ShebangToken(json)),
     "PERCENT" -> (json => PercentToken(json)),
     "PERCENTEQ" -> (json => PercenteqToken(json)),
@@ -272,8 +279,10 @@ object RustNodeSyntax {
     "IF_KW" -> (json => IfKwToken(json)),
     "IMPL_KW" -> (json => ImplKwToken(json)),
     "IN_KW" -> (json => InKwToken(json)),
+    "INCLUDE_BYTES_KW" -> (json => IncludeBytesKwToken(json)),
     "INLATEOUT_KW" -> (json => InlateoutKwToken(json)),
     "INOUT_KW" -> (json => InoutKwToken(json)),
+    "IS_KW" -> (json => IsKwToken(json)),
     "LABEL_KW" -> (json => LabelKwToken(json)),
     "LATEOUT_KW" -> (json => LateoutKwToken(json)),
     "LET_KW" -> (json => LetKwToken(json)),
@@ -289,9 +298,11 @@ object RustNodeSyntax {
     "NOMEM_KW" -> (json => NomemKwToken(json)),
     "NORETURN_KW" -> (json => NoreturnKwToken(json)),
     "NOSTACK_KW" -> (json => NostackKwToken(json)),
+    "NULL_KW" -> (json => NullKwToken(json)),
     "OFFSET_OF_KW" -> (json => OffsetOfKwToken(json)),
     "OPTIONS_KW" -> (json => OptionsKwToken(json)),
     "OUT_KW" -> (json => OutKwToken(json)),
+    "PATTERN_TYPE_KW" -> (json => PatternTypeKwToken(json)),
     "PRESERVES_FLAGS_KW" -> (json => PreservesFlagsKwToken(json)),
     "PUB_KW" -> (json => PubKwToken(json)),
     "PURE_KW" -> (json => PureKwToken(json)),
@@ -383,6 +394,11 @@ object RustNodeSyntax {
     "UNION",
   )
 
+  private val _anyAttrKinds: Set[String] = Set(
+    "ATTR",
+    "DOC_COMMENT",
+  )
+
   private val _asmOperandKinds: Set[String] = Set(
     "ASM_CONST",
     "ASM_LABEL",
@@ -418,12 +434,14 @@ object RustNodeSyntax {
     "BREAK_EXPR",
     "CALL_EXPR",
     "CAST_EXPR",
+    "CFG_PRED_EXPR",
     "CLOSURE_EXPR",
     "CONTINUE_EXPR",
     "FIELD_EXPR",
     "FOR_EXPR",
     "FORMAT_ARGS_EXPR",
     "IF_EXPR",
+    "INCLUDE_BYTES_EXPR",
     "INDEX_EXPR",
     "LET_EXPR",
     "LITERAL",
@@ -503,11 +521,13 @@ object RustNodeSyntax {
 
   private val _patKinds: Set[String] = Set(
     "BOX_PAT",
+    "CFG_PRED_PAT",
     "CONST_BLOCK_PAT",
     "DEREF_PAT",
     "IDENT_PAT",
     "LITERAL_PAT",
     "MACRO_PAT",
+    "NOT_NULL",
     "OR_PAT",
     "PAREN_PAT",
     "PATH_PAT",
@@ -554,6 +574,7 @@ object RustNodeSyntax {
     "NEVER_TYPE",
     "PAREN_TYPE",
     "PATH_TYPE",
+    "PATTERN_TYPE",
     "PTR_TYPE",
     "REF_TYPE",
     "SLICE_TYPE",
@@ -572,6 +593,8 @@ object RustNodeSyntax {
   )
 
   sealed trait Adt extends RustNode
+
+  sealed trait AnyAttr extends RustNode
 
   sealed trait AsmOperand extends RustNode
 
@@ -618,7 +641,7 @@ object RustNodeSyntax {
   }
 
   final case class ArrayExpr(json: Value) extends RustNode with Expr {
-    def attr: Seq[Attr] = _childrenByKind.getOrElse("ATTR", Seq.empty).map(createRustNode(_).asInstanceOf[Attr])
+    def anyAttr: Seq[AnyAttr] = _children.filter(child => _anyAttrKinds.contains(child("nodeKind").str)).map(createRustNode(_).asInstanceOf[AnyAttr])
     def lBrackToken: LBrackToken = createRustNode(_childrenByKind("L_BRACK").head).asInstanceOf[LBrackToken]
     def expr: Seq[Expr] = _children.filter(child => _exprKinds.contains(child("nodeKind").str)).map(createRustNode(_).asInstanceOf[Expr])
     def commaToken: Seq[CommaToken] = _childrenByKind.getOrElse("COMMA", Seq.empty).map(createRustNode(_).asInstanceOf[CommaToken])
@@ -635,6 +658,7 @@ object RustNodeSyntax {
   }
 
   final case class AsmClobberAbi(json: Value) extends RustNode with AsmPiece {
+    def anyAttr: Seq[AnyAttr] = _children.filter(child => _anyAttrKinds.contains(child("nodeKind").str)).map(createRustNode(_).asInstanceOf[AnyAttr])
     def clobberAbiKwToken: ClobberAbiKwToken = createRustNode(_childrenByKind("CLOBBER_ABI_KW").head).asInstanceOf[ClobberAbiKwToken]
     def lParenToken: LParenToken = createRustNode(_childrenByKind("L_PAREN").head).asInstanceOf[LParenToken]
     def stringToken: Seq[StringToken] = _childrenByKind.getOrElse("STRING", Seq.empty).map(createRustNode(_).asInstanceOf[StringToken])
@@ -656,7 +680,7 @@ object RustNodeSyntax {
   }
 
   final case class AsmExpr(json: Value) extends RustNode with Expr with Item with Stmt {
-    def attr: Seq[Attr] = _childrenByKind.getOrElse("ATTR", Seq.empty).map(createRustNode(_).asInstanceOf[Attr])
+    def anyAttr: Seq[AnyAttr] = _children.filter(child => _anyAttrKinds.contains(child("nodeKind").str)).map(createRustNode(_).asInstanceOf[AnyAttr])
     def builtinKwToken: BuiltinKwToken = createRustNode(_childrenByKind("BUILTIN_KW").head).asInstanceOf[BuiltinKwToken]
     def poundToken: PoundToken = createRustNode(_childrenByKind("POUND").head).asInstanceOf[PoundToken]
     def asmKwToken: Option[AsmKwToken] = _childrenByKind.get("ASM_KW").flatMap(_.headOption).map(createRustNode(_).asInstanceOf[AsmKwToken])
@@ -680,6 +704,7 @@ object RustNodeSyntax {
   }
 
   final case class AsmOperandNamed(json: Value) extends RustNode with AsmPiece {
+    def anyAttr: Seq[AnyAttr] = _children.filter(child => _anyAttrKinds.contains(child("nodeKind").str)).map(createRustNode(_).asInstanceOf[AnyAttr])
     def name: Option[Name] = _childrenByKind.get("NAME").flatMap(_.headOption).map(createRustNode(_).asInstanceOf[Name])
     def eqToken: Option[EqToken] = _childrenByKind.get("EQ").flatMap(_.headOption).map(createRustNode(_).asInstanceOf[EqToken])
     def asmOperand: AsmOperand = createRustNode(_children.find(child => _asmOperandKinds.contains(child("nodeKind").str)).get).asInstanceOf[AsmOperand]
@@ -698,6 +723,7 @@ object RustNodeSyntax {
   }
 
   final case class AsmOptions(json: Value) extends RustNode with AsmPiece {
+    def anyAttr: Seq[AnyAttr] = _children.filter(child => _anyAttrKinds.contains(child("nodeKind").str)).map(createRustNode(_).asInstanceOf[AnyAttr])
     def optionsKwToken: OptionsKwToken = createRustNode(_childrenByKind("OPTIONS_KW").head).asInstanceOf[OptionsKwToken]
     def lParenToken: LParenToken = createRustNode(_childrenByKind("L_PAREN").head).asInstanceOf[LParenToken]
     def asmOption: Seq[AsmOption] = _childrenByKind.getOrElse("ASM_OPTION", Seq.empty).map(createRustNode(_).asInstanceOf[AsmOption])
@@ -725,7 +751,7 @@ object RustNodeSyntax {
 
   final case class AssocItemList(json: Value) extends RustNode {
     def lCurlyToken: LCurlyToken = createRustNode(_childrenByKind("L_CURLY").head).asInstanceOf[LCurlyToken]
-    def attr: Seq[Attr] = _childrenByKind.getOrElse("ATTR", Seq.empty).map(createRustNode(_).asInstanceOf[Attr])
+    def anyAttr: Seq[AnyAttr] = _children.filter(child => _anyAttrKinds.contains(child("nodeKind").str)).map(createRustNode(_).asInstanceOf[AnyAttr])
     def assocItem: Seq[AssocItem] = _children.filter(child => _assocItemKinds.contains(child("nodeKind").str)).map(createRustNode(_).asInstanceOf[AssocItem])
     def rCurlyToken: RCurlyToken = createRustNode(_childrenByKind("R_CURLY").head).asInstanceOf[RCurlyToken]
   }
@@ -743,7 +769,7 @@ object RustNodeSyntax {
     def constArg: Option[ConstArg] = _childrenByKind.get("CONST_ARG").flatMap(_.headOption).map(createRustNode(_).asInstanceOf[ConstArg])
   }
 
-  final case class Attr(json: Value) extends RustNode {
+  final case class Attr(json: Value) extends RustNode with AnyAttr {
     def poundToken: PoundToken = createRustNode(_childrenByKind("POUND").head).asInstanceOf[PoundToken]
     def bangToken: Option[BangToken] = _childrenByKind.get("BANG").flatMap(_.headOption).map(createRustNode(_).asInstanceOf[BangToken])
     def lBrackToken: LBrackToken = createRustNode(_childrenByKind("L_BRACK").head).asInstanceOf[LBrackToken]
@@ -752,20 +778,20 @@ object RustNodeSyntax {
   }
 
   final case class AwaitExpr(json: Value) extends RustNode with Expr {
-    def attr: Seq[Attr] = _childrenByKind.getOrElse("ATTR", Seq.empty).map(createRustNode(_).asInstanceOf[Attr])
+    def anyAttr: Seq[AnyAttr] = _children.filter(child => _anyAttrKinds.contains(child("nodeKind").str)).map(createRustNode(_).asInstanceOf[AnyAttr])
     def expr: Expr = createRustNode(_children.find(child => _exprKinds.contains(child("nodeKind").str)).get).asInstanceOf[Expr]
     def dotToken: DotToken = createRustNode(_childrenByKind("DOT").head).asInstanceOf[DotToken]
     def awaitKwToken: AwaitKwToken = createRustNode(_childrenByKind("AWAIT_KW").head).asInstanceOf[AwaitKwToken]
   }
 
   final case class BecomeExpr(json: Value) extends RustNode with Expr {
-    def attr: Seq[Attr] = _childrenByKind.getOrElse("ATTR", Seq.empty).map(createRustNode(_).asInstanceOf[Attr])
+    def anyAttr: Seq[AnyAttr] = _children.filter(child => _anyAttrKinds.contains(child("nodeKind").str)).map(createRustNode(_).asInstanceOf[AnyAttr])
     def becomeKwToken: BecomeKwToken = createRustNode(_childrenByKind("BECOME_KW").head).asInstanceOf[BecomeKwToken]
     def expr: Expr = createRustNode(_children.find(child => _exprKinds.contains(child("nodeKind").str)).get).asInstanceOf[Expr]
   }
 
   final case class BinExpr(json: Value) extends RustNode with Expr {
-    def attr: Seq[Attr] = _childrenByKind.getOrElse("ATTR", Seq.empty).map(createRustNode(_).asInstanceOf[Attr])
+    def anyAttr: Seq[AnyAttr] = _children.filter(child => _anyAttrKinds.contains(child("nodeKind").str)).map(createRustNode(_).asInstanceOf[AnyAttr])
     def expr: Seq[Expr] = _children.filter(child => _exprKinds.contains(child("nodeKind").str)).map(createRustNode(_).asInstanceOf[Expr])
     def pipe2Token: Option[Pipe2Token] = _childrenByKind.get("PIPE2").flatMap(_.headOption).map(createRustNode(_).asInstanceOf[Pipe2Token])
     def amp2Token: Option[Amp2Token] = _childrenByKind.get("AMP2").flatMap(_.headOption).map(createRustNode(_).asInstanceOf[Amp2Token])
@@ -799,7 +825,7 @@ object RustNodeSyntax {
   }
 
   final case class BlockExpr(json: Value) extends RustNode with Expr {
-    def attr: Seq[Attr] = _childrenByKind.getOrElse("ATTR", Seq.empty).map(createRustNode(_).asInstanceOf[Attr])
+    def anyAttr: Seq[AnyAttr] = _children.filter(child => _anyAttrKinds.contains(child("nodeKind").str)).map(createRustNode(_).asInstanceOf[AnyAttr])
     def label: Option[Label] = _childrenByKind.get("LABEL").flatMap(_.headOption).map(createRustNode(_).asInstanceOf[Label])
     def tryBlockModifier: Option[TryBlockModifier] = _childrenByKind.get("TRY_BLOCK_MODIFIER").flatMap(_.headOption).map(createRustNode(_).asInstanceOf[TryBlockModifier])
     def unsafeKwToken: Option[UnsafeKwToken] = _childrenByKind.get("UNSAFE_KW").flatMap(_.headOption).map(createRustNode(_).asInstanceOf[UnsafeKwToken])
@@ -816,20 +842,20 @@ object RustNodeSyntax {
   }
 
   final case class BreakExpr(json: Value) extends RustNode with Expr {
-    def attr: Seq[Attr] = _childrenByKind.getOrElse("ATTR", Seq.empty).map(createRustNode(_).asInstanceOf[Attr])
+    def anyAttr: Seq[AnyAttr] = _children.filter(child => _anyAttrKinds.contains(child("nodeKind").str)).map(createRustNode(_).asInstanceOf[AnyAttr])
     def breakKwToken: BreakKwToken = createRustNode(_childrenByKind("BREAK_KW").head).asInstanceOf[BreakKwToken]
     def lifetime: Option[Lifetime] = _childrenByKind.get("LIFETIME").flatMap(_.headOption).map(createRustNode(_).asInstanceOf[Lifetime])
     def expr: Option[Expr] = _children.find(child => _exprKinds.contains(child("nodeKind").str)).map(createRustNode(_).asInstanceOf[Expr])
   }
 
   final case class CallExpr(json: Value) extends RustNode with Expr {
-    def attr: Seq[Attr] = _childrenByKind.getOrElse("ATTR", Seq.empty).map(createRustNode(_).asInstanceOf[Attr])
+    def anyAttr: Seq[AnyAttr] = _children.filter(child => _anyAttrKinds.contains(child("nodeKind").str)).map(createRustNode(_).asInstanceOf[AnyAttr])
     def expr: Expr = createRustNode(_children.find(child => _exprKinds.contains(child("nodeKind").str)).get).asInstanceOf[Expr]
     def argList: ArgList = createRustNode(_childrenByKind("ARG_LIST").head).asInstanceOf[ArgList]
   }
 
   final case class CastExpr(json: Value) extends RustNode with Expr {
-    def attr: Seq[Attr] = _childrenByKind.getOrElse("ATTR", Seq.empty).map(createRustNode(_).asInstanceOf[Attr])
+    def anyAttr: Seq[AnyAttr] = _children.filter(child => _anyAttrKinds.contains(child("nodeKind").str)).map(createRustNode(_).asInstanceOf[AnyAttr])
     def expr: Expr = createRustNode(_children.find(child => _exprKinds.contains(child("nodeKind").str)).get).asInstanceOf[Expr]
     def asKwToken: AsKwToken = createRustNode(_childrenByKind("AS_KW").head).asInstanceOf[AsKwToken]
     def typ: Type = createRustNode(_children.find(child => _typeKinds.contains(child("nodeKind").str)).get).asInstanceOf[Type]
@@ -868,8 +894,28 @@ object RustNodeSyntax {
     def rParenToken: RParenToken = createRustNode(_childrenByKind("R_PAREN").head).asInstanceOf[RParenToken]
   }
 
+  final case class CfgPredExpr(json: Value) extends RustNode with Expr {
+    def builtinKwToken: BuiltinKwToken = createRustNode(_childrenByKind("BUILTIN_KW").head).asInstanceOf[BuiltinKwToken]
+    def poundToken: PoundToken = createRustNode(_childrenByKind("POUND").head).asInstanceOf[PoundToken]
+    def cfgKwToken: CfgKwToken = createRustNode(_childrenByKind("CFG_KW").head).asInstanceOf[CfgKwToken]
+    def lParenToken: LParenToken = createRustNode(_childrenByKind("L_PAREN").head).asInstanceOf[LParenToken]
+    def cfgPredicate: CfgPredicate = createRustNode(_children.find(child => _cfgPredicateKinds.contains(child("nodeKind").str)).get).asInstanceOf[CfgPredicate]
+    def commaToken: Option[CommaToken] = _childrenByKind.get("COMMA").flatMap(_.headOption).map(createRustNode(_).asInstanceOf[CommaToken])
+    def rParenToken: RParenToken = createRustNode(_childrenByKind("R_PAREN").head).asInstanceOf[RParenToken]
+  }
+
+  final case class CfgPredPat(json: Value) extends RustNode with Pat {
+    def builtinKwToken: BuiltinKwToken = createRustNode(_childrenByKind("BUILTIN_KW").head).asInstanceOf[BuiltinKwToken]
+    def poundToken: PoundToken = createRustNode(_childrenByKind("POUND").head).asInstanceOf[PoundToken]
+    def cfgKwToken: CfgKwToken = createRustNode(_childrenByKind("CFG_KW").head).asInstanceOf[CfgKwToken]
+    def lParenToken: LParenToken = createRustNode(_childrenByKind("L_PAREN").head).asInstanceOf[LParenToken]
+    def cfgPredicate: CfgPredicate = createRustNode(_children.find(child => _cfgPredicateKinds.contains(child("nodeKind").str)).get).asInstanceOf[CfgPredicate]
+    def commaToken: Option[CommaToken] = _childrenByKind.get("COMMA").flatMap(_.headOption).map(createRustNode(_).asInstanceOf[CommaToken])
+    def rParenToken: RParenToken = createRustNode(_childrenByKind("R_PAREN").head).asInstanceOf[RParenToken]
+  }
+
   final case class ClosureExpr(json: Value) extends RustNode with Expr {
-    def attr: Seq[Attr] = _childrenByKind.getOrElse("ATTR", Seq.empty).map(createRustNode(_).asInstanceOf[Attr])
+    def anyAttr: Seq[AnyAttr] = _children.filter(child => _anyAttrKinds.contains(child("nodeKind").str)).map(createRustNode(_).asInstanceOf[AnyAttr])
     def forBinder: Option[ForBinder] = _childrenByKind.get("FOR_BINDER").flatMap(_.headOption).map(createRustNode(_).asInstanceOf[ForBinder])
     def constKwToken: Option[ConstKwToken] = _childrenByKind.get("CONST_KW").flatMap(_.headOption).map(createRustNode(_).asInstanceOf[ConstKwToken])
     def staticKwToken: Option[StaticKwToken] = _childrenByKind.get("STATIC_KW").flatMap(_.headOption).map(createRustNode(_).asInstanceOf[StaticKwToken])
@@ -882,7 +928,7 @@ object RustNodeSyntax {
   }
 
   final case class Const(json: Value) extends RustNode with AssocItem with Item with Stmt {
-    def attr: Seq[Attr] = _childrenByKind.getOrElse("ATTR", Seq.empty).map(createRustNode(_).asInstanceOf[Attr])
+    def anyAttr: Seq[AnyAttr] = _children.filter(child => _anyAttrKinds.contains(child("nodeKind").str)).map(createRustNode(_).asInstanceOf[AnyAttr])
     def visibility: Option[Visibility] = _childrenByKind.get("VISIBILITY").flatMap(_.headOption).map(createRustNode(_).asInstanceOf[Visibility])
     def defaultKwToken: Option[DefaultKwToken] = _childrenByKind.get("DEFAULT_KW").flatMap(_.headOption).map(createRustNode(_).asInstanceOf[DefaultKwToken])
     def typeKwToken: Option[TypeKwToken] = _childrenByKind.get("TYPE_KW").flatMap(_.headOption).map(createRustNode(_).asInstanceOf[TypeKwToken])
@@ -908,7 +954,7 @@ object RustNodeSyntax {
   }
 
   final case class ConstParam(json: Value) extends RustNode with GenericParam {
-    def attr: Seq[Attr] = _childrenByKind.getOrElse("ATTR", Seq.empty).map(createRustNode(_).asInstanceOf[Attr])
+    def anyAttr: Seq[AnyAttr] = _children.filter(child => _anyAttrKinds.contains(child("nodeKind").str)).map(createRustNode(_).asInstanceOf[AnyAttr])
     def constKwToken: ConstKwToken = createRustNode(_childrenByKind("CONST_KW").head).asInstanceOf[ConstKwToken]
     def name: Name = createRustNode(_childrenByKind("NAME").head).asInstanceOf[Name]
     def colonToken: ColonToken = createRustNode(_childrenByKind("COLON").head).asInstanceOf[ColonToken]
@@ -918,7 +964,7 @@ object RustNodeSyntax {
   }
 
   final case class ContinueExpr(json: Value) extends RustNode with Expr {
-    def attr: Seq[Attr] = _childrenByKind.getOrElse("ATTR", Seq.empty).map(createRustNode(_).asInstanceOf[Attr])
+    def anyAttr: Seq[AnyAttr] = _children.filter(child => _anyAttrKinds.contains(child("nodeKind").str)).map(createRustNode(_).asInstanceOf[AnyAttr])
     def continueKwToken: ContinueKwToken = createRustNode(_childrenByKind("CONTINUE_KW").head).asInstanceOf[ContinueKwToken]
     def lifetime: Option[Lifetime] = _childrenByKind.get("LIFETIME").flatMap(_.headOption).map(createRustNode(_).asInstanceOf[Lifetime])
   }
@@ -932,13 +978,18 @@ object RustNodeSyntax {
     def rParenToken: RParenToken = createRustNode(_childrenByKind("R_PAREN").head).asInstanceOf[RParenToken]
   }
 
+  final case class DocComment(json: Value) extends RustNode with AnyAttr {
+    def innerDocCommentToken: Option[InnerDocCommentToken] = _childrenByKind.get("INNER_DOC_COMMENT").flatMap(_.headOption).map(createRustNode(_).asInstanceOf[InnerDocCommentToken])
+    def outerDocCommentToken: Option[OuterDocCommentToken] = _childrenByKind.get("OUTER_DOC_COMMENT").flatMap(_.headOption).map(createRustNode(_).asInstanceOf[OuterDocCommentToken])
+  }
+
   final case class DynTraitType(json: Value) extends RustNode with Type {
     def dynKwToken: Option[DynKwToken] = _childrenByKind.get("DYN_KW").flatMap(_.headOption).map(createRustNode(_).asInstanceOf[DynKwToken])
     def typeBoundList: TypeBoundList = createRustNode(_childrenByKind("TYPE_BOUND_LIST").head).asInstanceOf[TypeBoundList]
   }
 
   final case class Enum(json: Value) extends RustNode with Adt with Item with Stmt {
-    def attr: Seq[Attr] = _childrenByKind.getOrElse("ATTR", Seq.empty).map(createRustNode(_).asInstanceOf[Attr])
+    def anyAttr: Seq[AnyAttr] = _children.filter(child => _anyAttrKinds.contains(child("nodeKind").str)).map(createRustNode(_).asInstanceOf[AnyAttr])
     def visibility: Option[Visibility] = _childrenByKind.get("VISIBILITY").flatMap(_.headOption).map(createRustNode(_).asInstanceOf[Visibility])
     def enumKwToken: EnumKwToken = createRustNode(_childrenByKind("ENUM_KW").head).asInstanceOf[EnumKwToken]
     def name: Name = createRustNode(_childrenByKind("NAME").head).asInstanceOf[Name]
@@ -953,14 +1004,14 @@ object RustNodeSyntax {
   }
 
   final case class ExternBlock(json: Value) extends RustNode with Item with Stmt {
-    def attr: Seq[Attr] = _childrenByKind.getOrElse("ATTR", Seq.empty).map(createRustNode(_).asInstanceOf[Attr])
+    def anyAttr: Seq[AnyAttr] = _children.filter(child => _anyAttrKinds.contains(child("nodeKind").str)).map(createRustNode(_).asInstanceOf[AnyAttr])
     def unsafeKwToken: Option[UnsafeKwToken] = _childrenByKind.get("UNSAFE_KW").flatMap(_.headOption).map(createRustNode(_).asInstanceOf[UnsafeKwToken])
     def abi: Abi = createRustNode(_childrenByKind("ABI").head).asInstanceOf[Abi]
     def externItemList: ExternItemList = createRustNode(_childrenByKind("EXTERN_ITEM_LIST").head).asInstanceOf[ExternItemList]
   }
 
   final case class ExternCrate(json: Value) extends RustNode with Item with Stmt {
-    def attr: Seq[Attr] = _childrenByKind.getOrElse("ATTR", Seq.empty).map(createRustNode(_).asInstanceOf[Attr])
+    def anyAttr: Seq[AnyAttr] = _children.filter(child => _anyAttrKinds.contains(child("nodeKind").str)).map(createRustNode(_).asInstanceOf[AnyAttr])
     def visibility: Option[Visibility] = _childrenByKind.get("VISIBILITY").flatMap(_.headOption).map(createRustNode(_).asInstanceOf[Visibility])
     def externKwToken: ExternKwToken = createRustNode(_childrenByKind("EXTERN_KW").head).asInstanceOf[ExternKwToken]
     def crateKwToken: CrateKwToken = createRustNode(_childrenByKind("CRATE_KW").head).asInstanceOf[CrateKwToken]
@@ -971,20 +1022,20 @@ object RustNodeSyntax {
 
   final case class ExternItemList(json: Value) extends RustNode {
     def lCurlyToken: LCurlyToken = createRustNode(_childrenByKind("L_CURLY").head).asInstanceOf[LCurlyToken]
-    def attr: Seq[Attr] = _childrenByKind.getOrElse("ATTR", Seq.empty).map(createRustNode(_).asInstanceOf[Attr])
+    def anyAttr: Seq[AnyAttr] = _children.filter(child => _anyAttrKinds.contains(child("nodeKind").str)).map(createRustNode(_).asInstanceOf[AnyAttr])
     def externItem: Seq[ExternItem] = _children.filter(child => _externItemKinds.contains(child("nodeKind").str)).map(createRustNode(_).asInstanceOf[ExternItem])
     def rCurlyToken: RCurlyToken = createRustNode(_childrenByKind("R_CURLY").head).asInstanceOf[RCurlyToken]
   }
 
   final case class FieldExpr(json: Value) extends RustNode with Expr {
-    def attr: Seq[Attr] = _childrenByKind.getOrElse("ATTR", Seq.empty).map(createRustNode(_).asInstanceOf[Attr])
+    def anyAttr: Seq[AnyAttr] = _children.filter(child => _anyAttrKinds.contains(child("nodeKind").str)).map(createRustNode(_).asInstanceOf[AnyAttr])
     def expr: Expr = createRustNode(_children.find(child => _exprKinds.contains(child("nodeKind").str)).get).asInstanceOf[Expr]
     def dotToken: DotToken = createRustNode(_childrenByKind("DOT").head).asInstanceOf[DotToken]
     def nameRef: NameRef = createRustNode(_childrenByKind("NAME_REF").head).asInstanceOf[NameRef]
   }
 
   final case class Fn(json: Value) extends RustNode with AssocItem with ExternItem with Item with Stmt {
-    def attr: Seq[Attr] = _childrenByKind.getOrElse("ATTR", Seq.empty).map(createRustNode(_).asInstanceOf[Attr])
+    def anyAttr: Seq[AnyAttr] = _children.filter(child => _anyAttrKinds.contains(child("nodeKind").str)).map(createRustNode(_).asInstanceOf[AnyAttr])
     def visibility: Option[Visibility] = _childrenByKind.get("VISIBILITY").flatMap(_.headOption).map(createRustNode(_).asInstanceOf[Visibility])
     def defaultKwToken: Option[DefaultKwToken] = _childrenByKind.get("DEFAULT_KW").flatMap(_.headOption).map(createRustNode(_).asInstanceOf[DefaultKwToken])
     def constKwToken: Option[ConstKwToken] = _childrenByKind.get("CONST_KW").flatMap(_.headOption).map(createRustNode(_).asInstanceOf[ConstKwToken])
@@ -1019,7 +1070,7 @@ object RustNodeSyntax {
   }
 
   final case class ForExpr(json: Value) extends RustNode with Expr {
-    def attr: Seq[Attr] = _childrenByKind.getOrElse("ATTR", Seq.empty).map(createRustNode(_).asInstanceOf[Attr])
+    def anyAttr: Seq[AnyAttr] = _children.filter(child => _anyAttrKinds.contains(child("nodeKind").str)).map(createRustNode(_).asInstanceOf[AnyAttr])
     def label: Option[Label] = _childrenByKind.get("LABEL").flatMap(_.headOption).map(createRustNode(_).asInstanceOf[Label])
     def forKwToken: ForKwToken = createRustNode(_childrenByKind("FOR_KW").head).asInstanceOf[ForKwToken]
     def pat: Pat = createRustNode(_children.find(child => _patKinds.contains(child("nodeKind").str)).get).asInstanceOf[Pat]
@@ -1034,16 +1085,13 @@ object RustNodeSyntax {
   }
 
   final case class FormatArgsArg(json: Value) extends RustNode {
-    def formatArgsArgName: Option[FormatArgsArgName] = _childrenByKind.get("FORMAT_ARGS_ARG_NAME").flatMap(_.headOption).map(createRustNode(_).asInstanceOf[FormatArgsArgName])
+    def name: Option[Name] = _childrenByKind.get("NAME").flatMap(_.headOption).map(createRustNode(_).asInstanceOf[Name])
+    def eqToken: Option[EqToken] = _childrenByKind.get("EQ").flatMap(_.headOption).map(createRustNode(_).asInstanceOf[EqToken])
     def expr: Expr = createRustNode(_children.find(child => _exprKinds.contains(child("nodeKind").str)).get).asInstanceOf[Expr]
   }
 
-  final case class FormatArgsArgName(json: Value) extends RustNode {
-    def eqToken: EqToken = createRustNode(_childrenByKind("EQ").head).asInstanceOf[EqToken]
-  }
-
   final case class FormatArgsExpr(json: Value) extends RustNode with Expr {
-    def attr: Seq[Attr] = _childrenByKind.getOrElse("ATTR", Seq.empty).map(createRustNode(_).asInstanceOf[Attr])
+    def anyAttr: Seq[AnyAttr] = _children.filter(child => _anyAttrKinds.contains(child("nodeKind").str)).map(createRustNode(_).asInstanceOf[AnyAttr])
     def builtinKwToken: BuiltinKwToken = createRustNode(_childrenByKind("BUILTIN_KW").head).asInstanceOf[BuiltinKwToken]
     def poundToken: PoundToken = createRustNode(_childrenByKind("POUND").head).asInstanceOf[PoundToken]
     def formatArgsKwToken: FormatArgsKwToken = createRustNode(_childrenByKind("FORMAT_ARGS_KW").head).asInstanceOf[FormatArgsKwToken]
@@ -1070,7 +1118,7 @@ object RustNodeSyntax {
   }
 
   final case class IdentPat(json: Value) extends RustNode with Pat {
-    def attr: Seq[Attr] = _childrenByKind.getOrElse("ATTR", Seq.empty).map(createRustNode(_).asInstanceOf[Attr])
+    def anyAttr: Seq[AnyAttr] = _children.filter(child => _anyAttrKinds.contains(child("nodeKind").str)).map(createRustNode(_).asInstanceOf[AnyAttr])
     def refKwToken: Option[RefKwToken] = _childrenByKind.get("REF_KW").flatMap(_.headOption).map(createRustNode(_).asInstanceOf[RefKwToken])
     def mutKwToken: Option[MutKwToken] = _childrenByKind.get("MUT_KW").flatMap(_.headOption).map(createRustNode(_).asInstanceOf[MutKwToken])
     def name: Name = createRustNode(_childrenByKind("NAME").head).asInstanceOf[Name]
@@ -1079,7 +1127,7 @@ object RustNodeSyntax {
   }
 
   final case class IfExpr(json: Value) extends RustNode with Expr {
-    def attr: Seq[Attr] = _childrenByKind.getOrElse("ATTR", Seq.empty).map(createRustNode(_).asInstanceOf[Attr])
+    def anyAttr: Seq[AnyAttr] = _children.filter(child => _anyAttrKinds.contains(child("nodeKind").str)).map(createRustNode(_).asInstanceOf[AnyAttr])
     def ifKwToken: IfKwToken = createRustNode(_childrenByKind("IF_KW").head).asInstanceOf[IfKwToken]
     def expr: Expr = createRustNode(_children.find(child => _exprKinds.contains(child("nodeKind").str)).get).asInstanceOf[Expr]
     def blockExpr: Seq[BlockExpr] = _childrenByKind.getOrElse("BLOCK_EXPR", Seq.empty).map(createRustNode(_).asInstanceOf[BlockExpr])
@@ -1088,7 +1136,7 @@ object RustNodeSyntax {
   }
 
   final case class Impl(json: Value) extends RustNode with Item with Stmt {
-    def attr: Seq[Attr] = _childrenByKind.getOrElse("ATTR", Seq.empty).map(createRustNode(_).asInstanceOf[Attr])
+    def anyAttr: Seq[AnyAttr] = _children.filter(child => _anyAttrKinds.contains(child("nodeKind").str)).map(createRustNode(_).asInstanceOf[AnyAttr])
     def visibility: Option[Visibility] = _childrenByKind.get("VISIBILITY").flatMap(_.headOption).map(createRustNode(_).asInstanceOf[Visibility])
     def defaultKwToken: Option[DefaultKwToken] = _childrenByKind.get("DEFAULT_KW").flatMap(_.headOption).map(createRustNode(_).asInstanceOf[DefaultKwToken])
     def unsafeKwToken: Option[UnsafeKwToken] = _childrenByKind.get("UNSAFE_KW").flatMap(_.headOption).map(createRustNode(_).asInstanceOf[UnsafeKwToken])
@@ -1112,8 +1160,14 @@ object RustNodeSyntax {
     def typeBoundList: TypeBoundList = createRustNode(_childrenByKind("TYPE_BOUND_LIST").head).asInstanceOf[TypeBoundList]
   }
 
+  final case class IncludeBytesExpr(json: Value) extends RustNode with Expr {
+    def builtinKwToken: BuiltinKwToken = createRustNode(_childrenByKind("BUILTIN_KW").head).asInstanceOf[BuiltinKwToken]
+    def poundToken: PoundToken = createRustNode(_childrenByKind("POUND").head).asInstanceOf[PoundToken]
+    def includeBytesKwToken: IncludeBytesKwToken = createRustNode(_childrenByKind("INCLUDE_BYTES_KW").head).asInstanceOf[IncludeBytesKwToken]
+  }
+
   final case class IndexExpr(json: Value) extends RustNode with Expr {
-    def attr: Seq[Attr] = _childrenByKind.getOrElse("ATTR", Seq.empty).map(createRustNode(_).asInstanceOf[Attr])
+    def anyAttr: Seq[AnyAttr] = _children.filter(child => _anyAttrKinds.contains(child("nodeKind").str)).map(createRustNode(_).asInstanceOf[AnyAttr])
     def expr: Seq[Expr] = _children.filter(child => _exprKinds.contains(child("nodeKind").str)).map(createRustNode(_).asInstanceOf[Expr])
     def lBrackToken: LBrackToken = createRustNode(_childrenByKind("L_BRACK").head).asInstanceOf[LBrackToken]
     def rBrackToken: RBrackToken = createRustNode(_childrenByKind("R_BRACK").head).asInstanceOf[RBrackToken]
@@ -1125,7 +1179,7 @@ object RustNodeSyntax {
 
   final case class ItemList(json: Value) extends RustNode {
     def lCurlyToken: LCurlyToken = createRustNode(_childrenByKind("L_CURLY").head).asInstanceOf[LCurlyToken]
-    def attr: Seq[Attr] = _childrenByKind.getOrElse("ATTR", Seq.empty).map(createRustNode(_).asInstanceOf[Attr])
+    def anyAttr: Seq[AnyAttr] = _children.filter(child => _anyAttrKinds.contains(child("nodeKind").str)).map(createRustNode(_).asInstanceOf[AnyAttr])
     def item: Seq[Item] = _children.filter(child => _itemKinds.contains(child("nodeKind").str)).map(createRustNode(_).asInstanceOf[Item])
     def rCurlyToken: RCurlyToken = createRustNode(_childrenByKind("R_CURLY").head).asInstanceOf[RCurlyToken]
   }
@@ -1147,7 +1201,7 @@ object RustNodeSyntax {
   }
 
   final case class LetExpr(json: Value) extends RustNode with Expr {
-    def attr: Seq[Attr] = _childrenByKind.getOrElse("ATTR", Seq.empty).map(createRustNode(_).asInstanceOf[Attr])
+    def anyAttr: Seq[AnyAttr] = _children.filter(child => _anyAttrKinds.contains(child("nodeKind").str)).map(createRustNode(_).asInstanceOf[AnyAttr])
     def letKwToken: LetKwToken = createRustNode(_childrenByKind("LET_KW").head).asInstanceOf[LetKwToken]
     def pat: Pat = createRustNode(_children.find(child => _patKinds.contains(child("nodeKind").str)).get).asInstanceOf[Pat]
     def eqToken: EqToken = createRustNode(_childrenByKind("EQ").head).asInstanceOf[EqToken]
@@ -1155,7 +1209,7 @@ object RustNodeSyntax {
   }
 
   final case class LetStmt(json: Value) extends RustNode with Stmt {
-    def attr: Seq[Attr] = _childrenByKind.getOrElse("ATTR", Seq.empty).map(createRustNode(_).asInstanceOf[Attr])
+    def anyAttr: Seq[AnyAttr] = _children.filter(child => _anyAttrKinds.contains(child("nodeKind").str)).map(createRustNode(_).asInstanceOf[AnyAttr])
     def superKwToken: Option[SuperKwToken] = _childrenByKind.get("SUPER_KW").flatMap(_.headOption).map(createRustNode(_).asInstanceOf[SuperKwToken])
     def letKwToken: LetKwToken = createRustNode(_childrenByKind("LET_KW").head).asInstanceOf[LetKwToken]
     def pat: Pat = createRustNode(_children.find(child => _patKinds.contains(child("nodeKind").str)).get).asInstanceOf[Pat]
@@ -1176,14 +1230,14 @@ object RustNodeSyntax {
   }
 
   final case class LifetimeParam(json: Value) extends RustNode with GenericParam {
-    def attr: Seq[Attr] = _childrenByKind.getOrElse("ATTR", Seq.empty).map(createRustNode(_).asInstanceOf[Attr])
+    def anyAttr: Seq[AnyAttr] = _children.filter(child => _anyAttrKinds.contains(child("nodeKind").str)).map(createRustNode(_).asInstanceOf[AnyAttr])
     def lifetime: Lifetime = createRustNode(_childrenByKind("LIFETIME").head).asInstanceOf[Lifetime]
     def colonToken: Option[ColonToken] = _childrenByKind.get("COLON").flatMap(_.headOption).map(createRustNode(_).asInstanceOf[ColonToken])
     def typeBoundList: Option[TypeBoundList] = _childrenByKind.get("TYPE_BOUND_LIST").flatMap(_.headOption).map(createRustNode(_).asInstanceOf[TypeBoundList])
   }
 
   final case class Literal(json: Value) extends RustNode with Expr {
-    def attr: Seq[Attr] = _childrenByKind.getOrElse("ATTR", Seq.empty).map(createRustNode(_).asInstanceOf[Attr])
+    def anyAttr: Seq[AnyAttr] = _children.filter(child => _anyAttrKinds.contains(child("nodeKind").str)).map(createRustNode(_).asInstanceOf[AnyAttr])
     def intNumberToken: Option[IntNumberToken] = _childrenByKind.get("INT_NUMBER").flatMap(_.headOption).map(createRustNode(_).asInstanceOf[IntNumberToken])
     def floatNumberToken: Option[FloatNumberToken] = _childrenByKind.get("FLOAT_NUMBER").flatMap(_.headOption).map(createRustNode(_).asInstanceOf[FloatNumberToken])
     def stringToken: Option[StringToken] = _childrenByKind.get("STRING").flatMap(_.headOption).map(createRustNode(_).asInstanceOf[StringToken])
@@ -1201,14 +1255,14 @@ object RustNodeSyntax {
   }
 
   final case class LoopExpr(json: Value) extends RustNode with Expr {
-    def attr: Seq[Attr] = _childrenByKind.getOrElse("ATTR", Seq.empty).map(createRustNode(_).asInstanceOf[Attr])
+    def anyAttr: Seq[AnyAttr] = _children.filter(child => _anyAttrKinds.contains(child("nodeKind").str)).map(createRustNode(_).asInstanceOf[AnyAttr])
     def label: Option[Label] = _childrenByKind.get("LABEL").flatMap(_.headOption).map(createRustNode(_).asInstanceOf[Label])
     def loopKwToken: LoopKwToken = createRustNode(_childrenByKind("LOOP_KW").head).asInstanceOf[LoopKwToken]
     def blockExpr: BlockExpr = createRustNode(_childrenByKind("BLOCK_EXPR").head).asInstanceOf[BlockExpr]
   }
 
   final case class MacroCall(json: Value) extends RustNode with AssocItem with ExternItem with Item with Stmt {
-    def attr: Seq[Attr] = _childrenByKind.getOrElse("ATTR", Seq.empty).map(createRustNode(_).asInstanceOf[Attr])
+    def anyAttr: Seq[AnyAttr] = _children.filter(child => _anyAttrKinds.contains(child("nodeKind").str)).map(createRustNode(_).asInstanceOf[AnyAttr])
     def path: Path = createRustNode(_childrenByKind("PATH").head).asInstanceOf[Path]
     def bangToken: BangToken = createRustNode(_childrenByKind("BANG").head).asInstanceOf[BangToken]
     def tokenTree: TokenTree = createRustNode(_childrenByKind("TOKEN_TREE").head).asInstanceOf[TokenTree]
@@ -1216,7 +1270,7 @@ object RustNodeSyntax {
   }
 
   final case class MacroDef(json: Value) extends RustNode with Item with Stmt {
-    def attr: Seq[Attr] = _childrenByKind.getOrElse("ATTR", Seq.empty).map(createRustNode(_).asInstanceOf[Attr])
+    def anyAttr: Seq[AnyAttr] = _children.filter(child => _anyAttrKinds.contains(child("nodeKind").str)).map(createRustNode(_).asInstanceOf[AnyAttr])
     def visibility: Option[Visibility] = _childrenByKind.get("VISIBILITY").flatMap(_.headOption).map(createRustNode(_).asInstanceOf[Visibility])
     def macroKwToken: MacroKwToken = createRustNode(_childrenByKind("MACRO_KW").head).asInstanceOf[MacroKwToken]
     def name: Name = createRustNode(_childrenByKind("NAME").head).asInstanceOf[Name]
@@ -1236,7 +1290,7 @@ object RustNodeSyntax {
   }
 
   final case class MacroRules(json: Value) extends RustNode with Item with Stmt {
-    def attr: Seq[Attr] = _childrenByKind.getOrElse("ATTR", Seq.empty).map(createRustNode(_).asInstanceOf[Attr])
+    def anyAttr: Seq[AnyAttr] = _children.filter(child => _anyAttrKinds.contains(child("nodeKind").str)).map(createRustNode(_).asInstanceOf[AnyAttr])
     def visibility: Option[Visibility] = _childrenByKind.get("VISIBILITY").flatMap(_.headOption).map(createRustNode(_).asInstanceOf[Visibility])
     def macroRulesKwToken: MacroRulesKwToken = createRustNode(_childrenByKind("MACRO_RULES_KW").head).asInstanceOf[MacroRulesKwToken]
     def bangToken: BangToken = createRustNode(_childrenByKind("BANG").head).asInstanceOf[BangToken]
@@ -1254,7 +1308,7 @@ object RustNodeSyntax {
   }
 
   final case class MatchArm(json: Value) extends RustNode {
-    def attr: Seq[Attr] = _childrenByKind.getOrElse("ATTR", Seq.empty).map(createRustNode(_).asInstanceOf[Attr])
+    def anyAttr: Seq[AnyAttr] = _children.filter(child => _anyAttrKinds.contains(child("nodeKind").str)).map(createRustNode(_).asInstanceOf[AnyAttr])
     def pat: Pat = createRustNode(_children.find(child => _patKinds.contains(child("nodeKind").str)).get).asInstanceOf[Pat]
     def matchGuard: Option[MatchGuard] = _childrenByKind.get("MATCH_GUARD").flatMap(_.headOption).map(createRustNode(_).asInstanceOf[MatchGuard])
     def fatArrowToken: FatArrowToken = createRustNode(_childrenByKind("FAT_ARROW").head).asInstanceOf[FatArrowToken]
@@ -1264,13 +1318,13 @@ object RustNodeSyntax {
 
   final case class MatchArmList(json: Value) extends RustNode {
     def lCurlyToken: LCurlyToken = createRustNode(_childrenByKind("L_CURLY").head).asInstanceOf[LCurlyToken]
-    def attr: Seq[Attr] = _childrenByKind.getOrElse("ATTR", Seq.empty).map(createRustNode(_).asInstanceOf[Attr])
+    def anyAttr: Seq[AnyAttr] = _children.filter(child => _anyAttrKinds.contains(child("nodeKind").str)).map(createRustNode(_).asInstanceOf[AnyAttr])
     def matchArm: Seq[MatchArm] = _childrenByKind.getOrElse("MATCH_ARM", Seq.empty).map(createRustNode(_).asInstanceOf[MatchArm])
     def rCurlyToken: RCurlyToken = createRustNode(_childrenByKind("R_CURLY").head).asInstanceOf[RCurlyToken]
   }
 
   final case class MatchExpr(json: Value) extends RustNode with Expr {
-    def attr: Seq[Attr] = _childrenByKind.getOrElse("ATTR", Seq.empty).map(createRustNode(_).asInstanceOf[Attr])
+    def anyAttr: Seq[AnyAttr] = _children.filter(child => _anyAttrKinds.contains(child("nodeKind").str)).map(createRustNode(_).asInstanceOf[AnyAttr])
     def matchKwToken: MatchKwToken = createRustNode(_childrenByKind("MATCH_KW").head).asInstanceOf[MatchKwToken]
     def expr: Expr = createRustNode(_children.find(child => _exprKinds.contains(child("nodeKind").str)).get).asInstanceOf[Expr]
     def matchArmList: MatchArmList = createRustNode(_childrenByKind("MATCH_ARM_LIST").head).asInstanceOf[MatchArmList]
@@ -1282,7 +1336,7 @@ object RustNodeSyntax {
   }
 
   final case class MethodCallExpr(json: Value) extends RustNode with Expr {
-    def attr: Seq[Attr] = _childrenByKind.getOrElse("ATTR", Seq.empty).map(createRustNode(_).asInstanceOf[Attr])
+    def anyAttr: Seq[AnyAttr] = _children.filter(child => _anyAttrKinds.contains(child("nodeKind").str)).map(createRustNode(_).asInstanceOf[AnyAttr])
     def expr: Expr = createRustNode(_children.find(child => _exprKinds.contains(child("nodeKind").str)).get).asInstanceOf[Expr]
     def dotToken: DotToken = createRustNode(_childrenByKind("DOT").head).asInstanceOf[DotToken]
     def nameRef: NameRef = createRustNode(_childrenByKind("NAME_REF").head).asInstanceOf[NameRef]
@@ -1291,7 +1345,7 @@ object RustNodeSyntax {
   }
 
   final case class Module(json: Value) extends RustNode with Item with Stmt {
-    def attr: Seq[Attr] = _childrenByKind.getOrElse("ATTR", Seq.empty).map(createRustNode(_).asInstanceOf[Attr])
+    def anyAttr: Seq[AnyAttr] = _children.filter(child => _anyAttrKinds.contains(child("nodeKind").str)).map(createRustNode(_).asInstanceOf[AnyAttr])
     def visibility: Option[Visibility] = _childrenByKind.get("VISIBILITY").flatMap(_.headOption).map(createRustNode(_).asInstanceOf[Visibility])
     def modKwToken: ModKwToken = createRustNode(_childrenByKind("MOD_KW").head).asInstanceOf[ModKwToken]
     def name: Name = createRustNode(_childrenByKind("NAME").head).asInstanceOf[Name]
@@ -1322,8 +1376,13 @@ object RustNodeSyntax {
     def bangToken: BangToken = createRustNode(_childrenByKind("BANG").head).asInstanceOf[BangToken]
   }
 
+  final case class NotNull(json: Value) extends RustNode with Pat {
+    def bangToken: BangToken = createRustNode(_childrenByKind("BANG").head).asInstanceOf[BangToken]
+    def nullKwToken: NullKwToken = createRustNode(_childrenByKind("NULL_KW").head).asInstanceOf[NullKwToken]
+  }
+
   final case class OffsetOfExpr(json: Value) extends RustNode with Expr {
-    def attr: Seq[Attr] = _childrenByKind.getOrElse("ATTR", Seq.empty).map(createRustNode(_).asInstanceOf[Attr])
+    def anyAttr: Seq[AnyAttr] = _children.filter(child => _anyAttrKinds.contains(child("nodeKind").str)).map(createRustNode(_).asInstanceOf[AnyAttr])
     def builtinKwToken: BuiltinKwToken = createRustNode(_childrenByKind("BUILTIN_KW").head).asInstanceOf[BuiltinKwToken]
     def poundToken: PoundToken = createRustNode(_childrenByKind("POUND").head).asInstanceOf[PoundToken]
     def offsetOfKwToken: OffsetOfKwToken = createRustNode(_childrenByKind("OFFSET_OF_KW").head).asInstanceOf[OffsetOfKwToken]
@@ -1341,7 +1400,7 @@ object RustNodeSyntax {
   }
 
   final case class Param(json: Value) extends RustNode {
-    def attr: Seq[Attr] = _childrenByKind.getOrElse("ATTR", Seq.empty).map(createRustNode(_).asInstanceOf[Attr])
+    def anyAttr: Seq[AnyAttr] = _children.filter(child => _anyAttrKinds.contains(child("nodeKind").str)).map(createRustNode(_).asInstanceOf[AnyAttr])
     def pat: Option[Pat] = _children.find(child => _patKinds.contains(child("nodeKind").str)).map(createRustNode(_).asInstanceOf[Pat])
     def colonToken: Option[ColonToken] = _childrenByKind.get("COLON").flatMap(_.headOption).map(createRustNode(_).asInstanceOf[ColonToken])
     def typ: Option[Type] = _children.find(child => _typeKinds.contains(child("nodeKind").str)).map(createRustNode(_).asInstanceOf[Type])
@@ -1358,7 +1417,7 @@ object RustNodeSyntax {
   }
 
   final case class ParenExpr(json: Value) extends RustNode with Expr {
-    def attr: Seq[Attr] = _childrenByKind.getOrElse("ATTR", Seq.empty).map(createRustNode(_).asInstanceOf[Attr])
+    def anyAttr: Seq[AnyAttr] = _children.filter(child => _anyAttrKinds.contains(child("nodeKind").str)).map(createRustNode(_).asInstanceOf[AnyAttr])
     def lParenToken: LParenToken = createRustNode(_childrenByKind("L_PAREN").head).asInstanceOf[LParenToken]
     def expr: Expr = createRustNode(_children.find(child => _exprKinds.contains(child("nodeKind").str)).get).asInstanceOf[Expr]
     def rParenToken: RParenToken = createRustNode(_childrenByKind("R_PAREN").head).asInstanceOf[RParenToken]
@@ -1391,7 +1450,7 @@ object RustNodeSyntax {
   }
 
   final case class PathExpr(json: Value) extends RustNode with Expr {
-    def attr: Seq[Attr] = _childrenByKind.getOrElse("ATTR", Seq.empty).map(createRustNode(_).asInstanceOf[Attr])
+    def anyAttr: Seq[AnyAttr] = _children.filter(child => _anyAttrKinds.contains(child("nodeKind").str)).map(createRustNode(_).asInstanceOf[AnyAttr])
     def path: Path = createRustNode(_childrenByKind("PATH").head).asInstanceOf[Path]
   }
 
@@ -1417,8 +1476,19 @@ object RustNodeSyntax {
     def path: Path = createRustNode(_childrenByKind("PATH").head).asInstanceOf[Path]
   }
 
+  final case class PatternType(json: Value) extends RustNode with Type {
+    def builtinKwToken: BuiltinKwToken = createRustNode(_childrenByKind("BUILTIN_KW").head).asInstanceOf[BuiltinKwToken]
+    def poundToken: PoundToken = createRustNode(_childrenByKind("POUND").head).asInstanceOf[PoundToken]
+    def patternTypeKwToken: PatternTypeKwToken = createRustNode(_childrenByKind("PATTERN_TYPE_KW").head).asInstanceOf[PatternTypeKwToken]
+    def lParenToken: LParenToken = createRustNode(_childrenByKind("L_PAREN").head).asInstanceOf[LParenToken]
+    def typ: Type = createRustNode(_children.find(child => _typeKinds.contains(child("nodeKind").str)).get).asInstanceOf[Type]
+    def isKwToken: IsKwToken = createRustNode(_childrenByKind("IS_KW").head).asInstanceOf[IsKwToken]
+    def pat: Pat = createRustNode(_children.find(child => _patKinds.contains(child("nodeKind").str)).get).asInstanceOf[Pat]
+    def rParenToken: RParenToken = createRustNode(_childrenByKind("R_PAREN").head).asInstanceOf[RParenToken]
+  }
+
   final case class PrefixExpr(json: Value) extends RustNode with Expr {
-    def attr: Seq[Attr] = _childrenByKind.getOrElse("ATTR", Seq.empty).map(createRustNode(_).asInstanceOf[Attr])
+    def anyAttr: Seq[AnyAttr] = _children.filter(child => _anyAttrKinds.contains(child("nodeKind").str)).map(createRustNode(_).asInstanceOf[AnyAttr])
     def minusToken: Option[MinusToken] = _childrenByKind.get("MINUS").flatMap(_.headOption).map(createRustNode(_).asInstanceOf[MinusToken])
     def bangToken: Option[BangToken] = _childrenByKind.get("BANG").flatMap(_.headOption).map(createRustNode(_).asInstanceOf[BangToken])
     def starToken: Option[StarToken] = _childrenByKind.get("STAR").flatMap(_.headOption).map(createRustNode(_).asInstanceOf[StarToken])
@@ -1433,7 +1503,7 @@ object RustNodeSyntax {
   }
 
   final case class RangeExpr(json: Value) extends RustNode with Expr {
-    def attr: Seq[Attr] = _childrenByKind.getOrElse("ATTR", Seq.empty).map(createRustNode(_).asInstanceOf[Attr])
+    def anyAttr: Seq[AnyAttr] = _children.filter(child => _anyAttrKinds.contains(child("nodeKind").str)).map(createRustNode(_).asInstanceOf[AnyAttr])
     def expr: Seq[Expr] = _children.filter(child => _exprKinds.contains(child("nodeKind").str)).map(createRustNode(_).asInstanceOf[Expr])
     def dot2Token: Option[Dot2Token] = _childrenByKind.get("DOT2").flatMap(_.headOption).map(createRustNode(_).asInstanceOf[Dot2Token])
     def dot2eqToken: Option[Dot2eqToken] = _childrenByKind.get("DOT2EQ").flatMap(_.headOption).map(createRustNode(_).asInstanceOf[Dot2eqToken])
@@ -1451,7 +1521,7 @@ object RustNodeSyntax {
   }
 
   final case class RecordExprField(json: Value) extends RustNode {
-    def attr: Seq[Attr] = _childrenByKind.getOrElse("ATTR", Seq.empty).map(createRustNode(_).asInstanceOf[Attr])
+    def anyAttr: Seq[AnyAttr] = _children.filter(child => _anyAttrKinds.contains(child("nodeKind").str)).map(createRustNode(_).asInstanceOf[AnyAttr])
     def nameRef: Option[NameRef] = _childrenByKind.get("NAME_REF").flatMap(_.headOption).map(createRustNode(_).asInstanceOf[NameRef])
     def colonToken: Option[ColonToken] = _childrenByKind.get("COLON").flatMap(_.headOption).map(createRustNode(_).asInstanceOf[ColonToken])
     def expr: Expr = createRustNode(_children.find(child => _exprKinds.contains(child("nodeKind").str)).get).asInstanceOf[Expr]
@@ -1459,7 +1529,7 @@ object RustNodeSyntax {
 
   final case class RecordExprFieldList(json: Value) extends RustNode {
     def lCurlyToken: LCurlyToken = createRustNode(_childrenByKind("L_CURLY").head).asInstanceOf[LCurlyToken]
-    def attr: Seq[Attr] = _childrenByKind.getOrElse("ATTR", Seq.empty).map(createRustNode(_).asInstanceOf[Attr])
+    def anyAttr: Seq[AnyAttr] = _children.filter(child => _anyAttrKinds.contains(child("nodeKind").str)).map(createRustNode(_).asInstanceOf[AnyAttr])
     def recordExprField: Seq[RecordExprField] = _childrenByKind.getOrElse("RECORD_EXPR_FIELD", Seq.empty).map(createRustNode(_).asInstanceOf[RecordExprField])
     def commaToken: Seq[CommaToken] = _childrenByKind.getOrElse("COMMA", Seq.empty).map(createRustNode(_).asInstanceOf[CommaToken])
     def dot2Token: Option[Dot2Token] = _childrenByKind.get("DOT2").flatMap(_.headOption).map(createRustNode(_).asInstanceOf[Dot2Token])
@@ -1468,7 +1538,7 @@ object RustNodeSyntax {
   }
 
   final case class RecordField(json: Value) extends RustNode {
-    def attr: Seq[Attr] = _childrenByKind.getOrElse("ATTR", Seq.empty).map(createRustNode(_).asInstanceOf[Attr])
+    def anyAttr: Seq[AnyAttr] = _children.filter(child => _anyAttrKinds.contains(child("nodeKind").str)).map(createRustNode(_).asInstanceOf[AnyAttr])
     def visibility: Option[Visibility] = _childrenByKind.get("VISIBILITY").flatMap(_.headOption).map(createRustNode(_).asInstanceOf[Visibility])
     def unsafeKwToken: Option[UnsafeKwToken] = _childrenByKind.get("UNSAFE_KW").flatMap(_.headOption).map(createRustNode(_).asInstanceOf[UnsafeKwToken])
     def mutRestriction: Option[MutRestriction] = _childrenByKind.get("MUT_RESTRICTION").flatMap(_.headOption).map(createRustNode(_).asInstanceOf[MutRestriction])
@@ -1492,7 +1562,7 @@ object RustNodeSyntax {
   }
 
   final case class RecordPatField(json: Value) extends RustNode {
-    def attr: Seq[Attr] = _childrenByKind.getOrElse("ATTR", Seq.empty).map(createRustNode(_).asInstanceOf[Attr])
+    def anyAttr: Seq[AnyAttr] = _children.filter(child => _anyAttrKinds.contains(child("nodeKind").str)).map(createRustNode(_).asInstanceOf[AnyAttr])
     def nameRef: Option[NameRef] = _childrenByKind.get("NAME_REF").flatMap(_.headOption).map(createRustNode(_).asInstanceOf[NameRef])
     def colonToken: Option[ColonToken] = _childrenByKind.get("COLON").flatMap(_.headOption).map(createRustNode(_).asInstanceOf[ColonToken])
     def pat: Pat = createRustNode(_children.find(child => _patKinds.contains(child("nodeKind").str)).get).asInstanceOf[Pat]
@@ -1507,7 +1577,7 @@ object RustNodeSyntax {
   }
 
   final case class RefExpr(json: Value) extends RustNode with Expr {
-    def attr: Seq[Attr] = _childrenByKind.getOrElse("ATTR", Seq.empty).map(createRustNode(_).asInstanceOf[Attr])
+    def anyAttr: Seq[AnyAttr] = _children.filter(child => _anyAttrKinds.contains(child("nodeKind").str)).map(createRustNode(_).asInstanceOf[AnyAttr])
     def ampToken: AmpToken = createRustNode(_childrenByKind("AMP").head).asInstanceOf[AmpToken]
     def rawKwToken: Option[RawKwToken] = _childrenByKind.get("RAW_KW").flatMap(_.headOption).map(createRustNode(_).asInstanceOf[RawKwToken])
     def constKwToken: Option[ConstKwToken] = _childrenByKind.get("CONST_KW").flatMap(_.headOption).map(createRustNode(_).asInstanceOf[ConstKwToken])
@@ -1535,7 +1605,7 @@ object RustNodeSyntax {
   }
 
   final case class RestPat(json: Value) extends RustNode with Pat {
-    def attr: Seq[Attr] = _childrenByKind.getOrElse("ATTR", Seq.empty).map(createRustNode(_).asInstanceOf[Attr])
+    def anyAttr: Seq[AnyAttr] = _children.filter(child => _anyAttrKinds.contains(child("nodeKind").str)).map(createRustNode(_).asInstanceOf[AnyAttr])
     def dot2Token: Dot2Token = createRustNode(_childrenByKind("DOT2").head).asInstanceOf[Dot2Token]
   }
 
@@ -1545,7 +1615,7 @@ object RustNodeSyntax {
   }
 
   final case class ReturnExpr(json: Value) extends RustNode with Expr {
-    def attr: Seq[Attr] = _childrenByKind.getOrElse("ATTR", Seq.empty).map(createRustNode(_).asInstanceOf[Attr])
+    def anyAttr: Seq[AnyAttr] = _children.filter(child => _anyAttrKinds.contains(child("nodeKind").str)).map(createRustNode(_).asInstanceOf[AnyAttr])
     def returnKwToken: ReturnKwToken = createRustNode(_childrenByKind("RETURN_KW").head).asInstanceOf[ReturnKwToken]
     def expr: Option[Expr] = _children.find(child => _exprKinds.contains(child("nodeKind").str)).map(createRustNode(_).asInstanceOf[Expr])
   }
@@ -1557,7 +1627,7 @@ object RustNodeSyntax {
   }
 
   final case class SelfParam(json: Value) extends RustNode {
-    def attr: Seq[Attr] = _childrenByKind.getOrElse("ATTR", Seq.empty).map(createRustNode(_).asInstanceOf[Attr])
+    def anyAttr: Seq[AnyAttr] = _children.filter(child => _anyAttrKinds.contains(child("nodeKind").str)).map(createRustNode(_).asInstanceOf[AnyAttr])
     def ampToken: Option[AmpToken] = _childrenByKind.get("AMP").flatMap(_.headOption).map(createRustNode(_).asInstanceOf[AmpToken])
     def lifetime: Option[Lifetime] = _childrenByKind.get("LIFETIME").flatMap(_.headOption).map(createRustNode(_).asInstanceOf[Lifetime])
     def mutKwToken: Option[MutKwToken] = _childrenByKind.get("MUT_KW").flatMap(_.headOption).map(createRustNode(_).asInstanceOf[MutKwToken])
@@ -1582,12 +1652,12 @@ object RustNodeSyntax {
   final case class SourceFile(json: Value) extends RustNode {
     def shebangToken: Option[ShebangToken] = _childrenByKind.get("SHEBANG").flatMap(_.headOption).map(createRustNode(_).asInstanceOf[ShebangToken])
     def frontmatterToken: Option[FrontmatterToken] = _childrenByKind.get("FRONTMATTER").flatMap(_.headOption).map(createRustNode(_).asInstanceOf[FrontmatterToken])
-    def attr: Seq[Attr] = _childrenByKind.getOrElse("ATTR", Seq.empty).map(createRustNode(_).asInstanceOf[Attr])
+    def anyAttr: Seq[AnyAttr] = _children.filter(child => _anyAttrKinds.contains(child("nodeKind").str)).map(createRustNode(_).asInstanceOf[AnyAttr])
     def item: Seq[Item] = _children.filter(child => _itemKinds.contains(child("nodeKind").str)).map(createRustNode(_).asInstanceOf[Item])
   }
 
   final case class Static(json: Value) extends RustNode with ExternItem with Item with Stmt {
-    def attr: Seq[Attr] = _childrenByKind.getOrElse("ATTR", Seq.empty).map(createRustNode(_).asInstanceOf[Attr])
+    def anyAttr: Seq[AnyAttr] = _children.filter(child => _anyAttrKinds.contains(child("nodeKind").str)).map(createRustNode(_).asInstanceOf[AnyAttr])
     def visibility: Option[Visibility] = _childrenByKind.get("VISIBILITY").flatMap(_.headOption).map(createRustNode(_).asInstanceOf[Visibility])
     def unsafeKwToken: Option[UnsafeKwToken] = _childrenByKind.get("UNSAFE_KW").flatMap(_.headOption).map(createRustNode(_).asInstanceOf[UnsafeKwToken])
     def safeKwToken: Option[SafeKwToken] = _childrenByKind.get("SAFE_KW").flatMap(_.headOption).map(createRustNode(_).asInstanceOf[SafeKwToken])
@@ -1603,14 +1673,14 @@ object RustNodeSyntax {
 
   final case class StmtList(json: Value) extends RustNode {
     def lCurlyToken: LCurlyToken = createRustNode(_childrenByKind("L_CURLY").head).asInstanceOf[LCurlyToken]
-    def attr: Seq[Attr] = _childrenByKind.getOrElse("ATTR", Seq.empty).map(createRustNode(_).asInstanceOf[Attr])
+    def anyAttr: Seq[AnyAttr] = _children.filter(child => _anyAttrKinds.contains(child("nodeKind").str)).map(createRustNode(_).asInstanceOf[AnyAttr])
     def stmt: Seq[Stmt] = _children.filter(child => _stmtKinds.contains(child("nodeKind").str)).map(createRustNode(_).asInstanceOf[Stmt])
     def expr: Option[Expr] = _children.find(child => _exprKinds.contains(child("nodeKind").str)).map(createRustNode(_).asInstanceOf[Expr])
     def rCurlyToken: RCurlyToken = createRustNode(_childrenByKind("R_CURLY").head).asInstanceOf[RCurlyToken]
   }
 
   final case class Struct(json: Value) extends RustNode with Adt with Item with Stmt with VariantDef {
-    def attr: Seq[Attr] = _childrenByKind.getOrElse("ATTR", Seq.empty).map(createRustNode(_).asInstanceOf[Attr])
+    def anyAttr: Seq[AnyAttr] = _children.filter(child => _anyAttrKinds.contains(child("nodeKind").str)).map(createRustNode(_).asInstanceOf[AnyAttr])
     def visibility: Option[Visibility] = _childrenByKind.get("VISIBILITY").flatMap(_.headOption).map(createRustNode(_).asInstanceOf[Visibility])
     def structKwToken: StructKwToken = createRustNode(_childrenByKind("STRUCT_KW").head).asInstanceOf[StructKwToken]
     def name: Name = createRustNode(_childrenByKind("NAME").head).asInstanceOf[Name]
@@ -1636,7 +1706,7 @@ object RustNodeSyntax {
   }
 
   final case class Trait(json: Value) extends RustNode with Item with Stmt {
-    def attr: Seq[Attr] = _childrenByKind.getOrElse("ATTR", Seq.empty).map(createRustNode(_).asInstanceOf[Attr])
+    def anyAttr: Seq[AnyAttr] = _children.filter(child => _anyAttrKinds.contains(child("nodeKind").str)).map(createRustNode(_).asInstanceOf[AnyAttr])
     def visibility: Option[Visibility] = _childrenByKind.get("VISIBILITY").flatMap(_.headOption).map(createRustNode(_).asInstanceOf[Visibility])
     def unsafeKwToken: Option[UnsafeKwToken] = _childrenByKind.get("UNSAFE_KW").flatMap(_.headOption).map(createRustNode(_).asInstanceOf[UnsafeKwToken])
     def autoKwToken: Option[AutoKwToken] = _childrenByKind.get("AUTO_KW").flatMap(_.headOption).map(createRustNode(_).asInstanceOf[AutoKwToken])
@@ -1659,13 +1729,13 @@ object RustNodeSyntax {
   }
 
   final case class TryExpr(json: Value) extends RustNode with Expr {
-    def attr: Seq[Attr] = _childrenByKind.getOrElse("ATTR", Seq.empty).map(createRustNode(_).asInstanceOf[Attr])
+    def anyAttr: Seq[AnyAttr] = _children.filter(child => _anyAttrKinds.contains(child("nodeKind").str)).map(createRustNode(_).asInstanceOf[AnyAttr])
     def expr: Expr = createRustNode(_children.find(child => _exprKinds.contains(child("nodeKind").str)).get).asInstanceOf[Expr]
     def questionToken: QuestionToken = createRustNode(_childrenByKind("QUESTION").head).asInstanceOf[QuestionToken]
   }
 
   final case class TupleExpr(json: Value) extends RustNode with Expr {
-    def attr: Seq[Attr] = _childrenByKind.getOrElse("ATTR", Seq.empty).map(createRustNode(_).asInstanceOf[Attr])
+    def anyAttr: Seq[AnyAttr] = _children.filter(child => _anyAttrKinds.contains(child("nodeKind").str)).map(createRustNode(_).asInstanceOf[AnyAttr])
     def lParenToken: LParenToken = createRustNode(_childrenByKind("L_PAREN").head).asInstanceOf[LParenToken]
     def expr: Seq[Expr] = _children.filter(child => _exprKinds.contains(child("nodeKind").str)).map(createRustNode(_).asInstanceOf[Expr])
     def commaToken: Seq[CommaToken] = _childrenByKind.getOrElse("COMMA", Seq.empty).map(createRustNode(_).asInstanceOf[CommaToken])
@@ -1673,7 +1743,7 @@ object RustNodeSyntax {
   }
 
   final case class TupleField(json: Value) extends RustNode {
-    def attr: Seq[Attr] = _childrenByKind.getOrElse("ATTR", Seq.empty).map(createRustNode(_).asInstanceOf[Attr])
+    def anyAttr: Seq[AnyAttr] = _children.filter(child => _anyAttrKinds.contains(child("nodeKind").str)).map(createRustNode(_).asInstanceOf[AnyAttr])
     def visibility: Option[Visibility] = _childrenByKind.get("VISIBILITY").flatMap(_.headOption).map(createRustNode(_).asInstanceOf[Visibility])
     def mutRestriction: Option[MutRestriction] = _childrenByKind.get("MUT_RESTRICTION").flatMap(_.headOption).map(createRustNode(_).asInstanceOf[MutRestriction])
     def typ: Type = createRustNode(_children.find(child => _typeKinds.contains(child("nodeKind").str)).get).asInstanceOf[Type]
@@ -1709,7 +1779,7 @@ object RustNodeSyntax {
   }
 
   final case class TypeAlias(json: Value) extends RustNode with AssocItem with ExternItem with Item with Stmt {
-    def attr: Seq[Attr] = _childrenByKind.getOrElse("ATTR", Seq.empty).map(createRustNode(_).asInstanceOf[Attr])
+    def anyAttr: Seq[AnyAttr] = _children.filter(child => _anyAttrKinds.contains(child("nodeKind").str)).map(createRustNode(_).asInstanceOf[AnyAttr])
     def visibility: Option[Visibility] = _childrenByKind.get("VISIBILITY").flatMap(_.headOption).map(createRustNode(_).asInstanceOf[Visibility])
     def defaultKwToken: Option[DefaultKwToken] = _childrenByKind.get("DEFAULT_KW").flatMap(_.headOption).map(createRustNode(_).asInstanceOf[DefaultKwToken])
     def typeKwToken: TypeKwToken = createRustNode(_childrenByKind("TYPE_KW").head).asInstanceOf[TypeKwToken]
@@ -1755,7 +1825,7 @@ object RustNodeSyntax {
   }
 
   final case class TypeParam(json: Value) extends RustNode with GenericParam {
-    def attr: Seq[Attr] = _childrenByKind.getOrElse("ATTR", Seq.empty).map(createRustNode(_).asInstanceOf[Attr])
+    def anyAttr: Seq[AnyAttr] = _children.filter(child => _anyAttrKinds.contains(child("nodeKind").str)).map(createRustNode(_).asInstanceOf[AnyAttr])
     def name: Name = createRustNode(_childrenByKind("NAME").head).asInstanceOf[Name]
     def colonToken: Option[ColonToken] = _childrenByKind.get("COLON").flatMap(_.headOption).map(createRustNode(_).asInstanceOf[ColonToken])
     def typeBoundList: Option[TypeBoundList] = _childrenByKind.get("TYPE_BOUND_LIST").flatMap(_.headOption).map(createRustNode(_).asInstanceOf[TypeBoundList])
@@ -1764,12 +1834,12 @@ object RustNodeSyntax {
   }
 
   final case class UnderscoreExpr(json: Value) extends RustNode with Expr {
-    def attr: Seq[Attr] = _childrenByKind.getOrElse("ATTR", Seq.empty).map(createRustNode(_).asInstanceOf[Attr])
+    def anyAttr: Seq[AnyAttr] = _children.filter(child => _anyAttrKinds.contains(child("nodeKind").str)).map(createRustNode(_).asInstanceOf[AnyAttr])
     def underscoreToken: UnderscoreToken = createRustNode(_childrenByKind("UNDERSCORE").head).asInstanceOf[UnderscoreToken]
   }
 
   final case class Union(json: Value) extends RustNode with Adt with Item with Stmt with VariantDef {
-    def attr: Seq[Attr] = _childrenByKind.getOrElse("ATTR", Seq.empty).map(createRustNode(_).asInstanceOf[Attr])
+    def anyAttr: Seq[AnyAttr] = _children.filter(child => _anyAttrKinds.contains(child("nodeKind").str)).map(createRustNode(_).asInstanceOf[AnyAttr])
     def visibility: Option[Visibility] = _childrenByKind.get("VISIBILITY").flatMap(_.headOption).map(createRustNode(_).asInstanceOf[Visibility])
     def unionKwToken: UnionKwToken = createRustNode(_childrenByKind("UNION_KW").head).asInstanceOf[UnionKwToken]
     def name: Name = createRustNode(_childrenByKind("NAME").head).asInstanceOf[Name]
@@ -1786,7 +1856,7 @@ object RustNodeSyntax {
   }
 
   final case class Use(json: Value) extends RustNode with Item with Stmt {
-    def attr: Seq[Attr] = _childrenByKind.getOrElse("ATTR", Seq.empty).map(createRustNode(_).asInstanceOf[Attr])
+    def anyAttr: Seq[AnyAttr] = _children.filter(child => _anyAttrKinds.contains(child("nodeKind").str)).map(createRustNode(_).asInstanceOf[AnyAttr])
     def visibility: Option[Visibility] = _childrenByKind.get("VISIBILITY").flatMap(_.headOption).map(createRustNode(_).asInstanceOf[Visibility])
     def useKwToken: UseKwToken = createRustNode(_childrenByKind("USE_KW").head).asInstanceOf[UseKwToken]
     def useTree: UseTree = createRustNode(_childrenByKind("USE_TREE").head).asInstanceOf[UseTree]
@@ -1816,9 +1886,10 @@ object RustNodeSyntax {
   }
 
   final case class Variant(json: Value) extends RustNode with VariantDef {
-    def attr: Seq[Attr] = _childrenByKind.getOrElse("ATTR", Seq.empty).map(createRustNode(_).asInstanceOf[Attr])
+    def anyAttr: Seq[AnyAttr] = _children.filter(child => _anyAttrKinds.contains(child("nodeKind").str)).map(createRustNode(_).asInstanceOf[AnyAttr])
     def visibility: Option[Visibility] = _childrenByKind.get("VISIBILITY").flatMap(_.headOption).map(createRustNode(_).asInstanceOf[Visibility])
-    def name: Name = createRustNode(_childrenByKind("NAME").head).asInstanceOf[Name]
+    def name: Option[Name] = _childrenByKind.get("NAME").flatMap(_.headOption).map(createRustNode(_).asInstanceOf[Name])
+    def underscoreToken: Option[UnderscoreToken] = _childrenByKind.get("UNDERSCORE").flatMap(_.headOption).map(createRustNode(_).asInstanceOf[UnderscoreToken])
     def fieldList: Option[FieldList] = _children.find(child => _fieldListKinds.contains(child("nodeKind").str)).map(createRustNode(_).asInstanceOf[FieldList])
     def eqToken: Option[EqToken] = _childrenByKind.get("EQ").flatMap(_.headOption).map(createRustNode(_).asInstanceOf[EqToken])
     def constArg: Option[ConstArg] = _childrenByKind.get("CONST_ARG").flatMap(_.headOption).map(createRustNode(_).asInstanceOf[ConstArg])
@@ -1858,7 +1929,7 @@ object RustNodeSyntax {
   }
 
   final case class WhileExpr(json: Value) extends RustNode with Expr {
-    def attr: Seq[Attr] = _childrenByKind.getOrElse("ATTR", Seq.empty).map(createRustNode(_).asInstanceOf[Attr])
+    def anyAttr: Seq[AnyAttr] = _children.filter(child => _anyAttrKinds.contains(child("nodeKind").str)).map(createRustNode(_).asInstanceOf[AnyAttr])
     def label: Option[Label] = _childrenByKind.get("LABEL").flatMap(_.headOption).map(createRustNode(_).asInstanceOf[Label])
     def whileKwToken: WhileKwToken = createRustNode(_childrenByKind("WHILE_KW").head).asInstanceOf[WhileKwToken]
     def expr: Expr = createRustNode(_children.find(child => _exprKinds.contains(child("nodeKind").str)).get).asInstanceOf[Expr]
@@ -1870,14 +1941,14 @@ object RustNodeSyntax {
   }
 
   final case class YeetExpr(json: Value) extends RustNode with Expr {
-    def attr: Seq[Attr] = _childrenByKind.getOrElse("ATTR", Seq.empty).map(createRustNode(_).asInstanceOf[Attr])
+    def anyAttr: Seq[AnyAttr] = _children.filter(child => _anyAttrKinds.contains(child("nodeKind").str)).map(createRustNode(_).asInstanceOf[AnyAttr])
     def doKwToken: DoKwToken = createRustNode(_childrenByKind("DO_KW").head).asInstanceOf[DoKwToken]
     def yeetKwToken: YeetKwToken = createRustNode(_childrenByKind("YEET_KW").head).asInstanceOf[YeetKwToken]
     def expr: Option[Expr] = _children.find(child => _exprKinds.contains(child("nodeKind").str)).map(createRustNode(_).asInstanceOf[Expr])
   }
 
   final case class YieldExpr(json: Value) extends RustNode with Expr {
-    def attr: Seq[Attr] = _childrenByKind.getOrElse("ATTR", Seq.empty).map(createRustNode(_).asInstanceOf[Attr])
+    def anyAttr: Seq[AnyAttr] = _children.filter(child => _anyAttrKinds.contains(child("nodeKind").str)).map(createRustNode(_).asInstanceOf[AnyAttr])
     def yieldKwToken: YieldKwToken = createRustNode(_childrenByKind("YIELD_KW").head).asInstanceOf[YieldKwToken]
     def expr: Option[Expr] = _children.find(child => _exprKinds.contains(child("nodeKind").str)).map(createRustNode(_).asInstanceOf[Expr])
   }
@@ -1892,7 +1963,11 @@ object RustNodeSyntax {
 
   final case class IdentToken(json: Value) extends RustToken
 
+  final case class InnerDocCommentToken(json: Value) extends RustToken
+
   final case class LifetimeIdentToken(json: Value) extends RustToken
+
+  final case class OuterDocCommentToken(json: Value) extends RustToken
 
   final case class ShebangToken(json: Value) extends RustToken
 
@@ -2062,9 +2137,13 @@ object RustNodeSyntax {
 
   final case class InKwToken(json: Value) extends RustToken
 
+  final case class IncludeBytesKwToken(json: Value) extends RustToken
+
   final case class InlateoutKwToken(json: Value) extends RustToken
 
   final case class InoutKwToken(json: Value) extends RustToken
+
+  final case class IsKwToken(json: Value) extends RustToken
 
   final case class LabelKwToken(json: Value) extends RustToken
 
@@ -2096,11 +2175,15 @@ object RustNodeSyntax {
 
   final case class NostackKwToken(json: Value) extends RustToken
 
+  final case class NullKwToken(json: Value) extends RustToken
+
   final case class OffsetOfKwToken(json: Value) extends RustToken
 
   final case class OptionsKwToken(json: Value) extends RustToken
 
   final case class OutKwToken(json: Value) extends RustToken
+
+  final case class PatternTypeKwToken(json: Value) extends RustToken
 
   final case class PreservesFlagsKwToken(json: Value) extends RustToken
 

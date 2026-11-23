@@ -1,7 +1,6 @@
-use ra_ap_hir::{
-    Crate, HirFileId, Impl, InFile, Semantics, Type, TypeAlias, db::DefDatabase,
-    db::ExpandDatabase, db::HirDatabase, next_solver::GenericArgs,
-};
+use ra_ap_hir::{Crate, HirFileId, Impl, InFile, Semantics, Type, TypeAlias, db::HirDatabase};
+use ra_ap_hir_def::include_macro_invoc;
+use ra_ap_hir_ty::next_solver::GenericArgs;
 use ra_ap_ide_db::RootDatabase;
 use ra_ap_rustc_parse_format::{ParseMode, Parser, Piece, Position};
 use ra_ap_syntax::{AstNode, AstToken, SyntaxError, SyntaxNode, ast, ast::IsString};
@@ -13,9 +12,7 @@ pub fn is_include_target(
     target_crate: Crate,
     semantics: &Semantics<RootDatabase>,
 ) -> bool {
-    semantics
-        .db
-        .include_macro_invoc(target_crate.base())
+    include_macro_invoc(semantics.db, target_crate.base())
         .iter()
         .any(|(_, included_file_id)| included_file_id.file_id(semantics.db) == file_id)
 }
@@ -39,7 +36,7 @@ pub fn expansion_errors(
         return Vec::new();
     };
 
-    let (parse, _) = &semantics.db.parse_macro_expansion(macro_file).value;
+    let (parse, _) = &macro_file.parse_macro_expansion(semantics.db).value;
     parse.errors().to_vec()
 }
 
