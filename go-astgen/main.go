@@ -99,6 +99,7 @@ func processRequest(input InputConfig) {
 		sem := make(chan int, concurrency)
 		var totalSentForProcessing = 0
 		includeFolders := getIncludePackageFolders(input)
+		excludeRegex := compileExcludeRegex(input.excludeFiles)
 		err := filepath.Walk(input.inputPath, func(path string, info os.FileInfo, err error) error {
 			if err != nil {
 				log.SetPrefix("[ERROR]")
@@ -107,12 +108,11 @@ func processRequest(input InputConfig) {
 				return err
 			}
 			if !info.IsDir() && (strings.HasSuffix(info.Name(), ".go") || strings.HasSuffix(info.Name(), ".mod")) {
-				fileMatched, _ := regexp.MatchString(input.excludeFiles, info.Name())
-				pathMatched, _ := regexp.MatchString(input.excludeFiles, path)
+				excluded := isExcluded(excludeRegex, input.inputPath, path)
 				includePathMatched, _ := regexp.MatchString(input.includeFiles, path)
 				containingFolder := filepath.Dir(path)
 				packageMatched := includeFolders.Contains(containingFolder)
-				if (input.includeFiles == "" || includePathMatched == true) && (input.excludeFiles == "" || (fileMatched == false && pathMatched == false)) && (includeFolders.Size() == 0 || packageMatched) {
+				if (input.includeFiles == "" || includePathMatched == true) && !excluded && (includeFolders.Size() == 0 || packageMatched) {
 					totalSentForProcessing++
 					go processFile(input.out, input.inputPath, path, info, resultErrChan, sem)
 				}
@@ -133,6 +133,30 @@ func processRequest(input InputConfig) {
 			log.Printf("Error walking the path %s: %v\n", input.inputPath, err)
 		}
 	}
+}
+
+func compileExcludeRegex(pattern string) *regexp.Regexp {
+	if pattern == "" {
+		return nil
+	}
+	excludeRegex, err := regexp.Compile(`^(?:` + pattern + `)$`)
+	if err != nil {
+		log.SetPrefix("[ERROR]")
+		log.Printf("Ignoring invalid -exclude regex '%s': %v\n", pattern, err)
+		return nil
+	}
+	return excludeRegex
+}
+
+func isExcluded(excludeRegex *regexp.Regexp, inputPath string, path string) bool {
+	if excludeRegex == nil {
+		return false
+	}
+	relPath, err := filepath.Rel(inputPath, path)
+	if err != nil {
+		return false
+	}
+	return excludeRegex.MatchString(relPath)
 }
 
 func getIncludePackageFolders(config InputConfig) goastgen.StringSet {
@@ -160,7 +184,7 @@ func parseArguments() InputConfig {
 	flag.StringVar(&out, "out", ".ast", "Out put location of ast")
 	flag.BoolVar(&version, "version", false, "print the version")
 	flag.BoolVar(&help, "help", false, "print the usage")
-	flag.StringVar(&excludeFiles, "exclude", "", "regex to exclude files")
+	flag.StringVar(&excludeFiles, "exclude", "", "regex to exclude files, fully matched against the file path relative to the source location")
 	flag.StringVar(&includeFiles, "include", "", "regex to include files")
 	flag.StringVar(&includePackages, "include-packages", "", " ',' separated list of only package folders, e.g. \"/pkg/, /cmd/\". e.g. to include root package excluding sub packages e.g. \"/\"")
 	flag.Parse()

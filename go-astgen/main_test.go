@@ -115,3 +115,53 @@ func TestWindowsGetIncludePackageFolders(t *testing.T) {
 	assert.Equal(t, true, results.Contains(filepath.Join(newFolder, "pkg")), "second result")
 	assert.Equal(t, true, results.Contains(filepath.Join(newFolder, "cmd")), "third result")
 }
+
+func convertWithExclude(t *testing.T, excludeFiles string) (mainConverted bool, libConverted bool) {
+	srcDir := filepath.Join(t.TempDir(), "m")
+	assert.Nil(t, os.MkdirAll(filepath.Join(srcDir, "pkg", "a"), 0755))
+	assert.Nil(t, os.WriteFile(filepath.Join(srcDir, "main.go"), []byte("package main\nfunc main() {}\n"), 0644))
+	assert.Nil(t, os.WriteFile(filepath.Join(srcDir, "pkg", "a", "a.go"), []byte("package a\nfunc Foo() int { return 1 }\n"), 0644))
+	outDir := t.TempDir()
+	processRequest(InputConfig{out: outDir, inputPath: srcDir, includeFiles: "", excludeFiles: excludeFiles})
+	_, mainErr := os.Stat(filepath.Join(outDir, "main.go.json"))
+	_, libErr := os.Stat(filepath.Join(outDir, "pkg", "a", "a.go.json"))
+	return mainErr == nil, libErr == nil
+}
+
+func TestExcludeFullyMatchingRelativePath(t *testing.T) {
+	mainConverted, libConverted := convertWithExclude(t, `main\.go`)
+	assert.False(t, mainConverted)
+	assert.True(t, libConverted)
+
+	mainConverted, libConverted = convertWithExclude(t, `pkg/a/.*`)
+	assert.True(t, mainConverted)
+	assert.False(t, libConverted)
+}
+
+func TestExcludeDoesNotMatchSubstring(t *testing.T) {
+	mainConverted, libConverted := convertWithExclude(t, `ain`)
+	assert.True(t, mainConverted)
+	assert.True(t, libConverted)
+
+	mainConverted, libConverted = convertWithExclude(t, `kg/a`)
+	assert.True(t, mainConverted)
+	assert.True(t, libConverted)
+}
+
+func TestExcludeDoesNotMatchFileNameOnly(t *testing.T) {
+	mainConverted, libConverted := convertWithExclude(t, `a\.go`)
+	assert.True(t, mainConverted)
+	assert.True(t, libConverted)
+}
+
+func TestExcludeDoesNotMatchAbsolutePath(t *testing.T) {
+	mainConverted, libConverted := convertWithExclude(t, `.*/main\.go`)
+	assert.True(t, mainConverted)
+	assert.True(t, libConverted)
+}
+
+func TestExcludeWithInvalidRegexExcludesNothing(t *testing.T) {
+	mainConverted, libConverted := convertWithExclude(t, `(?!pkg/a/.*$).*\.go`)
+	assert.True(t, mainConverted)
+	assert.True(t, libConverted)
+}
