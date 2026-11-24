@@ -32,7 +32,7 @@ Usage:
 
 Flags:
   -exclude string
-        regex to exclude files
+        regex to exclude files, fully matched against the file path relative to the source location
   -help
         print the usage
   -include string
