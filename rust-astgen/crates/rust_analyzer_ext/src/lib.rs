@@ -1,7 +1,8 @@
 use ra_ap_hir::{
     Crate, HirFileId, Impl, InFile, Semantics, Type, TypeAlias, db::DefDatabase,
-    db::ExpandDatabase, db::HirDatabase, next_solver::GenericArgs,
+    db::ExpandDatabase, db::HirDatabase,
 };
+use ra_ap_hir_ty::next_solver::GenericArgs;
 use ra_ap_ide_db::RootDatabase;
 use ra_ap_rustc_parse_format::{ParseMode, Parser, Piece, Position};
 use ra_ap_syntax::{AstNode, AstToken, SyntaxError, SyntaxNode, ast, ast::IsString};

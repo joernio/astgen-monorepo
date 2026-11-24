@@ -385,7 +385,7 @@ pub(super) fn format_impl_trait(
     // Self is 0, type args are 1+
     let generic_args = (1..param_count)
         .map(|idx| match trait_ref.get_type_argument(idx) {
-            Some(arg) => type_formatter::format_type(&arg.to_type(semantics.db), module, semantics),
+            Some(arg) => type_formatter::format_type(&arg, module, semantics),
             None => {
                 // TODO: properly match and handle each one, i.e. don't rely on get_type_argument.
                 let arg = args?.as_slice().get(idx)?;

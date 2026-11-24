@@ -8,13 +8,14 @@ edition = "2024"
 
 [workspace.dependencies]
 ra-ap-rustc_parse_format = "0.165.0"
-ra_ap_hir = "0.0.333"
-ra_ap_ide_db = "0.0.333"
-ra_ap_load-cargo = "0.0.333"
-ra_ap_project_model = "0.0.333"
-ra_ap_syntax = "0.0.333"
-ra_ap_test_fixture = "0.0.333"
-ra_ap_vfs = "0.0.333"
+ra_ap_hir = "0.0.334"
+ra_ap_hir_ty = "0.0.334"
+ra_ap_ide_db = "0.0.334"
+ra_ap_load-cargo = "0.0.334"
+ra_ap_project_model = "0.0.334"
+ra_ap_syntax = "0.0.334"
+ra_ap_test_fixture = "0.0.334"
+ra_ap_vfs = "0.0.334"
 
 [package]
 name = "rust_ast_gen"
