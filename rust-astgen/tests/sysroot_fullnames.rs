@@ -1,8 +1,8 @@
 mod common;
 
 use crate::common::{
-    TestResult, call_expr, ident_pat, impl_decl, method_call_expr, name_ref, path_expr,
-    sysroot_ast_json,
+    TestResult, call_expr, ident_pat, impl_decl, include_bytes_expr, method_call_expr, name_ref,
+    path_expr, sysroot_ast_json,
 };
 
 #[test]
@@ -180,6 +180,32 @@ impl Mark for Box<dyn Tr + Send + Sync> {}
     assert_eq!(
         impl_decl(&json, "impl Mark for Box<dyn Tr + Send + Sync> {}").type_full_name(),
         "<alloc::boxed::Box<dyn rust2cpg::Tr + core::marker::Send + core::marker::Sync, alloc::alloc::Global> as rust2cpg::Mark>"
+    );
+
+    Ok(())
+}
+
+#[test]
+fn emits_type_for_include_bytes_expansion() -> TestResult<()> {
+    let json = sysroot_ast_json(
+        "rust2cpg",
+        &[
+            (
+                "src/main.rs",
+                r#"
+static B: &[u8; 2] = include_bytes!("b.bin");
+
+fn main() {}
+"#,
+            ),
+            ("src/b.bin", "ab"),
+        ],
+        "src/main.rs",
+    )?;
+
+    assert_eq!(
+        include_bytes_expr(&json, "builtin #include_bytes").type_full_name(),
+        "&[u8; 2]"
     );
 
     Ok(())
