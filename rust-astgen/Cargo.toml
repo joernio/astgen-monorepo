@@ -3,19 +3,19 @@ members = ["crates/joern_fmt", "crates/rust_analyzer_ext", "crates/rust_ast_func
 default-members = [".", "crates/joern_fmt"]
 
 [workspace.package]
-version = "0.28.2"
+version = "0.28.3"
 edition = "2024"
 
 [workspace.dependencies]
 ra-ap-rustc_parse_format = "0.165.0"
-ra_ap_hir = "0.0.334"
-ra_ap_hir_ty = "0.0.334"
-ra_ap_ide_db = "0.0.334"
-ra_ap_load-cargo = "0.0.334"
-ra_ap_project_model = "0.0.334"
-ra_ap_syntax = "0.0.334"
-ra_ap_test_fixture = "0.0.334"
-ra_ap_vfs = "0.0.334"
+ra_ap_hir = "0.0.336"
+ra_ap_hir_ty = "0.0.336"
+ra_ap_ide_db = "0.0.336"
+ra_ap_load-cargo = "0.0.336"
+ra_ap_project_model = "0.0.336"
+ra_ap_syntax = "0.0.336"
+ra_ap_test_fixture = "0.0.336"
+ra_ap_vfs = "0.0.336"
 
 [package]
 name = "rust_ast_gen"
@@ -44,7 +44,7 @@ ra_ap_syntax.workspace = true
 
 [dev-dependencies]
 # used by the integration tests
-temp-dir = "0.1.16"
+temp-dir = "0.2.0"
 
 [profile.release]
 lto = "thin"

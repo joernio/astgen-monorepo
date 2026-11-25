@@ -1,8 +1,8 @@
 mod common;
 
 use crate::common::{
-    TestResult, closure_expr, name_ref, no_sysroot_ast_json, path_expr, ref_expr, return_expr,
-    sysroot_ast_json,
+    TestResult, block_expr, closure_expr, name_ref, no_sysroot_ast_json, path_expr, ref_expr,
+    return_expr, sysroot_ast_json,
 };
 use serde_json::json;
 
@@ -457,6 +457,31 @@ fn main() {
             "source": "rust2cpg::imported::Type",
             "target": "&rust2cpg::imported::Type",
         })],
+    );
+
+    Ok(())
+}
+
+#[test]
+fn diverging_block_never_to_any() -> TestResult<()> {
+    let json = no_sysroot_ast_json(
+        "rust2cpg",
+        &[(
+            "src/main.rs",
+            r#"
+fn main() {
+    if true { return; }
+}
+"#,
+        )],
+        "src/main.rs",
+    )?;
+
+    let block = block_expr(&json, "{ return; }");
+    assert_eq!(block.type_full_name(), "!");
+    assert_eq!(
+        block.adjustments(),
+        vec![json!({"kind": "cast", "source": "!", "target": "()"})],
     );
 
     Ok(())

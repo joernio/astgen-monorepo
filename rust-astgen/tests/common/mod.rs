@@ -317,3 +317,11 @@ pub fn return_expr<'a>(json: &'a Value, text: &'static str) -> NodeSelector<'a> 
 pub fn closure_expr<'a>(json: &'a Value, text: &'static str) -> NodeSelector<'a> {
     node(json, "CLOSURE_EXPR", text)
 }
+
+pub fn block_expr<'a>(json: &'a Value, text: &'static str) -> NodeSelector<'a> {
+    node(json, "BLOCK_EXPR", text)
+}
+
+pub fn include_bytes_expr<'a>(json: &'a Value, text: &'static str) -> NodeSelector<'a> {
+    node(json, "INCLUDE_BYTES_EXPR", text)
+}
