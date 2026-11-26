@@ -6,6 +6,7 @@ use ra_ap_hir::{Semantics, attach_db};
 use ra_ap_ide_db::RootDatabase;
 use ra_ap_syntax::{AstNode, SyntaxKind, SyntaxNode};
 use ra_ap_vfs::{FileId, VfsPath};
+use std::panic::{AssertUnwindSafe, catch_unwind};
 use std::path::Path;
 
 pub fn syntax_kind_to_json_name(kind: SyntaxKind) -> String {
@@ -69,7 +70,7 @@ fn process_files(
     root_db: RootDatabase,
     config: &config::RustAstGenConfig,
 ) {
-    let semantics = Semantics::new(&root_db);
+    let mut semantics = Semantics::new(&root_db);
 
     // Process each file
     attach_db(semantics.db, || {
@@ -77,11 +78,19 @@ fn process_files(
             let input_file_path = file_vfs_path.as_path().map(AsRef::<Path>::as_ref);
 
             let file_result = if let Some(input_file_path) = input_file_path {
-                if let Err(e) = process_file(*file_id, input_file_path, &semantics, config) {
-                    error!("{e}");
-                    None
-                } else {
-                    Some(())
+                match catch_unwind(AssertUnwindSafe(|| {
+                    process_file(*file_id, input_file_path, &semantics, config)
+                })) {
+                    Ok(Ok(())) => Some(()),
+                    Ok(Err(e)) => {
+                        error!("{e}");
+                        None
+                    }
+                    Err(_) => {
+                        error!("panicked while processing {}", input_file_path.display());
+                        semantics = Semantics::new(&root_db);
+                        None
+                    }
                 }
             } else {
                 error!("failed to convert VfsPath to Path: {:?}", file_vfs_path);
