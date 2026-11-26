@@ -3,7 +3,7 @@ use std::ops::Range;
 
 use joern_fmt::type_formatter;
 use ra_ap_ide_db::RootDatabase;
-use ra_ap_syntax::{AstNode, AstToken, ast};
+use ra_ap_syntax::{AstNode, AstToken, ast, ast::HasName};
 
 pub(crate) struct ImplicitFormatArg {
     pub(crate) name: String,
@@ -19,8 +19,8 @@ pub(crate) fn implicit_format_args(
 
     let explicit_arg_names: Vec<String> = format_args_expr
         .args()
-        .filter_map(|arg| arg.arg_name())
-        .map(|arg_name| arg_name.name().text().to_owned())
+        .filter_map(|arg| arg.name())
+        .map(|name| name.text().to_string())
         .collect();
 
     let module = semantics.scope(format_args_expr.syntax())?.module();
@@ -64,9 +64,7 @@ pub(crate) fn format_spec(arg: &ast::FormatArgsArg) -> Option<String> {
     let index = format_args_expr
         .args()
         .position(|format_args_arg| &format_args_arg == arg)?;
-    let name = arg
-        .arg_name()
-        .map(|arg_name| arg_name.name().text().to_owned());
+    let name = arg.name().map(|name| name.text().to_string());
     first_format_spec(&string, Some(index), name.as_deref())
 }
 
