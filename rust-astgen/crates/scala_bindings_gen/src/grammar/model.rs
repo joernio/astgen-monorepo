@@ -427,10 +427,10 @@ mod tests {
         let elements = model.elements("RefExpr").unwrap();
 
         // RefExpr =
-        //   Attr* '&' (('raw' 'const'?)| ('raw'? 'mut') ) Expr
+        //   AnyAttr* '&' (('raw' 'const'?)| ('raw'? 'mut') ) Expr
 
         assert_eq!(
-            find_element(elements, "Attr").cardinality,
+            find_element(elements, "AnyAttr").cardinality,
             Cardinality::Many
         );
         assert_eq!(find_element(elements, "&").cardinality, Cardinality::One);
@@ -456,7 +456,7 @@ mod tests {
         let elements = model.elements("BinExpr").unwrap();
 
         // BinExpr =
-        //   Attr*
+        //   AnyAttr*
         //   lhs:Expr
         //   op:(
         //     '||' | '&&'
@@ -467,7 +467,7 @@ mod tests {
         //   rhs:Expr
 
         assert_eq!(
-            find_element(elements, "Attr").cardinality,
+            find_element(elements, "AnyAttr").cardinality,
             Cardinality::Many
         );
         assert_eq!(
