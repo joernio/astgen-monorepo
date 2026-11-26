@@ -66,8 +66,8 @@ Options:
                                                        [boolean] [default: true]
       --exclude-file   Exclude this file. Can be specified multiple times.
                        Default is empty.                   [array] [default: []]
-      --exclude-regex  Exclude files matching this regex (matches the absolute
-                       path).
+      --exclude-regex  Exclude files whose path relative to the source directory
+                       fully matches this regex.
   -s, --scala-ast-only Only write the Scala wrapper for the Babel AST nodes
                        (./BabelNodeSyntax.scala) and exit; no sources are
                        parsed.                        [boolean] [default: false]
@@ -91,11 +91,11 @@ astgen -t js -i <path to project>
 astgen -t vue -i <path containing .vue files>
 ```
 
-Exclude individual files or whole directories with `--exclude-file` (repeatable, accepts both file and directory paths) or with `--exclude-regex` (matched against the absolute path):
+Exclude individual files or whole directories with `--exclude-file` (repeatable, accepts both file and directory paths) or with `--exclude-regex` (the whole path relative to the source directory must match, case-sensitively; on Windows the separator is `\`):
 
 ```bash
 astgen --exclude-file generated/ --exclude-file build/legacy.js
-astgen --exclude-regex '\.generated\.[jt]s$'
+astgen --exclude-regex '.*\.generated\.[jt]s'
 ```
 
 ## Scala accessors

@@ -5,6 +5,7 @@ import Options from "./Options"
 import * as Defaults from "./Defaults"
 import * as Logger from "./Logger"
 import {getErrorMessage} from "./Errors"
+import {compileExcludeRegex} from "./FileUtils"
 import {VERSION} from "./version"
 
 import * as path from "node:path"
@@ -50,15 +51,8 @@ async function main(argv: string[]) {
             description: "Exclude this file. Can be specified multiple times. Default is empty."
         })
         .option("exclude-regex", {
-            coerce: (arg: any): RegExp | undefined => {
-                try {
-                    return new RegExp(arg.toString(), "i")
-                } catch (err) {
-                    Logger.warn(`--exclude-regex: ignoring invalid regex ${JSON.stringify(arg)}: ${getErrorMessage(err)}`)
-                    return undefined
-                }
-            },
-            description: "Exclude files matching this regex (matches the absolute path)."
+            coerce: (arg: any): RegExp | undefined => compileExcludeRegex(arg.toString()),
+            description: "Exclude files whose path relative to the source directory fully matches this regex."
         })
         .option("scala-ast-only", {
             alias: "s",

@@ -34,11 +34,14 @@ export function outputPathFor(
  *   {@link ignoreFileByName}. A path can appear in both sets — files added via
  *   `--exclude-file` populate both so a single rule can exclude either a file
  *   or a directory tree without forcing the user to disambiguate.
- * - `regex` is applied to absolute paths of both files and directories.
+ * - `regex` is applied to the path of both files and directories relative to
+ *   `srcDir`, with the separators of the host OS. This is the path Joern matches
+ *   its own `--exclude-regex` against, so both sides agree on what is excluded.
  */
 type ExcludeRules = {
     prefixPaths: string[]
     exactPaths: Set<string>
+    srcDir: string
     regex?: RegExp
 }
 
@@ -96,7 +99,25 @@ function buildExcludeRules(options: Options): ExcludeRules {
             exactPaths.add(spelling)
         }
     }
-    return {prefixPaths, exactPaths, regex: options["exclude-regex"]}
+    return {prefixPaths, exactPaths, srcDir, regex: options["exclude-regex"]}
+}
+
+/**
+ * Compiles the value of `--exclude-regex`. The pattern has to match the whole
+ * relative path, and is case-sensitive, like in Joern. Returns `undefined`
+ * after a warning if the pattern is invalid, so a typo never aborts a run.
+ */
+export function compileExcludeRegex(pattern: string): RegExp | undefined {
+    try {
+        return new RegExp(`^(?:${pattern})$`)
+    } catch (err) {
+        Logger.warn(`--exclude-regex: ignoring invalid regex ${JSON.stringify(pattern)}: ${getErrorMessage(err)}`)
+        return undefined
+    }
+}
+
+function matchesExcludeRegex(rules: ExcludeRules, fullPath: string): boolean {
+    return rules.regex?.test(path.relative(rules.srcDir, fullPath)) ?? false
 }
 
 // Note: path comparison is case-sensitive. On macOS/Windows (case-insensitive
@@ -111,7 +132,7 @@ function ignoreDirectory(rules: ExcludeRules, dirName: string, fullPath: string)
     return dirName.startsWith(".") ||
         dirName.startsWith("__") ||
         rules.prefixPaths.some((ignoredDir) => pathIsInDirectory(fullPath, ignoredDir)) ||
-        rules.regex?.test(fullPath) ||
+        matchesExcludeRegex(rules, fullPath) ||
         IGNORE_DIRS_SET.has(dirName.toLowerCase())
 }
 
@@ -127,7 +148,7 @@ function ignoreFileByName(
         Defaults.IGNORE_FILE_PATTERN.test(fileName) ||
         Defaults.IGNORE_TOOLING_FILE_PATTERN.test(fileName) ||
         rules.exactPaths.has(fullPath) ||
-        (rules.regex?.test(fullPath) ?? false)
+        matchesExcludeRegex(rules, fullPath)
 }
 
 const NEWLINE_BYTE = "\n".charCodeAt(0)

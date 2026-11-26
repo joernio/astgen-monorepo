@@ -2,6 +2,7 @@ import * as path from "node:path"
 import * as fs from "node:fs"
 
 import start from "../src/Pipeline"
+import {compileExcludeRegex} from "../src/FileUtils"
 import {findOffsets, setupProject, setupTestFixture, withTmpDir, writeFiles} from "./helpers"
 
 describe("astgen basic functionality", () => {
@@ -157,6 +158,69 @@ describe("astgen basic functionality", () => {
 
         await setupTestFixture(code, "main.js", config, (tmpDir) => {
             expect(fs.existsSync(path.join(tmpDir, "ast_out", "main.js.json"))).toBe(false)
+        })
+    })
+
+    describe("--exclude-regex", () => {
+        const sep = path.sep === "\\" ? "[/\\\\]" : "/"
+        const files = [
+            {name: "main.js", code: "const a = 1;"},
+            {name: path.join("pkg", "lib.js"), code: "const b = 2;"},
+            {name: path.join("pkg", "Util.js"), code: "const c = 3;"},
+        ]
+        const emitted = (tmpDir: string, name: string) => fs.existsSync(path.join(tmpDir, "ast_out", `${name}.json`))
+
+        const run = async (pattern: string, check: (tmpDir: string) => void) =>
+            setupProject(
+                files,
+                {tsTypes: false, "exclude-file": [], "exclude-regex": compileExcludeRegex(pattern)},
+                check,
+            )
+
+        it("excludes a file whose relative path fully matches", async () => {
+            await run("main\\.js", (tmpDir) => {
+                expect(emitted(tmpDir, "main.js")).toBe(false)
+                expect(emitted(tmpDir, path.join("pkg", "lib.js"))).toBe(true)
+            })
+        })
+
+        it("excludes everything below a directory whose relative path matches", async () => {
+            await run(`pkg${sep}.*`, (tmpDir) => {
+                expect(emitted(tmpDir, "main.js")).toBe(true)
+                expect(emitted(tmpDir, path.join("pkg", "lib.js"))).toBe(false)
+            })
+        })
+
+        it("supports lookaheads on the relative path", async () => {
+            await run(`(?!pkg${sep}.*$).*\\.js`, (tmpDir) => {
+                expect(emitted(tmpDir, "main.js")).toBe(false)
+                expect(emitted(tmpDir, path.join("pkg", "lib.js"))).toBe(true)
+            })
+        })
+
+        it("does not exclude on a partial match", async () => {
+            await run("ain", (tmpDir) => {
+                expect(emitted(tmpDir, "main.js")).toBe(true)
+            })
+        })
+
+        it("does not match the absolute path", async () => {
+            await run(`${sep}.*main\\.js`, (tmpDir) => {
+                expect(emitted(tmpDir, "main.js")).toBe(true)
+            })
+        })
+
+        it("is case-sensitive", async () => {
+            await run(`pkg${sep}util\\.js`, (tmpDir) => {
+                expect(emitted(tmpDir, path.join("pkg", "Util.js"))).toBe(true)
+            })
+            await run(`pkg${sep}Util\\.js`, (tmpDir) => {
+                expect(emitted(tmpDir, path.join("pkg", "Util.js"))).toBe(false)
+            })
+        })
+
+        it("ignores an invalid regex", () => {
+            expect(compileExcludeRegex("(")).toBeUndefined()
         })
     })
 
