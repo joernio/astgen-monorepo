@@ -8,9 +8,7 @@ use joern_fmt::{
     owner_full_names, supertraits, total_elements, type_full_names,
 };
 use log::warn;
-use ra_ap_hir::{
-    CfgExpr, CfgOptions, Crate, HirFileId, Semantics, db::ExpandDatabase, prettify_macro_expansion,
-};
+use ra_ap_hir::{CfgExpr, CfgOptions, Crate, HirFileId, Semantics, prettify_macro_expansion};
 use ra_ap_ide_db::RootDatabase;
 use ra_ap_ide_db::line_index::LineIndex;
 use ra_ap_syntax::{
@@ -453,7 +451,7 @@ fn macro_text(
     target_crate: Crate,
 ) -> Option<String> {
     let macro_file = hir_file_id.macro_file()?;
-    let span_map = semantics.db.expansion_span_map(macro_file);
+    let span_map = macro_file.expansion_span_map(semantics.db);
     Some(
         prettify_macro_expansion(semantics.db, node.clone(), span_map, target_crate.into())
             .to_string(),
