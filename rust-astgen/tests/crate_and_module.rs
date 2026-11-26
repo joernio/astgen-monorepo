@@ -2,7 +2,11 @@ use crate::common::{
     TestResult, call_expr, fn_decl, no_sysroot_ast_json, no_sysroot_ast_json_generated,
     nodes_by_kind, sysroot_ast_json, sysroot_ast_json_generated,
 };
+use rust_ast_gen::config::RustAstGenConfig;
+use rust_ast_gen::json_gen;
+use std::fs;
 use std::path::Path;
+use temp_dir::TempDir;
 
 mod common;
 
@@ -243,6 +247,55 @@ fn emits_type_alias_type_full_name() -> TestResult<()> {
     let aliases = nodes_by_kind(&json, "TYPE_ALIAS");
     assert_eq!(aliases.len(), 1);
     assert_eq!(aliases[0]["typeFullName"].as_str(), Some("my_crate::A"));
+
+    Ok(())
+}
+
+// TODO: based on the 0.0.344 regression, i.e. will fail once we are able to update to a version that fixes it.
+// Until then, this test at least shows that we don't crash the entire thread on a panick, i.e. only 1 file gets dropped.
+#[test]
+fn emits_the_files_after_one_rust_analyzer_panics_on() -> TestResult<()> {
+    let root = TempDir::with_prefix("rust_ast_gen_integration_test_")?;
+    fs::write(
+        root.child("Cargo.toml"),
+        r#"[package]
+name = "my_crate"
+version = "0.1.0"
+edition = "2021"
+"#,
+    )?;
+    fs::create_dir(root.child("src"))?;
+    fs::write(
+        root.child("src/lib.rs"),
+        r#"
+mod n;
+trait Tr { type R<'a>; }
+#[derive(Clone)]
+struct S<K: Tr>(for<'a> fn(K::R<'a>));
+fn m<K: Tr>(s: &S<K>) { s.clone(); }
+"#,
+    )?;
+    fs::write(root.child("src/n.rs"), "fn n() {}\n")?;
+    let input_dir = dunce::canonicalize(root.path())?;
+    let output_dir = input_dir.join("out");
+
+    // Must specify num_threads: 1 otherwise we can't be sure both files are handled by the same worker.
+    let config = RustAstGenConfig::new(
+        input_dir,
+        output_dir.clone(),
+        1,
+        true,
+        false,
+        None,
+        vec![],
+        false,
+        false,
+        false,
+    )?;
+    json_gen::run(&config)?;
+
+    assert!(!output_dir.join("src/lib.rs.json").exists());
+    assert!(output_dir.join("src/n.rs.json").exists());
 
     Ok(())
 }
