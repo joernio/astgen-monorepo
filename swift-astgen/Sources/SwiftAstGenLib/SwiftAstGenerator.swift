@@ -33,7 +33,8 @@ public final class SwiftAstGenerator {
     ///     ``generate()``; the initializer performs no I/O.
     ///   - prettyPrint: If `true`, JSON output is pretty-printed.
     ///   - excludeRegex: Optional pre-compiled regex tested against each candidate file's
-    ///     absolute path; matching files are skipped.
+    ///     path relative to `srcDir`; matching files are skipped. Use ``compileExcludeRegex(_:)``
+    ///     to get the semantics of `--exclude-regex`.
     public init(srcDir: URL, outputDir: URL, prettyPrint: Bool, excludeRegex: NSRegularExpression? = nil) {
         self.srcDir = srcDir
         self.outputDir = outputDir
@@ -42,6 +43,14 @@ public final class SwiftAstGenerator {
         self.ignorePathsFromPackageSwift = PackageTestTargetParser(srcDir: srcDir)
             .getTestTargetPaths()
             .map { $0.lowercased() }
+    }
+
+    /// Compiles the pattern of `--exclude-regex`. It has to match the whole relative path and is
+    /// case-sensitive, like in Joern, so that both sides agree on which files are excluded.
+    ///
+    /// - Throws: If `pattern` is not a valid regular expression.
+    public static func compileExcludeRegex(_ pattern: String) throws -> NSRegularExpression {
+        try NSRegularExpression(pattern: "^(?:\(pattern))$", options: [])
     }
 
     /// Walks the source tree and writes one `<relative-path>.json` file per `.swift` source.
@@ -66,9 +75,8 @@ public final class SwiftAstGenerator {
             return true
         }
         if let excludeRegex = excludeRegex {
-            let absolute = fileURL.path
-            let range = NSRange(absolute.startIndex..<absolute.endIndex, in: absolute)
-            if excludeRegex.firstMatch(in: absolute, options: [], range: range) != nil {
+            let range = NSRange(relativeFilePath.startIndex..<relativeFilePath.endIndex, in: relativeFilePath)
+            if excludeRegex.firstMatch(in: relativeFilePath, options: [], range: range) != nil {
                 return true
             }
         }

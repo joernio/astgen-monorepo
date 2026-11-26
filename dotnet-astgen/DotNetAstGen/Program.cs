@@ -141,6 +141,21 @@ namespace DotNetAstGen
             return !errorWhileParsing;
         }
 
+        /// <summary>
+        /// Decides whether <paramref name="fullPath"/> is excluded by the <c>--exclude</c> pattern. The whole path
+        /// relative to <paramref name="rootPath"/> has to match, case-sensitively, like in Joern.
+        /// </summary>
+        public static bool IsExcluded(string? exclusionRegex, string rootPath, string fullPath)
+        {
+            if (exclusionRegex == null)
+            {
+                return false;
+            }
+
+            var relativePath = Path.GetRelativePath(rootPath, fullPath);
+            return Regex.IsMatch(relativePath, $"^(?:{exclusionRegex})$", RegexOptions.CultureInvariant);
+        }
+
         private static void _AstForFile(
             FileSystemInfo rootInputPath,
             FileSystemInfo rootOutputPath,
@@ -148,7 +163,7 @@ namespace DotNetAstGen
             string? exclusionRegex)
         {
             var fullPath = filePath.FullName;
-            if (exclusionRegex != null && Regex.IsMatch(fullPath, exclusionRegex))
+            if (IsExcluded(exclusionRegex, rootInputPath.FullName, fullPath))
             {
                 _logger?.LogInformation("Skipping file: {filePath}", fullPath);
                 return;
@@ -200,13 +215,13 @@ namespace DotNetAstGen
                 _logger?.LogInformation("Parsing directory {dirName}", inputPath);
                 new DirectoryInfo(inputPath).EnumerateFiles("*.dll", SearchOption.AllDirectories)
                     .AsParallel()
-                    .ForAll(inputFile => _SummaryForDLLFile(inputFile, exclusionRegex));
+                    .ForAll(inputFile => _SummaryForDLLFile(inputPath, inputFile, exclusionRegex));
             }
             else if (File.Exists(inputPath) && Path.GetExtension(inputPath).ToLower() == ".dll")
             {
                 var file = new FileInfo(inputPath);
                 Debug.Assert(file.Directory != null, "Given file has a null parent directory!");
-                _SummaryForDLLFile(file, exclusionRegex);
+                _SummaryForDLLFile(file.DirectoryName ?? "./", file, exclusionRegex);
             }
             else if (!File.Exists(inputPath))
             {
@@ -217,10 +232,10 @@ namespace DotNetAstGen
             _logger?.LogInformation("Bytecode summary generation complete");
         }
 
-        private static void _SummaryForDLLFile(FileInfo filePath, string? exclusionRegex)
+        private static void _SummaryForDLLFile(string rootInputPath, FileInfo filePath, string? exclusionRegex)
         {
             var fullPath = filePath.FullName;
-            if (exclusionRegex != null && Regex.IsMatch(fullPath, exclusionRegex))
+            if (IsExcluded(exclusionRegex, rootInputPath, fullPath))
             {
                 _logger?.LogInformation("Skipping file: {filePath}", fullPath);
                 return;
@@ -333,7 +348,7 @@ namespace DotNetAstGen
         [Option('o', "output", Required = false, HelpText = "Output directory. (default `./.ast`)")]
         public string OutputDirectory { get; set; } = ".ast";
 
-        [Option('e', "exclude", Required = false, HelpText = "Exclusion regex for while files to filter out.")]
+        [Option('e', "exclude", Required = false, HelpText = "Exclusion regex for files to filter out. Has to match the whole path relative to the input directory.")]
         public string? ExclusionRegex { get; set; } = null;
     }
 }

@@ -38,7 +38,7 @@ Options:
   -d, --debug     Enable verbose output.
   -i, --input     Input file or directory. Ingested file types are `.cs`, `.dll`, and `.pdb`. (required)
   -o, --output    Output directory. (default: `./.ast`)
-  -e, --exclude   Exclusion regex for files to filter out.
+  -e, --exclude   Exclusion regex for files to filter out. It has to match the whole path relative to the input directory, case-sensitively.
 ```
 
 For parsing symbols of DLL files, both the `.dll` and `.pdb` file (with matching names) must live in the same directory. Symbol summaries are written to the output directory with a `_Symbols.json` suffix.

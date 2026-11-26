@@ -68,7 +68,7 @@ OPTIONS:
   -p, --pretty-print       Pretty print the generated AST json files.
   -s, --scala-ast-only     Only print the generated Scala SwiftSyntax AST nodes
                            (writes `./SwiftNodeSyntax.scala`).
-  --exclude-regex <regex>  Exclude files whose absolute path matches this case-insensitive regex.
+  --exclude-regex <regex>  Exclude files whose path relative to the source directory fully matches this regex.
   -v, --version            Show the version.
   -h, --help               Show help information.
 ```
@@ -92,12 +92,12 @@ for a given SwiftSyntax version.
 `/spec/`, `/specs/`) and dot/underscore-prefixed directories (`/.`, `/__`). It also reads
 the project's root `Package.swift` and skips every `testTarget(...)` path declared there.
 
-Pass `--exclude-regex` to skip additional files. The pattern is matched
-case-insensitively against the **absolute** path of every candidate `.swift` file:
+Pass `--exclude-regex` to skip additional files. The whole path of a candidate `.swift` file
+relative to the source directory has to match the pattern, case-sensitively:
 
 ```bash
-SwiftAstGen --exclude-regex '/Generated/'
-SwiftAstGen --exclude-regex '\.pb\.swift$'
+SwiftAstGen --exclude-regex 'Generated/.*'
+SwiftAstGen --exclude-regex '.*\.pb\.swift'
 ```
 
 ## Examples

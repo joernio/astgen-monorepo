@@ -50,9 +50,11 @@ export default interface Options {
     "exclude-file": string[],
 
     /**
-     * Optional case-insensitive regex matched against the absolute path of
-     * each candidate file or directory. Files/directories that match are
-     * skipped. Invalid regexes are dropped with a warning at parse time.
+     * Optional regex tested against the path of each candidate file or
+     * directory relative to `src`, using the separators of the host OS.
+     * Files/directories that match are skipped. On the CLI the pattern must
+     * match the whole relative path and is case-sensitive. Invalid regexes are
+     * dropped with a warning at parse time.
      */
     "exclude-regex"?: RegExp
 }
