@@ -716,3 +716,22 @@ fn f(t: T) {
         "<ra_test_fixture::T as ra_test_fixture::Sink>::m",
     );
 }
+
+#[test]
+#[ignore = "TODO: 0.0.344 started to crash on this."]
+fn derive_with_higher_ranked_projection_field() {
+    check_method_call_method_full_name(
+        r#"
+//- minicore: clone, derive
+trait Tr {
+    type R<'a>;
+}
+#[derive(Clone)]
+struct S<K: Tr>(for<'a> fn(K::R<'a>));
+fn m<K: Tr>(s: &S<K>) {
+    $0s.clone();
+}
+"#,
+        "<&T as core::clone::Clone>::clone",
+    );
+}

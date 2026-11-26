@@ -48,6 +48,7 @@ fn generate_bindings(include_date: bool) -> Result<String> {
     let base_token_trait = "RustToken".to_string();
     let trait_nodes = vec![
         "Adt".to_string(),
+        "AnyAttr".to_string(),
         "AsmOperand".to_string(),
         "AsmPiece".to_string(),
         "AssocItem".to_string(),

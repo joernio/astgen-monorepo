@@ -3,20 +3,20 @@ members = ["crates/joern_fmt", "crates/rust_analyzer_ext", "crates/rust_ast_func
 default-members = [".", "crates/joern_fmt"]
 
 [workspace.package]
-version = "0.28.5"
+version = "0.28.6"
 edition = "2024"
 
 [workspace.dependencies]
 ra-ap-rustc_parse_format = "0.166.0"
-ra_ap_hir = "0.0.346"
-ra_ap_hir_def = "0.0.346"
-ra_ap_hir_ty = "0.0.346"
-ra_ap_ide_db = "0.0.346"
-ra_ap_load-cargo = "0.0.346"
-ra_ap_project_model = "0.0.346"
-ra_ap_syntax = "0.0.346"
-ra_ap_test_fixture = "0.0.346"
-ra_ap_vfs = "0.0.346"
+ra_ap_hir = "0.0.351"
+ra_ap_hir_def = "0.0.351"
+ra_ap_hir_ty = "0.0.351"
+ra_ap_ide_db = "0.0.351"
+ra_ap_load-cargo = "0.0.351"
+ra_ap_project_model = "0.0.351"
+ra_ap_syntax = "0.0.351"
+ra_ap_test_fixture = "0.0.351"
+ra_ap_vfs = "0.0.351"
 
 [package]
 name = "rust_ast_gen"
